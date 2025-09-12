@@ -1,0 +1,186 @@
+:root {
+  interpolate-size: allow-keywords;
+  font-family: "Roboto", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  text-align: center;
+
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  --primary: #000000;
+  --secondary: #FFFFFF;
+  --black-50: #e5e5e5;
+  --black-100: #cbcbcb;
+  --black-200: #b2b2b2;
+  --black-300: #9a9a9a;
+  --black-400: #828282;
+  --black-500: #6b6b6b;
+  --black-600: #555555;
+  --black-700: #404040;
+  --black-800: #2c2c2c;
+  --black-900: #191919;
+  --black-950: #0f0f0f;
+
+  --padding: "1em";
+  --radius: "5px";
+}
+
+body {
+  padding: 1.0em;
+}
+
+html,
+main,
+body {
+  display: flex;
+  flex-flow: column;
+  background-color: var(--black-950);
+  color: white;
+  margin: 0;
+  gap: 1.0em;
+  flex: 1;
+}
+
+a {
+  text-decoration: none;
+  color: unset;
+}
+
+button,
+input {
+  text-decoration: none;
+  color: inherit;
+  border: none;
+  font: inherit;
+  outline: inherit;
+  outline: none;
+}
+
+input {
+  background-color: var(--black-700);
+}
+
+.background-2 {
+  background-color: var(--black-900);
+}
+
+.background-3 {
+  background-color: var(--black-800);
+}
+
+.padded {
+  padding: 0.5em;
+}
+
+.rounded {
+  border-radius: 5px;
+}
+
+.interactive {
+  background-color: var(--black-800);
+  overflow: hidden;
+}
+
+.interactive:hover {
+  background-color: var(--black-700);
+  cursor: pointer;
+}
+
+.interactive:focus:not(button) {
+  outline: none;
+  background-color: var(--black-700);
+  cursor: pointer;
+}
+
+.interactive:active {
+  background-color: var(--black-600);
+}
+
+.horizontal {
+  display: flex;
+  flex-flow: row nowrap;
+}
+
+.vertical {
+  display: flex;
+  flex-flow: column nowrap;
+}
+
+.flex{
+  display: flex;
+}
+
+.gap {
+  gap: 1.0em;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.flex-end {
+  justify-content: flex-end;
+}
+
+.space-between {
+  justify-content: space-between
+}
+
+.absolute-position {
+  position: absolute;
+}
+
+.relative {
+  position: relative;
+}
+
+.h2 {
+  font-weight: 300;
+  padding: 0;
+  margin: 0;
+}
+
+label {
+  padding-left: 0.5em;
+  padding-bottom: 0.5em;
+  text-align: left;
+  font-size: 0.75em;
+  flex-flow: column;
+  width: fit-content;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gray {
+  color: gray;
+}
+
+.red {
+  color: red;
+}
+
+.green {
+  color: green;
+}
+
+.dashed {
+  outline: 1px dashed;
+}
+
+.icon {
+  margin: 0;
+  padding: 0;
+  svg {
+    padding: 0;
+    margin: 0;
+    width: 24px;
+    height: 24px;
+  }
+}
