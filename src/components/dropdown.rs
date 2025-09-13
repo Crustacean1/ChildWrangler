@@ -125,7 +125,7 @@ where
                 }
             />
             <ul
-                class="background-3 vertical flex-1 rounded"
+                class="background-3 vertical flex-1 rounded shadow"
                 style:gap="1px"
                 style:position="absolute"
                 style:top="100%"

@@ -1,7 +1,297 @@
-use leptos::prelude::*;
+use leptos::{either::Either, prelude::*};
+use leptos_router::hooks::{use_navigate, use_params};
+use uuid::Uuid;
+
+use crate::{
+    components::{
+        modal::Modal,
+        modals::{
+            add_group::AddGroupModal, add_student::AddStudentModal, delete_group::DeleteGroupModal,
+            delete_student::DeleteStudentModal, modify_group::ModifyGroupModal,
+        },
+    },
+    dtos::{
+        details::{GroupDetailsDto, StudentDetailsDto},
+        group::GroupDto,
+    },
+    icons::{add_group::AddGroupIcon, add_user::AddUserIcon, delete::DeleteIcon, edit::EditIcon},
+    pages::attendance_page::AttendanceParams,
+    services::group::{get_breadcrumbs, get_details},
+};
 
 #[component]
 pub fn DetailPage() -> impl IntoView {
-    view! { <div>Detail Page</div> }
+    view! {
+        <div class="vertical gap">
+            <div class="background-2 rounded padded">
+                <InfoPage />
+            </div>
+            <div class="background-2 rounded padded"></div>
+        </div>
+    }
 }
 
+#[component]
+pub fn InfoPage() -> impl IntoView {
+    let params = use_params::<AttendanceParams>();
+    let id = move || {
+        params
+            .read()
+            .as_ref()
+            .ok()
+            .and_then(|params| params.target)
+            .unwrap_or_default()
+    };
+    let info = Resource::new(id, |id| async move { get_details(id).await });
+    let trail = Resource::new(id, |id| async move { get_breadcrumbs(id).await });
+    view! {
+        <Suspense fallback=|| view! { <div>Loading</div> }>
+            <ErrorBoundary fallback=|_| {
+                view! { <div>Error</div> }
+            }>
+                {move || Suspend::new(async move {
+                    let info = info.await?;
+                    let trail = trail.await?;
+                    Ok::<
+                        _,
+                        ServerFnError,
+                    >(
+                        match info {
+                            crate::dtos::details::EntityDto::Student(student) => {
+                                Either::Left(
+                                    Either::Left(Either::Left(view! { <Student student trail /> })),
+                                )
+                            }
+                            crate::dtos::details::EntityDto::Group(group) => {
+                                Either::Left(
+                                    Either::Left(
+                                        Either::Right(view! { <NonemptyGroup group trail /> }),
+                                    ),
+                                )
+                            }
+                            crate::dtos::details::EntityDto::StudentGroup(group) => {
+                                Either::Left(
+                                    Either::Right(
+                                        Either::Right(view! { <StudentGroup group trail /> }),
+                                    ),
+                                )
+                            }
+                            crate::dtos::details::EntityDto::LeafGroup(group) => {
+                                Either::Left(
+                                    Either::Right(
+                                        Either::Left(view! { <EmptyGroup group trail /> }),
+                                    ),
+                                )
+                            }
+                            crate::dtos::details::EntityDto::Catering(catering) => {
+                                Either::Right(view! { <Catering catering trail /> })
+                            }
+                        },
+                    )
+                })}
+            </ErrorBoundary>
+        </Suspense>
+    }
+}
+
+#[component]
+pub fn Breadcrumb(trail: Vec<GroupDto>) -> impl IntoView {
+    view! {
+        <div class="horizontal gap">
+            <For each=move || trail.clone() key=|g| g.id let:item>
+                <div class="interactive rounded padded">
+                    <span on:click=move |_| {
+                        use_navigate()(&format!("/attendance/{}", item.id), Default::default())
+                    }>{item.name}</span>
+                </div>
+            </For>
+        </div>
+    }
+}
+
+#[component]
+pub fn Catering(catering: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoView {
+    let (add_group, set_add_group) = signal(false);
+    let (edit_group, set_edit_group) = signal(false);
+
+    view! {
+        <div class="horizontal gap space-between">
+            <Breadcrumb trail />
+
+            <div class="horizontal gap">
+                <button class="interactive rounded center" on:click=move |_| set_add_group(true)>
+                    <AddGroupIcon />
+                </button>
+                <button class="interactive rounded center" on:click=move |_| set_edit_group(true)>
+                    <EditIcon />
+                </button>
+            </div>
+        </div>
+        <Modal is_open=add_group on_close=move || set_add_group(false)>
+            <AddGroupModal on_close=move |_| set_add_group(false) parent=catering.id />
+        </Modal>
+        <Modal is_open=edit_group on_close=move || set_edit_group(false)>
+            <ModifyGroupModal on_close=move |_| set_edit_group(false) group=catering.id />
+        </Modal>
+    }
+}
+
+fn Test(details: Signal<StudentDetailsDto>) -> impl IntoView {
+    view! { <div>Whatever</div> }
+}
+
+#[component]
+pub fn EmptyGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoView {
+    let (add_group, set_add_group) = signal(false);
+    let (add_student, set_add_student) = signal(false);
+    let (edit_group, set_edit_group) = signal(false);
+    let (delete_group, set_delete_group) = signal(false);
+
+    view! {
+        <div class="horizontal space-between">
+            <Breadcrumb trail />
+            <div class="horizontal gap">
+                <button class="interactive rounded center" on:click=move |_| set_add_student(true)>
+                    <AddUserIcon />
+                </button>
+                <button class="interactive rounded center" on:click=move |_| set_add_group(true)>
+                    <AddGroupIcon />
+                </button>
+                <button class="interactive rounded center" on:click=move |_| set_edit_group(true)>
+                    <EditIcon />
+                </button>
+                <button class="interactive rounded center" on:click=move |_| set_delete_group(true)>
+                    <DeleteIcon />
+                </button>
+            </div>
+        </div>
+        <Modal is_open=add_group on_close=move || set_add_group(false)>
+            <AddGroupModal on_close=move |_| set_add_group(false) parent=group.id />
+        </Modal>
+        <Modal is_open=add_student on_close=move || set_add_student(false)>
+            <AddStudentModal on_close=move |_| set_add_student(false) group=group.id initial=None />
+        </Modal>
+        <Modal is_open=edit_group on_close=move || set_edit_group(false)>
+            <ModifyGroupModal on_close=move |_| set_edit_group(false) group=group.id />
+        </Modal>
+        <Modal is_open=delete_group on_close=move || set_delete_group(false)>
+            <DeleteGroupModal on_close=move |_| set_delete_group(false) id=group.id />
+        </Modal>
+    }
+}
+
+#[component]
+pub fn NonemptyGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoView {
+    let (edit_group, set_edit_group) = signal(false);
+    let (add_group, set_add_group) = signal(false);
+    let (delete_group, set_delete_group) = signal(false);
+
+    view! {
+        <div class="horizontal space-between">
+            <Breadcrumb trail />
+            <div class="horizontal gap">
+                <button
+                    class="interactive rounded center"
+                    on:click=move |_| { set_add_group(true) }
+                >
+                    <AddGroupIcon />
+                </button>
+                <button class="interactive rounded center" on:click=move |_| set_edit_group(true)>
+                    <EditIcon />
+                </button>
+                <button class="interactive rounded center" on:click=move |_| set_delete_group(true)>
+                    <DeleteIcon />
+                </button>
+            </div>
+        </div>
+        <Modal is_open=edit_group on_close=move || set_edit_group(false)>
+            <ModifyGroupModal on_close=move |_| set_edit_group(false) group=group.id />
+        </Modal>
+        <Modal is_open=add_group on_close=move || set_add_group(false)>
+            <AddGroupModal on_close=move |_| set_add_group(false) parent=group.id />
+        </Modal>
+        <Modal is_open=delete_group on_close=move || set_delete_group(false)>
+            <DeleteGroupModal on_close=move |_| set_delete_group(false) id=group.id />
+        </Modal>
+    }
+}
+
+#[component]
+pub fn StudentGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoView {
+    let (edit_group, set_edit_group) = signal(false);
+    let (add_student, set_add_student) = signal(false);
+    let (delete_group, set_delete_group) = signal(false);
+
+    view! {
+        <div class="horizontal space-between">
+            <Breadcrumb trail />
+            <div class="horizontal gap">
+                <button
+                    class="interactive rounded center"
+                    on:click=move |_| { set_add_student(true) }
+                >
+                    <AddUserIcon />
+                </button>
+                <button class="interactive rounded center" on:click=move |_| set_edit_group(true)>
+                    <EditIcon />
+                </button>
+                <button class="interactive rounded center" on:click=move |_| set_delete_group(true)>
+                    <DeleteIcon />
+                </button>
+            </div>
+        </div>
+        <Modal is_open=edit_group on_close=move || set_edit_group(false)>
+            <ModifyGroupModal on_close=move |_| set_edit_group(false) group=group.id />
+        </Modal>
+        <Modal is_open=add_student on_close=move || set_add_student(false)>
+            <AddStudentModal on_close=move |_| set_add_student(false) group=group.id initial=None />
+        </Modal>
+        <Modal is_open=delete_group on_close=move || set_delete_group(false)>
+            <DeleteGroupModal on_close=move |_| set_delete_group(false) id=group.id />
+        </Modal>
+    }
+}
+
+#[component]
+pub fn SaveStudentBar(student: ReadSignal<StudentDetailsDto>) -> impl IntoView {
+    view! { <div>Ridiculous</div> }
+}
+
+#[component]
+pub fn Student(student: StudentDetailsDto, trail: Vec<GroupDto>) -> impl IntoView {
+    let (delete_student, set_delete_student) = signal(false);
+    let (edit_student, set_edit_student) = signal(false);
+
+    let on_delete = move |deleted| {
+        set_delete_student(false);
+        if deleted {}
+    };
+
+    view! {
+        <div class="horizontal space-between">
+            <Breadcrumb trail />
+            <div class="horizontal gap">
+                <button class="interactive rounded center" on:click=move |_| set_edit_student(true)>
+                    <EditIcon />
+                </button>
+                <button
+                    class="interactive rounded center"
+                    on:click=move |_| set_delete_student(true)
+                >
+                    <DeleteIcon />
+                </button>
+            </div>
+        </div>
+
+        <Modal is_open=delete_student on_close=move || set_delete_student(false)>
+            <DeleteStudentModal student_id=student.id on_close=on_delete />
+        </Modal>
+        <Modal is_open=edit_student on_close=move || set_edit_student(false)>
+            <AddStudentModal
+                group=Uuid::nil()
+                initial=Some(student.clone())
+                on_close=move |_| set_edit_student(false)
+            />
+        </Modal>
+    }
+}

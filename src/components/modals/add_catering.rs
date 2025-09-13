@@ -5,7 +5,11 @@ use leptos::{either::Either, logging::log, prelude::*};
 use uuid::Uuid;
 
 use crate::{
-    components::{dropdown::Dropdown, modal::Modal},
+    components::{
+        dropdown::Dropdown,
+        modal::Modal,
+        snackbar::{use_snackbar, SnackbarContext},
+    },
     dtos::catering::{CreateCateringDto, MealDto},
     icons::close::CloseIcon,
     services::{catering::create_catering, student::get_meals},
@@ -14,7 +18,7 @@ use crate::{
 #[component]
 pub fn AddCateringModal(
     is_open: impl Fn() -> bool + Send + Sync + Copy + 'static,
-    on_close: impl Fn() + Send + Sync + Copy + 'static,
+    on_close: impl Fn(Option<Uuid>) + Send + Sync + Copy + 'static,
 ) -> impl IntoView {
     let meals = Resource::new(|| (), |_| async move { get_meals().await });
 
@@ -35,10 +39,11 @@ pub fn AddCateringModal(
 #[component]
 fn InnerCateringModal(
     is_open: impl Fn() -> bool + Send + Sync + Copy + 'static,
-    on_close: impl Fn() + Send + Sync + Copy + 'static,
+    on_close: impl Fn(Option<Uuid>) + Send + Sync + Copy + 'static,
     meals: Vec<MealDto>,
 ) -> impl IntoView {
-    let on_cancel = move |_| on_close();
+    let snackbar = use_snackbar();
+    let on_cancel = move |_| on_close(None);
 
     let (selected_meals, set_selected_meals) = signal(vec![]);
     let (name, set_name) = signal(String::new());
@@ -56,9 +61,32 @@ fn InnerCateringModal(
         }
     };
 
-    let create_catering = Action::new(|dto: &CreateCateringDto| {
+    let (dow, set_dow) = signal(
+        iter::successors(Some(Weekday::Mon), |w| {
+            if *w == Weekday::Sun {
+                None
+            } else {
+                Some(w.succ())
+            }
+        })
+        .map(|w| (w, false))
+        .collect::<Vec<_>>(),
+    );
+
+    let on_remove = move |id| set_selected_meals.write().retain(|x| x.id != id);
+
+    let create_catering = Action::new(move |dto: &CreateCateringDto| {
         let dto = dto.clone();
-        async { create_catering(dto).await }
+        async move {
+            let id = create_catering(dto).await;
+            match id {
+                Ok(id) => {
+                    snackbar.success("Dodano nowy catering");
+                    on_close(Some(id));
+                }
+                Err(e) => snackbar.error("Nie udało się stworzyć cateringu", e),
+            }
+        }
     });
 
     let on_save = move |_| match (
@@ -73,16 +101,21 @@ fn InnerCateringModal(
                 until,
                 grace_period,
                 meals: selected_meals().iter().map(|m| m.name.clone()).collect(),
-                dow: [true, true, true, true, true, false, false],
+                dow: dow()
+                    .into_iter()
+                    .map(|(_, enabled)| enabled)
+                    .collect::<Vec<_>>(),
             };
             create_catering.dispatch(dto);
         }
-        _ => {}
+        _ => {
+            snackbar.error("Podano nieprawidłowy czas lub datę", "");
+        }
     };
 
     view! {
-        <div class="gap vertical" style:width="20em">
-            <h2 class="h2">Nowy catering</h2>
+        <div class="gap vertical" style:width="25em">
+            <h2 class="h2">Dodaj catering</h2>
             <div class="vertical">
                 <label for="name">Nazwa</label>
                 <input bind:value=(name, set_name) class="padded rounded" id="name" />
@@ -121,7 +154,11 @@ fn InnerCateringModal(
                 }}
                 <For each=selected_meals key=|meal: &MealDto| meal.id let:meal>
                     <div class="rounded padded background-3 flex space-between">
-                        {meal.name}<button class="interactive red rounded flex icon">
+                        {meal.name}
+                        <button
+                            class="interactive red rounded flex icon"
+                            on:click=move |_| on_remove(meal.id)
+                        >
                             <CloseIcon />
                         </button>
                     </div>
@@ -150,23 +187,38 @@ fn InnerCateringModal(
 
             <label>Dni tygodnia</label>
             <div class="horizontal" style:gap="0.5em">
-                {iter::successors(
-                        Some(Weekday::Mon),
-                        |w| if *w == Weekday::Sun { None } else { Some(w.succ()) },
-                    )
-                    .map(|w| {
-                        view! {
-                            <button class="interactive padded rounded">{format!("{}", w)}</button>
-                        }
-                    })
-                    .collect::<Vec<_>>()}
+                {move || {
+                    dow()
+                        .iter()
+                        .enumerate()
+                        .map(|(i, (w, enabled))| {
+                            view! {
+                                <button
+                                    class:green-outline=*enabled
+                                    class="interactive padded rounded flex-1"
+                                    on:click=move |_| set_dow.write()[i].1 = !dow()[i].1
+                                >
+                                    {format!("{}", w)}
+                                </button>
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                }}
             </div>
 
             <div class="horizontal flex-end gap">
-                <button class="padded rounded interactive red" on:click=on_cancel>
+                <button
+                    class="padded rounded interactive red"
+                    on:click=on_cancel
+                    disabled=create_catering.pending()
+                >
                     Anuluj
                 </button>
-                <button class="padded rounded interactive green" on:click=on_save>
+                <button
+                    class="padded rounded interactive green"
+                    on:click=on_save
+                    disabled=create_catering.pending()
+                >
                     Dodaj
                 </button>
             </div>

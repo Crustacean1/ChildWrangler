@@ -20,3 +20,17 @@ pub struct SearchTerm {
     pub name: String,
     pub parent_name: Option<String>,
 }
+
+#[derive(Serialize, Debug, Clone, Deserialize)]
+pub struct ModifyGroupDto {
+    pub id: Uuid,
+    pub name: String,
+}
+
+#[derive(Serialize, Debug, Clone, Deserialize)]
+pub struct GroupInfoDto {
+    pub id: Uuid,
+    pub name: String,
+    pub group_count: i64,
+    pub student_count: i64,
+}

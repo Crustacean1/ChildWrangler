@@ -7,7 +7,7 @@ use leptos_router::{
 };
 
 use crate::{
-    components::searchbar::Searchbar,
+    components::{searchbar::Searchbar, snackbar::Snackbar},
     pages::{
         attendance_page::AttendancePage, detail_page::DetailPage,
         guardian_contact_details::GuardianContactDetails, message_page::MessagePage,
@@ -48,79 +48,83 @@ pub fn App() -> impl IntoView {
 
         // content for this welcome page
         <Router>
-            // <Snackbar>
-            <Routes fallback=|| "Nie ma takiej strony".into_view()>
-                <ParentRoute
-                    path=path!("/")
-                    view=|| {
-                        view! {
-                            <nav class="rounded background-2 padded horizontal">
-                                <div style:flex="1"></div>
-                                <div style:flex="1">
-                                    <Searchbar />
-                                </div>
-                                <div class="horizontal flex-1 flex-end gap">
-                                    <a class="interactive rounded padded" href="/attendance">
-                                        Obecność
-                                    </a>
-                                    <a class="interactive rounded padded" href="/messages">
-                                        Wiadomosci
-                                    </a>
-                                </div>
-                            </nav>
-                            <main>
-                                <Outlet />
-                            </main>
+            <Snackbar>
+                <Routes fallback=|| "Nie ma takiej strony".into_view()>
+                    <ParentRoute
+                        path=path!("/")
+                        view=|| {
+                            view! {
+                                <nav class="rounded background-2 padded horizontal">
+                                    <div class="flex-1"></div>
+                                    <div class="flex flex-1">
+                                        <Searchbar />
+                                    </div>
+                                    <div class="horizontal flex-1 flex-end gap">
+                                        <a class="interactive rounded padded" href="/attendance">
+                                            Obecność
+                                        </a>
+                                        <a class="interactive rounded padded" href="/messages">
+                                            Wiadomosci
+                                        </a>
+                                    </div>
+                                </nav>
+                                <main>
+                                    <Outlet />
+                                </main>
+                            }
                         }
-                    }
-                >
-                    <ParentRoute path=path!("messages") view=MessagePage>
-                        <Route
-                            path=path!("/")
-                            view=|| {
-                                view! { <div class="group-not-selected">Nie wybrano kontaktu</div> }
-                            }
-                        />
-                        <Route
-                            path=path!("/guardian/:id")
-                            view=|| {
-                                view! { <GuardianContactDetails /> }
-                            }
-                        />
-                        <Route
-                            path=path!("/unknown/:phone")
-                            view=|| {
-                                view! { <UnknownContactDetails /> }
-                            }
-                        />
-                    </ParentRoute>
-                    <ParentRoute path=path!("attendance") view=AttendancePage>
-                        <Route path=path!(":target/:year/:month") view=DetailPage />
-                        <Route
-                            path=path!("/")
-                            view=|| {
-                                view! { <div class="group-not-selected">Nie wybrano grupy</div> }
-                            }
-                        />
-                        <Route
-                            path=path!(":target")
-                            view=|| {
-                                let current = Utc::now();
-                                view! {
-                                    <Redirect path=format!(
-                                        "{}/{}",
-                                        current.year(),
-                                        current.month(),
-                                    ) />
+                    >
+                        <ParentRoute path=path!("messages") view=MessagePage>
+                            <Route
+                                path=path!("/")
+                                view=|| {
+                                    view! {
+                                        <div class="group-not-selected">Nie wybrano kontaktu</div>
+                                    }
                                 }
-                            }
-                        />
+                            />
+                            <Route
+                                path=path!("/guardian/:id")
+                                view=|| {
+                                    view! { <GuardianContactDetails /> }
+                                }
+                            />
+                            <Route
+                                path=path!("/unknown/:phone")
+                                view=|| {
+                                    view! { <UnknownContactDetails /> }
+                                }
+                            />
+                        </ParentRoute>
+                        <ParentRoute path=path!("attendance") view=AttendancePage>
+                            <Route path=path!(":target/:year/:month") view=DetailPage />
+                            <Route
+                                path=path!("/")
+                                view=|| {
+                                    view! {
+                                        <div class="group-not-selected">Nie wybrano grupy</div>
+                                    }
+                                }
+                            />
+                            <Route
+                                path=path!(":target")
+                                view=|| {
+                                    let current = Utc::now();
+                                    view! {
+                                        <Redirect path=format!(
+                                            "{}/{}",
+                                            current.year(),
+                                            current.month(),
+                                        ) />
+                                    }
+                                }
+                            />
 
+                        </ParentRoute>
+                        <Route path=path!("/") view=|| view! { <Redirect path="/attendance" /> } />
                     </ParentRoute>
-                    <Route path=path!("/") view=|| view! { <Redirect path="/attendance" /> } />
-                </ParentRoute>
-            </Routes>
-        // </Snackbar>
+                </Routes>
+            </Snackbar>
         </Router>
     }
 }

@@ -1,7 +1,16 @@
 use leptos::prelude::*;
 use leptos_router::components::Outlet;
+use leptos_router::params::Params;
+use uuid::Uuid;
 
-use crate::components::{modal::Modal, modals::add_catering::AddCateringModal};
+use crate::components::{modal::Modal, modals::add_catering::AddCateringModal, tree::InnerTree};
+
+#[derive(Params, PartialEq)]
+pub struct AttendanceParams {
+    pub target: Option<Uuid>,
+    pub year: Option<u32>,
+    pub month: Option<u32>,
+}
 
 #[component]
 pub fn AttendancePage() -> impl IntoView {
@@ -10,7 +19,7 @@ pub fn AttendancePage() -> impl IntoView {
     view! {
         <div class="horizontal flex-1 gap">
             <div class="background-2 rounded padded vertical gap" style:min-width="20em">
-                Tree
+                <InnerTree />
                 <button
                     class="interactive rounded padded"
                     on:click=move |_| set_catering_modal(true)
@@ -19,12 +28,11 @@ pub fn AttendancePage() -> impl IntoView {
                 </button>
             </div>
             <div class="vertical flex-1 gap">
-                <div class="background-2 rounded padded">Whatever</div>
                 <Outlet />
             </div>
         </div>
         <Modal is_open=catering_modal on_close=move || set_catering_modal(false)>
-            <AddCateringModal is_open=catering_modal on_close=move || set_catering_modal(false) />
+            <AddCateringModal is_open=catering_modal on_close=move |_| set_catering_modal(false) />
         </Modal>
     }
 }

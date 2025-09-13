@@ -4,7 +4,8 @@ use uuid::Uuid;
 
 use crate::dtos::{
     catering::{AllergyDto, GuardianDto, MealDto},
-    student::{CreateStudentDto, StudentDto},
+    details::StudentDetailsDto,
+    student::{CreateStudentDto, StudentDto, StudentInfoDto},
 };
 
 #[server]
@@ -174,4 +175,71 @@ pub async fn get_students() -> Result<Vec<StudentDto>, ServerFnError> {
         })
         .collect();
     Ok(students)
+}
+
+#[server]
+pub async fn update_student(dto: StudentDetailsDto) -> Result<(), ServerFnError> {
+    use sqlx::postgres::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+    let mut tr = pool.begin().await?;
+
+    if dto.guardians.is_empty() {
+        return Err(ServerFnError::new(
+            "Student needs to have at least one guardian",
+        ));
+    }
+
+    let allergies = dto.allergies.iter().map(|a| a.id).collect::<Vec<_>>();
+    let allergy_names = dto
+        .allergies
+        .iter()
+        .map(|a| a.name.clone())
+        .collect::<Vec<_>>();
+
+    let allergy_combination = sqlx::query!("WITH combinations AS (SELECT id, ARRAY_AGG(allergy_id) AS al_id FROM allergy_combinations GROUP BY allergy_combinations.id)
+            SELECT id FROM combinations
+            WHERE $1::uuid[] @> combinations.al_id AND $1::uuid[] <@ combinations.al_id
+", &allergies).fetch_optional(&mut *tr).await?.map(|row| row.id);
+
+    sqlx::query!("INSERT INTO allergies (id,name) SELECT * FROM UNNEST($1::uuid[], $2::text[]) ON CONFLICT DO NOTHING", &allergies, &allergy_names).execute(&mut*tr).await?;
+
+    let allergy_combination = match allergy_combination {
+        Some(a) => a,
+        None => {
+            let id = Uuid::new_v4();
+            sqlx::query!("INSERT INTO allergy_combinations (id, allergy_id) SELECT $1, * FROM UNNEST($2::uuid[])", id,
+            &allergies).execute(&mut *tr).await;
+            id
+        }
+    };
+
+    sqlx::query!("DELETE from student_guardians WHERE student_id=$1", dto.id)
+        .execute(&mut *tr)
+        .await?;
+
+    let guardian_ids = dto.guardians.iter().map(|g| g.id).collect::<Vec<_>>();
+    let guardian_names = dto
+        .guardians
+        .iter()
+        .map(|g| g.fullname.clone())
+        .collect::<Vec<_>>();
+
+    sqlx::query!("INSERT INTO guardians (id, fullname) SELECT * FROM UNNEST($1::uuid[], $2::text[]) ON CONFLICT DO NOTHING", &guardian_ids, &guardian_names
+    ).execute(&mut *tr).await?;
+
+    sqlx::query!("INSERT INTO student_guardians (student_id, guardian_id) SELECT $1,id FROM UNNEST($2::uuid[]) AS guard(name) INNER JOIN guardians ON guardians.id = guard.name", dto.id, &guardian_ids).execute(&mut *tr).await?;
+
+    sqlx::query!(
+        "UPDATE students SET name=$2, surname=$3, allergy_combination_id=$4 WHERE id = $1",
+        dto.id,
+        dto.name,
+        dto.surname,
+        allergy_combination
+    )
+    .execute(&mut *tr)
+    .await?;
+
+    tr.commit().await;
+    Ok(())
 }

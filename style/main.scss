@@ -29,7 +29,7 @@
 }
 
 body {
-  padding: 1.0em;
+  padding: 0.5em;
 }
 
 html,
@@ -40,8 +40,9 @@ body {
   background-color: var(--black-950);
   color: white;
   margin: 0;
-  gap: 1.0em;
+  gap: 0.5em;
   flex: 1;
+  overflow: hidden;
 }
 
 a {
@@ -109,12 +110,12 @@ input {
   flex-flow: column nowrap;
 }
 
-.flex{
+.flex {
   display: flex;
 }
 
 .gap {
-  gap: 1.0em;
+  gap: 0.5em;
 }
 
 .flex-1 {
@@ -177,10 +178,59 @@ ul {
 .icon {
   margin: 0;
   padding: 0;
+
   svg {
     padding: 0;
     margin: 0;
     width: 24px;
     height: 24px;
   }
+}
+
+.green-outline {
+  outline: 1px solid green;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.success {
+  background-color: green;
+}
+
+.error {
+  background-color: red;
+}
+
+.reverse-vertical {
+  display: flex;
+  flex-flow: column-reverse;
+}
+
+.hide-overflow {
+  overflow: hidden;
+}
+
+.gap-2 {
+  gap: 0.25em;
+}
+
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shadow {
+  z-index: 2;
+  filter: drop-shadow(5px 5px 5px black);
+}
+
+.align-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
 }

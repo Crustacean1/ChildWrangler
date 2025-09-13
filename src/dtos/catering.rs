@@ -9,7 +9,7 @@ pub struct CreateCateringDto {
     pub until: NaiveDate,
     pub grace_period: NaiveTime,
     pub meals: Vec<String>,
-    pub dow: [bool; 7],
+    pub dow: Vec<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

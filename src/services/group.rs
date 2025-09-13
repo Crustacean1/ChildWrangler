@@ -3,8 +3,9 @@ use leptos::prelude::*;
 use uuid::Uuid;
 
 use crate::dtos::{
+    catering::{AllergyDto, GuardianDto},
     details::{EntityDto, GroupDetailsDto, StudentDetailsDto},
-    group::{CreateGroupDto, GroupDto, SearchTerm},
+    group::{CreateGroupDto, GroupDto, GroupInfoDto, ModifyGroupDto, SearchTerm},
 };
 
 #[server]
@@ -24,7 +25,10 @@ pub async fn create_group(group: CreateGroupDto) -> Result<Uuid, ServerFnError> 
     .await?;
 
     if is_group.is_none() {
-        log!("Group {} has students, so it cannot also have groups", group.parent);
+        log!(
+            "Group {} has students, so it cannot also have groups",
+            group.parent
+        );
         return Err(ServerFnError::new("Invalid group selected"));
     }
 
@@ -40,6 +44,21 @@ pub async fn create_group(group: CreateGroupDto) -> Result<Uuid, ServerFnError> 
 
     tr.commit().await?;
     Ok(id)
+}
+
+#[server]
+pub async fn modify_group(dto: ModifyGroupDto) -> Result<(), ServerFnError> {
+    use sqlx::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+    let mut tr = pool.begin().await?;
+    let rows = sqlx::query!("UPDATE groups set name= $2 WHERE id=$1", dto.id, dto.name)
+        .execute(&mut *tr)
+        .await?
+        .rows_affected();
+    tr.commit().await?;
+
+    Ok(())
 }
 
 #[server]
@@ -134,6 +153,47 @@ pub async fn transfer_group(transfer: (Uuid, Uuid)) -> Result<(), ServerFnError>
 }
 
 #[server]
+pub async fn get_group_info(id: Uuid) -> Result<GroupInfoDto, ServerFnError> {
+    use sqlx::postgres::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+    let info = sqlx::query!("SELECT * FROM groups WHERE id = $1", id)
+        .fetch_one(&pool)
+        .await?;
+
+    let students = sqlx::query!(
+        "SELECT count(*) AS student_count FROM groups 
+                    INNER JOIN group_relations AS s_gr ON s_gr.parent = groups.id AND s_gr.level > 0
+                    INNER JOIN students ON students.id = s_gr.child
+                    WHERE students.removed = false
+                    GROUP BY groups.id
+                    HAVING groups.id = $1",
+        id
+    )
+    .fetch_optional(&pool)
+    .await?;
+
+    let groups = sqlx::query!(
+        "SELECT count(*) AS group_count FROM groups 
+                    INNER JOIN group_relations AS s_gr ON s_gr.parent = groups.id AND s_gr.level > 0
+                    INNER JOIN groups AS gr ON gr.id = s_gr.child
+                    WHERE gr.removed = false
+                    GROUP BY groups.id
+                    HAVING groups.id = $1",
+        id
+    )
+    .fetch_optional(&pool)
+    .await?;
+
+    Ok(GroupInfoDto {
+        id: info.id,
+        name: info.name,
+        student_count: students.and_then(|s| s.student_count).unwrap_or(0),
+        group_count: groups.and_then(|s| s.group_count).unwrap_or(0),
+    })
+}
+
+#[server]
 pub async fn delete_group(id: Uuid) -> Result<(), ServerFnError> {
     use sqlx::postgres::PgPool;
 
@@ -224,10 +284,17 @@ pub async fn get_details(id: Uuid) -> Result<EntityDto, ServerFnError> {
 
     if let Some(student) = student {
         let allergies = sqlx::query!(
-            "SELECT allergies.name FROM allergies 
+            "SELECT allergies.* FROM allergies 
         INNER JOIN allergy_combinations ON allergy_combinations.allergy_id = allergies.id
         INNER JOIN students ON students.allergy_combination_id = allergy_combinations.id
         WHERE students.id = $1",
+            id
+        )
+        .fetch_all(&pool)
+        .await?;
+
+        let guardians = sqlx::query!(
+            "SELECT guardians.* FROM guardians INNER JOIN student_guardians ON student_id = $1 AND student_guardians.guardian_id = guardians.id",
             id
         )
         .fetch_all(&pool)
@@ -237,9 +304,20 @@ pub async fn get_details(id: Uuid) -> Result<EntityDto, ServerFnError> {
             id,
             name: student.name,
             surname: student.surname,
-            guardian: String::new(),
-            guardian_id: Uuid::nil(),
-            allergies: allergies.into_iter().map(|row| row.name).collect(),
+            guardians: guardians
+                .into_iter()
+                .map(|g| GuardianDto {
+                    id: g.id,
+                    fullname: g.fullname,
+                })
+                .collect(),
+            allergies: allergies
+                .into_iter()
+                .map(|row| AllergyDto {
+                    name: row.name,
+                    id: row.id,
+                })
+                .collect(),
         }))
     } else {
         let group = sqlx::query!("SELECT id, name, gr_parent.parent AS \"parent:Option<Uuid>\" FROM groups 
@@ -249,12 +327,20 @@ pub async fn get_details(id: Uuid) -> Result<EntityDto, ServerFnError> {
                 id: group.id,
                 name: group.name,
             };
+
             if group.parent.is_none() {
                 Ok(EntityDto::Catering(result))
             } else {
                 let child_groups = sqlx::query!("SELECT * FROM groups INNER JOIN group_relations ON group_relations.level = 1 AND group_relations.parent = $1 LIMIT 1", id).fetch_optional(&pool).await?;
                 if child_groups.is_some() {
-                    Ok(EntityDto::Group(result))
+                    let has_students = sqlx::query!("SELECT * FROM group_relations 
+            INNER JOIN students ON students.id = group_relations.child AND group_relations.level = 1 
+            WHERE group_relations.parent = $1 LIMIT 1", id).fetch_optional(&pool).await?;
+                    if has_students.is_some() {
+                        Ok(EntityDto::StudentGroup(result))
+                    } else {
+                        Ok(EntityDto::Group(result))
+                    }
                 } else {
                     Ok(EntityDto::LeafGroup(result))
                 }
