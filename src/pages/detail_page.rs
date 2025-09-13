@@ -99,11 +99,14 @@ pub fn Breadcrumb(trail: Vec<GroupDto>) -> impl IntoView {
     view! {
         <div class="horizontal gap">
             <For each=move || trail.clone() key=|g| g.id let:item>
-                <div class="interactive rounded padded">
-                    <span on:click=move |_| {
+                <button
+                    class="interactive rounded padded"
+                    on:click=move |_| {
                         use_navigate()(&format!("/attendance/{}", item.id), Default::default())
-                    }>{item.name}</span>
-                </div>
+                    }
+                >
+                    {item.name}
+                </button>
             </For>
         </div>
     }

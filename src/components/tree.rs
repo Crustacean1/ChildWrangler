@@ -58,13 +58,17 @@ fn Test(groups: Vec<GroupDto>, students: Vec<StudentDto>) -> impl IntoView {
 
     let entities = Arc::new(groups.chain(students).collect::<Vec<_>>());
 
+    let (expanded, set_expanded) = signal(HashSet::new());
+
     view! {
-        <ul class="vertical gap-2">
+        <ul class="vertical fast-transition tree">
             {entities
                 .iter()
                 .filter(|item| item.parent.is_none())
                 .map(|item| {
-                    view! { <TreeNode root=item.clone() groups=entities.clone() /> }
+                    view! {
+                        <TreeNode root=item.clone() groups=entities.clone() expanded set_expanded />
+                    }
                 })
                 .collect::<Vec<_>>()}
         </ul>
@@ -72,7 +76,12 @@ fn Test(groups: Vec<GroupDto>, students: Vec<StudentDto>) -> impl IntoView {
 }
 
 #[component]
-fn TreeNode(root: TreeItem, groups: Arc<Vec<TreeItem>>) -> impl IntoView {
+fn TreeNode(
+    root: TreeItem,
+    groups: Arc<Vec<TreeItem>>,
+    expanded: ReadSignal<HashSet<Uuid>>,
+    set_expanded: WriteSignal<HashSet<Uuid>>,
+) -> impl IntoView {
     let on_drag_end = |_| {};
     let on_drag_start = |_| {};
 
@@ -83,8 +92,21 @@ fn TreeNode(root: TreeItem, groups: Arc<Vec<TreeItem>>) -> impl IntoView {
     let dropzone_ref: NodeRef<html::Li> = NodeRef::new();
     let navigate = use_navigate();
 
+    let on_toggle_expand = move |_| {
+        if expanded().contains(&root.id) {
+            set_expanded.write().remove(&root.id);
+        } else {
+            set_expanded.write().insert(root.id);
+        }
+    };
+
     view! {
-        <li class="flex flex-1 vertical gap" node_ref=dropzone_ref>
+        <li
+            class="flex vertical fast-transition"
+            node_ref=dropzone_ref
+            style:padding-top="0.125em"
+            class:expanded=move || !expanded().contains(&root.id)
+        >
             <span
                 class="rounded flex-1 flex hide-overflow"
                 draggable="true"
@@ -98,7 +120,7 @@ fn TreeNode(root: TreeItem, groups: Arc<Vec<TreeItem>>) -> impl IntoView {
                 on:dragend=move |_| { on_drag_end(None) }
             >
                 <span
-                    class="flex-1 interactive padded center"
+                    class="flex-1 interactive padded center left-align"
                     on:click=move |_| {
                         navigate(&format!("/attendance/{}", root.id), Default::default())
                     }
@@ -111,7 +133,10 @@ fn TreeNode(root: TreeItem, groups: Arc<Vec<TreeItem>>) -> impl IntoView {
                     } else {
                         Either::Left(
                             view! {
-                                <button class="interactive padded center" on:click=|_| {}>
+                                <button
+                                    class="interactive center fast-transition"
+                                    on:click=on_toggle_expand
+                                >
                                     <ArrowDown />
                                 </button>
                             },
@@ -151,13 +176,15 @@ fn TreeNode(root: TreeItem, groups: Arc<Vec<TreeItem>>) -> impl IntoView {
                     }
                 ></span>
             </span>
-            <ul class="vertical" style:padding-left="1em">
-                //<li class="dropzone"></li>
+            <ul class="vertical fast-transition" style:padding-left="1em">
+                // <li class="dropzone"></li>
                 {groups
                     .iter()
                     .filter(|g| g.parent == Some(root.id))
                     .map(|g| {
-                        view! { <TreeNode groups=groups.clone() root=g.clone() /> }
+                        view! {
+                            <TreeNode groups=groups.clone() root=g.clone() expanded set_expanded />
+                        }
                     })
                     .collect::<Vec<_>>()}
             </ul>
