@@ -88,11 +88,11 @@ pub async fn create_student(student: CreateStudentDto) -> Result<Uuid, ServerFnE
     sqlx::query!("INSERT INTO group_relations (child,parent,level) SELECT $1,parent,level + 1 FROM group_relations WHERE child=$2 UNION SELECT $1::uuid,$1::uuid,0", student_id, student.group_id).execute(&mut *tr).await?;
 
     sqlx::query!("INSERT INTO attendance (cause_id, target, day, meal_id, value) 
-SELECT gen_random_uuid(), $1, day, meal_id, true FROM caterings 
+SELECT $2, $1, day, meal_id, true FROM caterings 
 INNER JOIN group_relations ON group_relations.parent = caterings.group_id AND group_relations.child = $1
-INNER JOIN generate_series(caterings.since, caterings.until, '1 day') as days(day) ON ((caterings.dow >> EXTRACT(DOW FROM day)::smallint)&1) = 1
+INNER JOIN generate_series(caterings.since, caterings.until, '1 day') as days(day) ON ((caterings.dow >> (EXTRACT(DOW FROM day)::smallint + 6) % 7 )&1) = 1
 INNER JOIN catering_meals ON catering_meals.catering_id = caterings.id
-", student_id).execute(&mut*tr).await?;
+", student_id, Uuid::new_v4()).execute(&mut*tr).await?;
 
     tr.commit().await?;
 

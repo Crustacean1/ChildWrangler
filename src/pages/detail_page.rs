@@ -4,6 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     components::{
+        calendar::Calendar,
         modal::Modal,
         modals::{
             add_group::AddGroupModal, add_student::AddStudentModal, delete_group::DeleteGroupModal,
@@ -22,11 +23,11 @@ use crate::{
 #[component]
 pub fn DetailPage() -> impl IntoView {
     view! {
-        <div class="vertical gap">
+        <div class="vertical gap flex-1">
             <div class="background-2 rounded padded">
                 <InfoPage />
             </div>
-            <div class="background-2 rounded padded"></div>
+            <Calendar />
         </div>
     }
 }

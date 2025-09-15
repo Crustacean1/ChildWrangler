@@ -193,7 +193,7 @@ fn InnerAddStudentModal(
                 }
             }}
             <For each=selected_allergies key=|a: &AllergyDto| a.id let:allergy>
-                <li class="padded rounded background-3 horizontal flex space-between">
+                <li class="padded rounded background-3 horizontal flex space-between align-center">
                     {allergy.name} <button class="interactive red rounded flex icon">
                         <CloseIcon on:click=move |_| {
                             set_selected_allergies.write().retain(|a| a.id != allergy.id)
@@ -224,7 +224,7 @@ fn InnerAddStudentModal(
                 }
             }}
             <For each=selected_guardians key=|g: &GuardianDto| g.id let:guardian>
-                <li class="padded rounded background-3 horizontal flex space-between">
+                <li class="padded rounded background-3 horizontal flex space-between align-center">
                     {guardian.fullname} <button class="interactive red rounded flex icon">
                         <CloseIcon on:click=move |_| {
                             set_selected_guardians.write().retain(|a| a.id != guardian.id)

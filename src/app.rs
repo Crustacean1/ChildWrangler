@@ -44,7 +44,7 @@ pub fn App() -> impl IntoView {
         <Stylesheet id="leptos" href="/pkg/child-wrangler.css" />
 
         // sets the document title
-        <Title text="Welcome to Leptos" />
+        <Title text="Child Wrangler" />
 
         // content for this welcome page
         <Router>

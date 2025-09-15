@@ -216,6 +216,10 @@ ul {
   gap: 0.25em;
 }
 
+.gap-0 {
+  gap: 1em;
+}
+
 .center {
   display: flex;
   align-items: center;
@@ -291,4 +295,45 @@ button.fast-transition {
 
 .left-align {
   justify-content: left;
+}
+
+.grid-7 {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5em;
+  grid-auto-rows: 2em 1fr 1fr 1fr 1fr 1fr 1fr;
+}
+
+.grid {
+  display: grid;
+}
+
+
+.highlight {
+  outline: 2px solid white;
+}
+
+.outline-green {
+  outline: 2px solid green;
+}
+
+.outline-yellow {
+  outline: 2px solid yellow;
+}
+
+.outline-red {
+  outline: 2px solid red;
+}
+
+.outline-gray {
+  outline: 2px solid gray;
+}
+
+.interactive:disabled {
+  color: gray;
+}
+
+.interactive:hover:disabled {
+  cursor: unset;
+  background-color: var(--black-800);
 }

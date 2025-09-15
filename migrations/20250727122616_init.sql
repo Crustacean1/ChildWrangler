@@ -67,18 +67,9 @@ CREATE TABLE catering_meals(
 	meal_order integer not null
 );
 
-CREATE TABLE cancellations (
-	id uuid primary key default gen_random_uuid(),
-	accepted bool,
-	details jsonb,
-	inbox_id integer,
-	outbox_id integer
-);
-
 CREATE TABLE processing_info (
-	id uuid primary key default gen_random_uuid(),
+	id int primary key generated always as identity,
 	cause_id uuid not null,
-	reason text,
 	value jsonb not null
 );
 
@@ -87,11 +78,17 @@ CREATE TABLE processing_trigger (
 	processing_id uuid
 );
 
+CREATE TABLE attendance_override (
+	id uuid primary key default gen_random_uuid(),
+	created timestamptz not null default NOW(),
+	note text
+);
+
 CREATE TABLE attendance (
 	originated timestamptz not null default NOW(),
-	cause_id uuid,
+	cause_id uuid not null,
 	target uuid not null,
-	day date,
+	day date not null ,
 	meal_id uuid not null,
 	value bool not null
 );
@@ -108,9 +105,9 @@ CREATE TABLE messages (
 );
 
 
-CREATE VIEW effective_attendance AS SELECT DISTINCT ON (day, meal_id, target) day, meal_id, target, value FROM attendance ORDER BY day, meal_id, target, originated, cause_id;
-CREATE VIEW rooted_attendance AS SELECT bool_and(effective_attendance.value) AS present, effective_attendance.day, effective_attendance.meal_id, effective_attendance.target as student_id, group_relations.parent AS root FROM group_relations
+CREATE VIEW effective_attendance AS SELECT DISTINCT ON (day, meal_id, target) day, meal_id, target, value, cause_id FROM attendance ORDER BY day, meal_id, target, originated DESC, cause_id;
+CREATE VIEW rooted_attendance AS SELECT bool_and(effective_attendance.value) AS present, effective_attendance.day, effective_attendance.meal_id, student_relation.child as student_id, group_relations.parent AS root FROM group_relations
                         INNER JOIN group_relations AS student_relation ON student_relation.parent = group_relations.child
-                        INNER JOIN students ON students.id = student_relation.child
-                        INNER JOIN effective_attendance ON effective_attendance.target = student_relation.child
-                        GROUP BY effective_attendance.day, effective_attendance.meal_id, effective_attendance.target, group_relations.parent;
+                        INNER JOIN students ON students.id = student_relation.child AND students.removed = false
+                        INNER JOIN effective_attendance ON effective_attendance.target = student_relation.parent
+                        GROUP BY effective_attendance.day, effective_attendance.meal_id, student_relation.child, group_relations.parent;

@@ -1,7 +1,12 @@
 use chrono::{Days, Months, NaiveDate};
 use std::collections::{BTreeMap, HashMap};
+use uuid::Uuid;
 
-use crate::dtos::attendance::{CateringMealDto, GetMonthAttendanceDto, MonthAttendanceDto};
+use crate::dtos::attendance::{
+    AttendanceHistoryItemDto, CateringMealDto, EffectiveAttendance, EffectiveMonthAttendance,
+    GetAttendanceHistoryDto, GetEffectiveMonthAttendance, GetMonthAttendanceDto,
+    MonthAttendanceDto, UpdateAttendanceDto,
+};
 use leptos::{logging::log, prelude::*};
 
 #[server]
@@ -75,4 +80,112 @@ pub async fn get_month_attendance(
         end: catering.until,
         attendance: days,
     })
+}
+
+#[server]
+pub async fn get_effective_attendance(
+    dto: GetEffectiveMonthAttendance,
+) -> Result<EffectiveMonthAttendance, ServerFnError> {
+    use sqlx::postgres::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+    let start = NaiveDate::from_ymd_opt(dto.year, dto.month, 1);
+    let end = start.and_then(|date| date.checked_add_months(Months::new(1)));
+
+    let (Some(start), Some(end)) = (start, end) else {
+        log!(
+            "Failed to parse the dates: {:?} {:?} for request: {:?}",
+            start,
+            end,
+            dto
+        );
+        return Err(ServerFnError::new("Failed to parse provided date"));
+    };
+
+    let attendance = sqlx::query!(
+        "SELECT DISTINCT ON (day,meal_id) day, meal_id, value, target, cause_id, attendance_override.id AS \"o_id: Option<Uuid>\" FROM effective_attendance 
+            INNER JOIN group_relations ON group_relations.parent = effective_attendance.target
+            LEFT JOIN attendance_override ON attendance_override.id = effective_attendance.cause_id
+            WHERE group_relations.child=$1 AND (value = false OR level = 0) AND day >= $2 AND day < $3
+            ORDER BY day, meal_id, level DESC
+",
+        dto.target,
+        start,
+        end
+    )
+    .fetch_all(&pool)
+    .await?;
+
+    let mut entries = BTreeMap::new();
+
+    for entry in attendance {
+        if let Some(day) = entry.day {
+            entries.entry(day).or_insert(BTreeMap::new()).insert(
+                entry.meal_id.unwrap_or(Default::default()),
+                if entry.o_id.is_some() {
+                    if entry.value.unwrap() {
+                        EffectiveAttendance::Present
+                    } else {
+                        if entry.target == Some(dto.target) {
+                            EffectiveAttendance::Absent
+                        } else {
+                            EffectiveAttendance::Blocked
+                        }
+                    }
+                } else {
+                    EffectiveAttendance::Present
+                },
+            );
+        }
+    }
+
+    Ok(EffectiveMonthAttendance {
+        attendance: entries,
+    })
+}
+
+#[server]
+pub async fn update_attendance(dto: UpdateAttendanceDto) -> Result<(), ServerFnError> {
+    use sqlx::postgres::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+    let mut tr = pool.begin().await?;
+
+    let override_id = sqlx::query!(
+        "INSERT INTO attendance_override (note) VALUES ($1) RETURNING id",
+        dto.note,
+    )
+    .fetch_one(&mut *tr)
+    .await?
+    .id;
+
+    sqlx::query!("INSERT INTO attendance (cause_id,target,day,meal_id,value) SELECT $1,$2,day,meal_id, false FROM UNNEST($3::date[]) AS arg1(day) 
+                    CROSS JOIN UNNEST($4::uuid[]) AS arg2(meal_id)", override_id, dto.target, &dto.days, &dto.inactive_meals).execute(&mut *tr).await?;
+
+    sqlx::query!("INSERT INTO attendance (cause_id,target,day,meal_id,value) SELECT $1,$2,day,meal_id, true FROM UNNEST($3::date[]) AS arg1(day) 
+                    CROSS JOIN UNNEST($4::uuid[]) AS arg2(meal_id)", override_id, dto.target, &dto.days, &dto.active_meals).execute(&mut *tr).await?;
+
+    tr.commit().await?;
+    Ok(())
+}
+
+#[server]
+pub async fn get_attendance_history(
+    dto: GetAttendanceHistoryDto,
+) -> Result<Vec<AttendanceHistoryItemDto>, ServerFnError> {
+    use sqlx::postgres::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+
+    let history = sqlx::query!(
+        "SELECT attendance.originated, attendance.value  FROM attendance 
+        LEFT JOIN attendance_override ON attendance_override.id = attendance.cause_id
+        WHERE target=$1 AND day = $2 ORDER BY originated",
+        dto.target,
+        dto.day
+    )
+    .fetch_all(&pool)
+    .await?;
+
+    todo!();
 }
