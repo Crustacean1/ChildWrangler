@@ -3,7 +3,7 @@ use leptos::prelude::*;
 use uuid::Uuid;
 
 use crate::dtos::{
-    catering::{AllergyDto, GuardianDto, MealDto},
+    catering::{AllergyDto, GuardianDetailDto, GuardianDto, MealDto},
     details::StudentDetailsDto,
     student::{CreateStudentDto, StudentDto, StudentInfoDto},
 };
@@ -144,7 +144,7 @@ pub async fn get_guardians() -> Result<Vec<GuardianDto>, ServerFnError> {
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
-    let guardians = sqlx::query!("SELECT id,fullname FROM guardians")
+    let guardians = sqlx::query!("SELECT * FROM guardians")
         .fetch_all(&pool)
         .await?
         .into_iter()
@@ -209,7 +209,7 @@ pub async fn update_student(dto: StudentDetailsDto) -> Result<(), ServerFnError>
         None => {
             let id = Uuid::new_v4();
             sqlx::query!("INSERT INTO allergy_combinations (id, allergy_id) SELECT $1, * FROM UNNEST($2::uuid[])", id,
-            &allergies).execute(&mut *tr).await;
+            &allergies).execute(&mut *tr).await?;
             id
         }
     };
@@ -240,6 +240,6 @@ pub async fn update_student(dto: StudentDetailsDto) -> Result<(), ServerFnError>
     .execute(&mut *tr)
     .await?;
 
-    tr.commit().await;
+    tr.commit().await?;
     Ok(())
 }

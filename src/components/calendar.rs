@@ -17,7 +17,7 @@ use crate::{
         EffectiveAttendance, EffectiveMonthAttendance, GetEffectiveMonthAttendance,
         GetMonthAttendanceDto, MonthAttendanceDto,
     },
-    icons::{left_arrow::LeftArrow, right_arrow::RightArrow},
+    icons::{left_arrow::LeftArrow, right_arrow::RightArrow, select::SelectIcon},
     pages::attendance_page::AttendanceParams,
     services::attendance::{get_effective_attendance, get_month_attendance},
 };
@@ -158,17 +158,25 @@ pub fn InnerCalendar(
     view! {
         <div class="vertical gap flex-1 flex" on:mouseup=on_drag_end>
             <div class="background-2 rounded padded gap horizontal center">
-                <button class="interactive rounded center">
-                    <LeftArrow />
-                </button>
-                {move || {
-                    NaiveDate::from_ymd_opt(year, month, 1)
-                        .map(|d| format!("{}", d.format("%Y %B")))
-                        .unwrap_or(String::new())
-                }}
-                <button class="interactive rounded center">
-                    <RightArrow />
-                </button>
+                <div class="flex-1"></div>
+                <div class="flex-1 horizontal gap center">
+                    <button class="interactive rounded center">
+                        <LeftArrow />
+                    </button>
+                    {move || {
+                        NaiveDate::from_ymd_opt(year, month, 1)
+                            .map(|d| format!("{}", d.format("%Y %B")))
+                            .unwrap_or(String::new())
+                    }}
+                    <button class="interactive rounded center">
+                        <RightArrow />
+                    </button>
+                </div>
+                <div class="flex-1 flex-end">
+                    <button class="interactive rounded center">
+                        <SelectIcon />
+                    </button>
+                </div>
             </div>
             <div class="background-2 flex-1 rounded padded grid-7">
                 {iter::successors(

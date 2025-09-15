@@ -106,6 +106,7 @@ pub async fn get_effective_attendance(
         "SELECT DISTINCT ON (day,meal_id) day, meal_id, value, target, cause_id, attendance_override.id AS \"o_id: Option<Uuid>\" FROM effective_attendance 
             INNER JOIN group_relations ON group_relations.parent = effective_attendance.target
             LEFT JOIN attendance_override ON attendance_override.id = effective_attendance.cause_id
+            LEFT JOIN processing_trigger ON processing_trigger.processing_id = cause_id
             WHERE group_relations.child=$1 AND (value = false OR level = 0) AND day >= $2 AND day < $3
             ORDER BY day, meal_id, level DESC
 ",

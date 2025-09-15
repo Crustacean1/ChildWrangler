@@ -30,10 +30,11 @@ pub struct Message {
     pub msg_type: MessageType
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum MessageType {
     Sent,
-    Received(bool)
+    Received(bool),
+    Pending
 }
 
 

@@ -20,7 +20,6 @@ where
     let list_ref = NodeRef::new();
 
     let (active, set_active) = signal(false);
-    let (value, set_value) = signal(None::<T>);
 
     let (input_value, set_input_value) = signal(String::new());
 
@@ -119,8 +118,8 @@ where
                         e.prevent_default();
                         e.stop_propagation();
                         set_active(false);
-                        on_select(value().ok_or(input_value()));
-                            set_input_value(String::new());
+                        on_select(Err(input_value()));
+                        set_input_value(String::new());
                     }
                 }
             />
@@ -159,7 +158,6 @@ where
                                         e.prevent_default();
                                         e.stop_propagation();
                                         on_select(Ok(item()));
-                                        set_value(Some(item()));
                                         set_input_value(String::new());
                                         if let Some(doc) = window().document() {
                                             if let Some(e) = doc.active_element() {
@@ -174,7 +172,6 @@ where
                                     }
                                     if e.key_code() == 13 {
                                         on_select(Ok(item()));
-                                        set_value(Some(item()));
                                         set_active(false);
                                         set_input_value(String::new());
                                     }

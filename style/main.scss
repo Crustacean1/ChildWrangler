@@ -64,6 +64,12 @@ input {
   background-color: var(--black-700);
 }
 
+.h2 {
+  font-weight: 300;
+  padding: 0;
+  margin: 0;
+}
+
 .background-2 {
   background-color: var(--black-900);
 }
@@ -136,12 +142,6 @@ input {
 
 .relative {
   position: relative;
-}
-
-.h2 {
-  font-weight: 300;
-  padding: 0;
-  margin: 0;
 }
 
 label {
@@ -336,4 +336,33 @@ button.fast-transition {
 .interactive:hover:disabled {
   cursor: unset;
   background-color: var(--black-800);
+}
+
+.w-20 {
+  min-width: 20em;
+  max-width: 20em;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.flex-start {
+  justify-content: flex-start;
+}
+
+.self-start {
+  align-self: start;
+}
+
+.self-end {
+  align-self: end;
+}
+
+.self-center {
+  align-self: center;
+}
+
+.fit-content {
+  width: fit-content;
 }

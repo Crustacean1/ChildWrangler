@@ -1,4 +1,4 @@
-use leptos::{either::Either, prelude::*};
+use leptos::{either::Either, logging::log, prelude::*};
 use uuid::Uuid;
 
 use crate::{
@@ -7,7 +7,7 @@ use crate::{
         snackbar::{use_snackbar, SnackbarContext},
     },
     dtos::{
-        catering::{AllergyDto, GuardianDto},
+        catering::{AllergyDto, GuardianDetailDto, GuardianDto},
         details::StudentDetailsDto,
         student::CreateStudentDto,
     },
@@ -110,12 +110,15 @@ fn InnerAddStudentModal(
         }),
     };
 
-    let on_add_guardian = move |guardian| match guardian {
-        Ok(guardian) => set_selected_guardians.write().push(guardian),
-        Err(fullname) => set_selected_guardians.write().push(GuardianDto {
-            id: Uuid::new_v4(),
-            fullname,
-        }),
+    let on_add_guardian = move |guardian| {
+        log!("Wtf: {:?}", guardian);
+        match guardian {
+            Ok(guardian) => set_selected_guardians.write().push(guardian),
+            Err(fullname) => set_selected_guardians.write().push(GuardianDto {
+                id: Uuid::new_v4(),
+                fullname,
+            }),
+        }
     };
 
     let update_id = initial.as_ref().map(|i| i.id);

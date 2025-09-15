@@ -1,8 +1,9 @@
 use leptos::prelude::*;
 use uuid::Uuid;
 
-use crate::dtos::messages::{
-    ContactDto, GuardianDetails, GuardianDto, GuardianStudent, Message, MessageType,
+use crate::dtos::{
+    catering::GuardianDetailDto,
+    messages::{ContactDto, GuardianDetails, GuardianDto, GuardianStudent, Message, MessageType},
 };
 
 #[server]
@@ -102,14 +103,20 @@ pub async fn get_guardian_details(id: Uuid) -> Result<GuardianDetails, ServerFnE
 }
 
 #[server]
-pub async fn update_guardian_phone(id: Uuid, phone: String) -> Result<(), ServerFnError> {
+pub async fn update_guardian(guardian: GuardianDetailDto) -> Result<(), ServerFnError> {
     use sqlx::postgres::PgPool;
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
     let mut tr = pool.begin().await?;
-    let affected = sqlx::query!("UPDATE guardians SET phone=$2 WHERE id = $1", id, phone)
-        .execute(&mut *tr)
-        .await?;
+
+    let affected = sqlx::query!(
+        "UPDATE guardians SET phone=$2 , fullname=$3 WHERE id = $1",
+        guardian.id,
+        guardian.phone,
+        guardian.fullname,
+    )
+    .execute(&mut *tr)
+    .await?;
     if affected.rows_affected() != 1 {
         return Err(ServerFnError::new("Failed to update guardian"));
     }
@@ -125,4 +132,55 @@ pub async fn send_message(phone: String, content: String) -> Result<i32, ServerF
     let id = sqlx::query!("INSERT INTO outbox (\"TextDecoded\", \"DestinationNumber\", \"CreatorID\") VALUES ($1,$2, 2137) RETURNING \"ID\"", content, phone).fetch_one(&pool).await?.ID;
 
     Ok(id)
+}
+
+#[server]
+pub async fn get_messages(phone: String) -> Result<Vec<Message>, ServerFnError> {
+    use sqlx::postgres::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+
+    let inbox = sqlx::query!(
+        "SELECT * FROM inbox WHERE \"SenderNumber\" LIKE $1",
+        &format!("%{}", &phone)
+    )
+    .fetch_all(&pool)
+    .await?
+    .into_iter()
+    .map(|row| Message {
+        id: row.ID,
+        sent: row.ReceivingDateTime,
+        content: row.TextDecoded,
+        msg_type: MessageType::Received(row.Processed),
+    });
+
+    let sent = sqlx::query!(
+        "SELECT * FROM sentitems WHERE \"DestinationNumber\" LIKE $1",
+        &format!("%{}", &phone)
+    )
+    .fetch_all(&pool)
+    .await?
+    .into_iter()
+    .map(|row| Message {
+        id: row.ID,
+        sent: row.SendingDateTime,
+        content: row.TextDecoded,
+        msg_type: MessageType::Sent,
+    });
+
+    let pending = sqlx::query!(
+        "SELECT * FROM outbox WHERE \"DestinationNumber\" LIKE $1",
+        &format!("%{}", &phone)
+    )
+    .fetch_all(&pool)
+    .await?
+    .into_iter()
+    .map(|row| Message {
+        id: row.ID,
+        sent: row.SendingDateTime,
+        content: row.TextDecoded,
+        msg_type: MessageType::Pending,
+    });
+
+    Ok(inbox.chain(sent).chain(pending).collect())
 }
