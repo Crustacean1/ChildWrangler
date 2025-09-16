@@ -1,16 +1,14 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use chrono::{Datelike, Utc};
 use leptos::either::Either;
 use leptos::{html, prelude::*};
-use leptos_router::hooks::{use_navigate, use_params};
+use leptos_router::hooks::use_navigate;
 use uuid::Uuid;
 
 use crate::dtos::group::GroupDto;
 use crate::dtos::student::StudentDto;
 use crate::icons::arrow_down::ArrowDown;
-use crate::pages::attendance_page::AttendanceParams;
 use crate::services::group::get_groups;
 use crate::services::student::get_students;
 
@@ -61,17 +59,24 @@ fn Test(groups: Vec<GroupDto>, students: Vec<StudentDto>) -> impl IntoView {
     let (expanded, set_expanded) = signal(HashSet::new());
 
     view! {
-        <ul class="vertical fast-transition tree">
-            {entities
-                .iter()
-                .filter(|item| item.parent.is_none())
-                .map(|item| {
-                    view! {
-                        <TreeNode root=item.clone() groups=entities.clone() expanded set_expanded />
-                    }
-                })
-                .collect::<Vec<_>>()}
-        </ul>
+        <div class="scrollable">
+            <ul class="vertical fast-transition tree">
+                {entities
+                    .iter()
+                    .filter(|item| item.parent.is_none())
+                    .map(|item| {
+                        view! {
+                            <TreeNode
+                                root=item.clone()
+                                groups=entities.clone()
+                                expanded
+                                set_expanded
+                            />
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+            </ul>
+        </div>
     }
 }
 

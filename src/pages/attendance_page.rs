@@ -12,9 +12,15 @@ pub struct AttendanceParams {
     pub month: Option<u32>,
 }
 
+#[derive(Clone, Debug)]
+pub struct GroupVersion(pub ReadSignal<i32>, pub WriteSignal<i32>);
+
 #[component]
 pub fn AttendancePage() -> impl IntoView {
     let (catering_modal, set_catering_modal) = signal(false);
+
+    let (group_version, set_group_version) = signal(0);
+    provide_context(GroupVersion(group_version, set_group_version));
 
     view! {
         <div class="horizontal flex-1 gap">

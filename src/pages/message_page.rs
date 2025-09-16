@@ -30,49 +30,58 @@ pub fn MessagePage() -> impl IntoView {
 pub fn InnerMessagePage(contacts: Vec<ContactDto>) -> impl IntoView {
     let (search, set_search) = signal(String::new());
 
-    let searched_contacts = move || {};
+    let searched_contacts = move || {
+        let mut contacts = contacts.clone();
+        contacts.sort_by_key(|c| match c {
+            ContactDto::Unknown(_) => format!("Nieznany"),
+            ContactDto::GuardianWithPhone(guardian) => guardian.fullname.clone(),
+        });
+        contacts
+    };
 
     view! {
         <div class="horizontal flex-1 gap">
             <div class="vertical background-2 gap padded w-20 rounded">
-                <ul class="flex-1 vertical gap">
-                    {contacts
-                        .iter()
-                        .map(|g| {
-                            match g {
-                                ContactDto::Unknown(u) => {
-                                    Either::Left(
-                                        view! {
-                                            <li class="rounded vertical text-left">
-                                                <a
-                                                    class="interactive horizontal padded flex-1 rounded space-between"
-                                                    href=format!("/messages/unknown/{}", u)
-                                                >
-                                                    <span>Nieznany</span>
-                                                    <span>{format!("{}", u)}</span>
-                                                </a>
-                                            </li>
-                                        },
-                                    )
+                <div class="scrollable">
+                    <ul class="flex-1 vertical gap-2">
+                        {move || searched_contacts()
+                            .iter()
+                            .map(|g| {
+                                match g {
+                                    ContactDto::Unknown(u) => {
+                                        Either::Left(
+                                            view! {
+                                                <li class="rounded vertical text-left">
+                                                    <a
+                                                        class="interactive horizontal padded flex-1 rounded space-between"
+                                                        href=format!("/messages/unknown/{}", u)
+                                                    >
+                                                        <span>Nieznany</span>
+                                                        <span>{format!("{}", u)}</span>
+                                                    </a>
+                                                </li>
+                                            },
+                                        )
+                                    }
+                                    ContactDto::GuardianWithPhone(guardian) => {
+                                        Either::Right(
+                                            view! {
+                                                <li class="rounded vertical">
+                                                    <a
+                                                        class="interactive horizontal padded flex-1 rounded flex-start"
+                                                        href=format!("/messages/guardian/{}", guardian.id)
+                                                    >
+                                                        {format!("{}", guardian.fullname)}
+                                                    </a>
+                                                </li>
+                                            },
+                                        )
+                                    }
                                 }
-                                ContactDto::GuardianWithPhone(guardian) => {
-                                    Either::Right(
-                                        view! {
-                                            <li class="rounded vertical">
-                                                <a
-                                                    class="interactive horizontal padded flex-1 rounded flex-start"
-                                                    href=format!("/messages/guardian/{}", guardian.id)
-                                                >
-                                                    {format!("{}", guardian.fullname)}
-                                                </a>
-                                            </li>
-                                        },
-                                    )
-                                }
-                            }
-                        })
-                        .collect::<Vec<_>>()}
-                </ul>
+                            })
+                            .collect::<Vec<_>>()}
+                    </ul>
+                </div>
                 <input
                     autocomplete="off"
                     class="rounded padded"

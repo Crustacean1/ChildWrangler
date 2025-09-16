@@ -2,15 +2,7 @@ use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 
 use crate::{
-    components::dropdown::Dropdown,
-    dtos::{
-        group::{GroupDto, SearchTerm},
-        student::StudentDto,
-    },
-    services::{
-        group::{get_groups, get_search_terms},
-        student::get_students,
-    },
+    components::dropdown::Dropdown, dtos::group::SearchTerm, services::group::get_search_terms,
 };
 
 #[component]
@@ -45,7 +37,7 @@ pub fn SearchbarInner(terms: Vec<SearchTerm>) -> impl IntoView {
             name="global_search"
             options=move || terms.clone()
             key=|t| t.id
-            filter=|h, n| n.name.contains(h)
+            filter=|h, n| n.name.to_lowercase().contains(&h.to_lowercase())
             on_select
             item_view=|item| {
                 view! {

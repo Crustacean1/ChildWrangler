@@ -32,7 +32,7 @@ where
 
     view! {
         <div
-            class="vertical relative flex-1"
+            class="vertical relative flex-1 "
             on:focusout=move |_| { set_active(false) }
             on:focusin=move |_| { set_active(true) }
             on:keydown=move |e| {
@@ -124,12 +124,11 @@ where
                 }
             />
             <ul
-                class="background-3 vertical flex-1 rounded shadow"
+                class="background-3 vertical max-h-20 flex-1 rounded shadow"
                 style:gap="1px"
                 style:position="absolute"
                 style:top="100%"
                 style:width="100%"
-                style:overflow="hidden"
                 style:display=move || if active() { "flex" } else { "none" }
                 role="listbox"
                 class:active=active

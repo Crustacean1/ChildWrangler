@@ -412,3 +412,33 @@ button.fast-transition {
   }
 }
 
+.scrollable {
+  >ul {
+    position: absolute;
+    scrollbar-width: none;
+    left: 0;
+    top: 0;
+    overflow: auto;
+    max-height: 100%;
+    width: 100%;
+  }
+
+  position: relative;
+
+  //height: 100%;
+  flex: 1;
+  display: flex;
+  flex-flow: column;
+
+  overflow:hidden;
+
+}
+
+.max-h-20 {
+  >* {
+    min-height: 2em;
+  }
+
+  max-height: 20em;
+  overflow: auto;
+}
