@@ -2,12 +2,18 @@ use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 
 use crate::{
-    components::dropdown::Dropdown, dtos::group::SearchTerm, services::group::get_search_terms,
+    components::dropdown::Dropdown, dtos::group::SearchTerm, pages::attendance_page::GroupVersion,
+    services::group::get_search_terms,
 };
 
 #[component]
 pub fn Searchbar() -> impl IntoView {
-    let terms = Resource::new(|| (), |_| async move { get_search_terms().await });
+    let GroupVersion(group_version, set_group_version) = use_context().unwrap();
+
+    let terms = Resource::new(
+        move || (group_version()),
+        |_| async move { get_search_terms().await },
+    );
 
     view! {
         <Suspense fallback=|| view! { <div>Loading</div> }>

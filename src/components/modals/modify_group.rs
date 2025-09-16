@@ -10,9 +10,10 @@ use crate::{
 #[component]
 pub fn ModifyGroupModal(
     group: Uuid,
+    group_name: String,
     on_close: impl Fn(bool) + Send + Sync + Copy + 'static,
 ) -> impl IntoView {
-    let (name, set_name) = signal(String::new());
+    let (name, set_name) = signal(group_name);
     let snackbar = use_snackbar();
 
     let modify_group = Action::new(move |dto: &ModifyGroupDto| {

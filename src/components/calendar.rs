@@ -20,12 +20,14 @@ use crate::{
     icons::{
         download::DownloadIcon, left_arrow::LeftArrow, right_arrow::RightArrow, select::SelectIcon,
     },
-    pages::attendance_page::AttendanceParams,
+    pages::attendance_page::{AttendanceParams, GroupVersion},
     services::attendance::{get_effective_attendance, get_month_attendance},
 };
 
 #[component]
 pub fn Calendar() -> impl IntoView {
+    let GroupVersion(group_version, set_group_version) = use_context().unwrap();
+
     let params = use_params::<AttendanceParams>();
     let params = move || params.read();
 
@@ -65,8 +67,15 @@ pub fn Calendar() -> impl IntoView {
     );
 
     let local_attendance = Resource::new(
-        move || (year(), month(), target().unwrap_or_default()),
-        |(year, month, target)| async move {
+        move || {
+            (
+                year(),
+                month(),
+                target().unwrap_or_default(),
+                group_version(),
+            )
+        },
+        |(year, month, target, _)| async move {
             get_effective_attendance(GetEffectiveMonthAttendance {
                 year: year as i32,
                 month,
@@ -294,7 +303,10 @@ pub fn InnerCalendar(
 
                                         view! {
                                             <div class="flex flex-1 center">
-                                                <div class="grid gap-0" style:grid-template-columns="1fr 2em">
+                                                <div
+                                                    class="grid gap-0"
+                                                    style:grid-template-columns="1fr 2em"
+                                                >
                                                     {attendance
                                                         .meals
                                                         .iter()

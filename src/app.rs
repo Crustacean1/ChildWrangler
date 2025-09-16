@@ -9,7 +9,7 @@ use leptos_router::{
 use crate::{
     components::{searchbar::Searchbar, snackbar::Snackbar},
     pages::{
-        attendance_page::AttendancePage, detail_page::DetailPage,
+        attendance_page::{AttendancePage, GroupVersion}, detail_page::DetailPage,
         guardian_contact_details::GuardianContactDetails, message_page::MessagePage,
         unknown_contact_details::UnknownContactDetails,
     },
@@ -37,6 +37,9 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
+
+    let (group_version, set_group_version) = signal(0);
+    provide_context(GroupVersion(group_version, set_group_version));
 
     view! {
         // injects a stylesheet into the document <head>

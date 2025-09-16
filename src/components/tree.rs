@@ -1,14 +1,16 @@
 use std::collections::HashSet;
+use std::iter;
 use std::sync::Arc;
 
 use leptos::either::Either;
 use leptos::{html, prelude::*};
-use leptos_router::hooks::use_navigate;
+use leptos_router::hooks::{use_navigate, use_params};
 use uuid::Uuid;
 
 use crate::dtos::group::GroupDto;
 use crate::dtos::student::StudentDto;
 use crate::icons::arrow_down::ArrowDown;
+use crate::pages::attendance_page::{AttendanceParams, GroupVersion};
 use crate::services::group::get_groups;
 use crate::services::student::get_students;
 
@@ -22,8 +24,29 @@ pub struct TreeItem {
 
 #[component]
 pub fn InnerTree() -> impl IntoView {
-    let groups = Resource::new(|| (), |i| async move { get_groups().await });
-    let students = Resource::new(|| (), |i| async move { get_students().await });
+    let GroupVersion(group_version, set_group_version) = use_context::<GroupVersion>().unwrap();
+
+    let groups = Resource::new(
+        move || (group_version()),
+        |i| async move { get_groups().await },
+    );
+    let students = Resource::new(
+        move || (group_version()),
+        |i| async move { get_students().await },
+    );
+
+    let (expanded, set_expanded) = signal(HashSet::new());
+
+    let params = use_params::<AttendanceParams>();
+    let params = move || params.read();
+
+    let target = move || {
+        params()
+            .as_ref()
+            .ok()
+            .and_then(|attendance| attendance.target)
+    };
+
     view! {
         <Transition>
             <ErrorBoundary fallback=|_| {
@@ -32,7 +55,10 @@ pub fn InnerTree() -> impl IntoView {
                 {move || Suspend::new(async move {
                     let groups = groups.await?;
                     let students = students.await?;
-                    Ok::<_, ServerFnError>(view! { <Test groups students /> })
+                    Ok::<
+                        _,
+                        ServerFnError,
+                    >(view! { <Test groups students target expanded set_expanded /> })
                 })}
             </ErrorBoundary>
         </Transition>
@@ -40,7 +66,13 @@ pub fn InnerTree() -> impl IntoView {
 }
 
 #[component]
-fn Test(groups: Vec<GroupDto>, students: Vec<StudentDto>) -> impl IntoView {
+fn Test(
+    groups: Vec<GroupDto>,
+    students: Vec<StudentDto>,
+    expanded: ReadSignal<HashSet<Uuid>>,
+    set_expanded: WriteSignal<HashSet<Uuid>>,
+    target: impl Fn() -> Option<Uuid> + Send + Sync + Copy + 'static,
+) -> impl IntoView {
     let students = students.into_iter().map(|s| TreeItem {
         is_student: true,
         parent: Some(s.group_id),
@@ -54,9 +86,25 @@ fn Test(groups: Vec<GroupDto>, students: Vec<StudentDto>) -> impl IntoView {
         name: g.name,
     });
 
-    let entities = Arc::new(groups.chain(students).collect::<Vec<_>>());
+    let entities = Arc::new({
+        let mut entities = groups.chain(students).collect::<Vec<_>>();
+        entities.sort_by_key(|e| e.name.clone());
+        entities
+    });
 
-    let (expanded, set_expanded) = signal(HashSet::new());
+    let all_expanded = {
+        let entities = entities.clone();
+        move || {
+            iter::successors(target(), |item| {
+                entities
+                    .iter()
+                    .find(|e| e.id == *item)
+                    .and_then(|e| e.parent)
+            })
+            .chain(expanded().into_iter())
+            .collect::<HashSet<_>>()
+        }
+    };
 
     view! {
         <div class="scrollable">

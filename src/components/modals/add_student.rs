@@ -111,7 +111,6 @@ fn InnerAddStudentModal(
     };
 
     let on_add_guardian = move |guardian| {
-        log!("Wtf: {:?}", guardian);
         match guardian {
             Ok(guardian) => set_selected_guardians.write().push(guardian),
             Err(fullname) => set_selected_guardians.write().push(GuardianDto {

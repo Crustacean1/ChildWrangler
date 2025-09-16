@@ -16,7 +16,7 @@ use crate::{
         group::GroupDto,
     },
     icons::{add_group::AddGroupIcon, add_user::AddUserIcon, delete::DeleteIcon, edit::EditIcon},
-    pages::attendance_page::AttendanceParams,
+    pages::attendance_page::{AttendanceParams, GroupVersion},
     services::group::{get_breadcrumbs, get_details},
 };
 
@@ -119,6 +119,7 @@ pub fn Breadcrumb(trail: Vec<GroupDto>) -> impl IntoView {
 pub fn Catering(catering: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoView {
     let (add_group, set_add_group) = signal(false);
     let (edit_group, set_edit_group) = signal(false);
+    let GroupVersion(group_version, set_group_version) = use_context().unwrap();
 
     view! {
         <div class="horizontal gap space-between">
@@ -134,16 +135,35 @@ pub fn Catering(catering: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoVie
             </div>
         </div>
         <Modal is_open=add_group on_close=move || set_add_group(false)>
-            <AddGroupModal on_close=move |_| set_add_group(false) parent=catering.id />
+            <AddGroupModal
+                on_close=move |group| {
+                    if let Some(id) = group {
+                        *set_group_version.write() += 1;
+                    }
+                    set_add_group(false);
+                }
+                parent=catering.id
+            />
         </Modal>
         <Modal is_open=edit_group on_close=move || set_edit_group(false)>
-            <ModifyGroupModal on_close=move |_| set_edit_group(false) group=catering.id />
+            <ModifyGroupModal
+                group_name=catering.name.clone()
+                on_close=move |group| {
+                    if group {
+                        *set_group_version.write() += 1;
+                    }
+                    set_edit_group(false);
+                }
+                group=catering.id
+            />
         </Modal>
     }
 }
 
 #[component]
 pub fn EmptyGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoView {
+    let GroupVersion(group_version, set_group_version) = use_context().unwrap();
+
     let (add_group, set_add_group) = signal(false);
     let (add_student, set_add_student) = signal(false);
     let (edit_group, set_edit_group) = signal(false);
@@ -168,22 +188,57 @@ pub fn EmptyGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoView
             </div>
         </div>
         <Modal is_open=add_group on_close=move || set_add_group(false)>
-            <AddGroupModal on_close=move |_| set_add_group(false) parent=group.id />
+            <AddGroupModal
+                on_close=move |group| {
+                    if let Some(id) = group {
+                        *set_group_version.write() += 1;
+                    }
+                    set_add_group(false);
+                }
+                parent=group.id
+            />
         </Modal>
-        <Modal is_open=add_student on_close=move || set_add_student(false)>
-            <AddStudentModal on_close=move |_| set_add_student(false) group=group.id initial=None />
+        <Modal is_open=add_student on_close=move || { set_add_student(false) }>
+            <AddStudentModal
+                on_close=move |student| {
+                    if let Some(id) = student {
+                        *set_group_version.write() += 1;
+                    }
+                    set_add_student(false);
+                }
+                group=group.id
+                initial=None
+            />
         </Modal>
-        <Modal is_open=edit_group on_close=move || set_edit_group(false)>
-            <ModifyGroupModal on_close=move |_| set_edit_group(false) group=group.id />
+        <Modal is_open=edit_group on_close=move || { set_edit_group(false) }>
+            <ModifyGroupModal
+                group_name=group.name.clone()
+                on_close=move |edited| {
+                    if edited {
+                        *set_group_version.write() += 1;
+                    }
+                    set_edit_group(false);
+                }
+                group=group.id
+            />
         </Modal>
         <Modal is_open=delete_group on_close=move || set_delete_group(false)>
-            <DeleteGroupModal on_close=move |_| set_delete_group(false) id=group.id />
+            <DeleteGroupModal
+                on_close=move |deleted| {
+                    if deleted {
+                        *set_group_version.write() += 1;
+                    }
+                    set_delete_group(false)
+                }
+                id=group.id
+            />
         </Modal>
     }
 }
 
 #[component]
 pub fn NonemptyGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoView {
+    let GroupVersion(group_version, set_group_version) = use_context().unwrap();
     let (edit_group, set_edit_group) = signal(false);
     let (add_group, set_add_group) = signal(false);
     let (delete_group, set_delete_group) = signal(false);
@@ -204,19 +259,45 @@ pub fn NonemptyGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoV
             </div>
         </div>
         <Modal is_open=edit_group on_close=move || set_edit_group(false)>
-            <ModifyGroupModal on_close=move |_| set_edit_group(false) group=group.id />
+            <ModifyGroupModal
+                group_name=group.name.clone()
+                on_close=move |modified| {
+                    if modified {
+                        *set_group_version.write() += 1;
+                    }
+                    set_edit_group(false)
+                }
+                group=group.id
+            />
         </Modal>
         <Modal is_open=add_group on_close=move || set_add_group(false)>
-            <AddGroupModal on_close=move |_| set_add_group(false) parent=group.id />
+            <AddGroupModal
+                on_close=move |group| {
+                    if let Some(id) = group {
+                        *set_group_version.write() += 1;
+                    }
+                    set_add_group(false)
+                }
+                parent=group.id
+            />
         </Modal>
         <Modal is_open=delete_group on_close=move || set_delete_group(false)>
-            <DeleteGroupModal on_close=move |_| set_delete_group(false) id=group.id />
+            <DeleteGroupModal
+                on_close=move |deleted| {
+                    if deleted {
+                        *set_group_version.write() += 1;
+                    }
+                    set_delete_group(false)
+                }
+                id=group.id
+            />
         </Modal>
     }
 }
 
 #[component]
 pub fn StudentGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoView {
+    let GroupVersion(group_version, set_group_version) = use_context().unwrap();
     let (edit_group, set_edit_group) = signal(false);
     let (add_student, set_add_student) = signal(false);
     let (delete_group, set_delete_group) = signal(false);
@@ -237,25 +318,54 @@ pub fn StudentGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoVi
             </div>
         </div>
         <Modal is_open=edit_group on_close=move || set_edit_group(false)>
-            <ModifyGroupModal on_close=move |_| set_edit_group(false) group=group.id />
+            <ModifyGroupModal
+                group_name=group.name.clone()
+                on_close=move |modified| {
+                    if modified {
+                        *set_group_version.write() += 1;
+                    }
+                    set_edit_group(false)
+                }
+                group=group.id
+            />
         </Modal>
         <Modal is_open=add_student on_close=move || set_add_student(false)>
-            <AddStudentModal on_close=move |_| set_add_student(false) group=group.id initial=None />
+            <AddStudentModal
+                on_close=move |student| {
+                    if let Some(id) = student {
+                        *set_group_version.write() += 1;
+                    }
+                    set_add_student(false)
+                }
+                group=group.id
+                initial=None
+            />
         </Modal>
         <Modal is_open=delete_group on_close=move || set_delete_group(false)>
-            <DeleteGroupModal on_close=move |_| set_delete_group(false) id=group.id />
+            <DeleteGroupModal
+                on_close=move |deleted| {
+                    if deleted {
+                        *set_group_version.write() += 1;
+                    }
+                    set_delete_group(false)
+                }
+                id=group.id
+            />
         </Modal>
     }
 }
 
 #[component]
 pub fn Student(student: StudentDetailsDto, trail: Vec<GroupDto>) -> impl IntoView {
+    let GroupVersion(group_version, set_group_version) = use_context().unwrap();
     let (delete_student, set_delete_student) = signal(false);
     let (edit_student, set_edit_student) = signal(false);
 
     let on_delete = move |deleted| {
         set_delete_student(false);
-        if deleted {}
+        if deleted {
+            *set_group_version.write() += 1;
+        }
     };
 
     view! {
@@ -278,7 +388,12 @@ pub fn Student(student: StudentDetailsDto, trail: Vec<GroupDto>) -> impl IntoVie
             <AddStudentModal
                 group=Uuid::nil()
                 initial=Some(student.clone())
-                on_close=move |_| set_edit_student(false)
+                on_close=move |student| {
+                    if let Some(id) = student {
+                        *set_group_version.write() += 1;
+                    }
+                    set_edit_student(false)
+                }
             />
         </Modal>
     }
