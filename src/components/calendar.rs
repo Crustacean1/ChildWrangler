@@ -294,7 +294,7 @@ pub fn InnerCalendar(
 
                                         view! {
                                             <div class="flex flex-1 center">
-                                                <div class="grid gap" style:grid-template-columns="1fr 2em">
+                                                <div class="grid gap-0" style:grid-template-columns="1fr 2em">
                                                     {attendance
                                                         .meals
                                                         .iter()
@@ -324,7 +324,12 @@ pub fn InnerCalendar(
                                                                 >
                                                                     {meal.name.clone()}
                                                                 </div>
-                                                                <div class="padded no-select">
+                                                                <div
+                                                                    class="padded no-select interactive rounded"
+                                                                    on:mousedown=|e| {
+                                                                        e.stop_propagation();
+                                                                    }
+                                                                >
                                                                     {format!(
                                                                         "{}",
                                                                         attendance

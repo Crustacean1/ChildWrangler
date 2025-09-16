@@ -8,7 +8,6 @@ use crate::components::messages::Messages;
 use crate::components::modal::Modal;
 use crate::components::modals::modify_guardian_phone::ModifyGuardianModal;
 use crate::dtos::messages::GuardianDetails;
-use crate::icons::add::AddIcon;
 use crate::icons::edit::EditIcon;
 use crate::icons::phone::PhoneIcon;
 use crate::services::messages::get_guardian_details;
@@ -52,7 +51,6 @@ pub fn GuardianContactDetails() -> impl IntoView {
 #[component]
 pub fn InnerGuardianContactDetails(details: GuardianDetails) -> impl IntoView {
     let (edit_guardian, set_edit_guardian) = signal(false);
-    let (msg, set_msg) = signal(String::new());
 
     view! {
         <div class="vertical gap flex-1">
@@ -76,7 +74,7 @@ pub fn InnerGuardianContactDetails(details: GuardianDetails) -> impl IntoView {
                     )
                 }}
                 <button
-                    class="self-end interactive rounded"
+                    class="self-end interactive icon-button"
                     on:click=move |_| set_edit_guardian(true)
                 >
                     <EditIcon />
