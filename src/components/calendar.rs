@@ -4,7 +4,7 @@ use std::{
 };
 
 use chrono::{Datelike, Days, Month, Months, NaiveDate, Utc, Weekday};
-use leptos::{either::Either, prelude::*};
+use leptos::{either::Either, logging::log, prelude::*};
 use leptos_router::hooks::use_params;
 use uuid::Uuid;
 
@@ -17,7 +17,9 @@ use crate::{
         EffectiveAttendance, EffectiveMonthAttendance, GetEffectiveMonthAttendance,
         GetMonthAttendanceDto, MonthAttendanceDto,
     },
-    icons::{left_arrow::LeftArrow, right_arrow::RightArrow, select::SelectIcon},
+    icons::{
+        download::DownloadIcon, left_arrow::LeftArrow, right_arrow::RightArrow, select::SelectIcon,
+    },
     pages::attendance_page::AttendanceParams,
     services::attendance::{get_effective_attendance, get_month_attendance},
 };
@@ -113,6 +115,7 @@ pub fn InnerCalendar(
     //let (meal_history, set_meal_history) = signal(false);
     //let (meal_count, set_meal_count) = signal(false);
     let (meal_edit, set_meal_edit) = signal(None::<Vec<_>>);
+    let (selection_mode, set_selection_mode) = signal(false);
 
     let start = NaiveDate::from_ymd_opt(year, month, 1).unwrap();
 
@@ -124,31 +127,71 @@ pub fn InnerCalendar(
     let (drag_start, set_drag_start) = signal(None::<NaiveDate>);
     let (drag_end, set_drag_end) = signal(None::<NaiveDate>);
 
+    let dow = attendance.days_of_week.clone();
+    let is_active = move |mode,
+                          r_start: NaiveDate,
+                          r_end: NaiveDate,
+                          day: NaiveDate,
+                          dow: &[bool],
+                          att_start: &NaiveDate,
+                          att_end: &NaiveDate| {
+        let start = if r_start < r_end { r_start } else { r_end };
+        let end = if r_start < r_end { r_end } else { r_start };
+
+        if *att_start <= day
+            && day <= *att_end
+            && dow
+                .get(day.weekday().num_days_from_monday() as usize)
+                .map(|b| *b)
+                .unwrap_or(false)
+        {
+            if mode {
+                let (start_week, end_week) = (start.iso_week().week(), end.iso_week().week());
+                let day_week = day.iso_week().week();
+                let (start_dow, end_dow) = (
+                    start.weekday().num_days_from_monday(),
+                    end.weekday().num_days_from_monday(),
+                );
+                let day_dow = day.weekday().num_days_from_monday();
+                (start_week <= day_week && day_week <= end_week)
+                    && (start_dow <= day_dow && day_dow <= end_dow)
+            } else {
+                start <= day && day <= end
+            }
+        } else {
+            false
+        }
+    };
+
+    let dow1 = attendance.days_of_week.clone();
     let on_drag_end = {
-        let dow = attendance.days_of_week.clone();
-        let att_start = attendance.start;
-        let att_end = attendance.end;
         move |_| {
             if let (Some(r_start), Some(r_end)) = (drag_start(), drag_end()) {
                 let start = min(r_start, r_end);
                 let end = max(r_start, r_end);
+                let mode = selection_mode();
 
-                let days = iter::successors(Some(start), |day| {
-                    if *day < end {
+                let days = iter::successors(NaiveDate::from_ymd_opt(year, month, 1), |day| {
+                    if day.month() == month {
                         day.checked_add_days(Days::new(1))
                     } else {
                         None
                     }
                 })
                 .filter(|d| {
-                    *d >= att_start
-                        && *d <= att_end
-                        && dow
-                            .get(d.weekday().num_days_from_monday() as usize)
-                            .map(|d| *d)
-                            .unwrap_or(false)
+                    is_active(
+                        mode,
+                        start,
+                        end,
+                        *d,
+                        &dow1,
+                        &attendance.start,
+                        &attendance.end,
+                    )
                 });
-                set_meal_edit(Some(days.collect()));
+                let days: Vec<_> = days.collect();
+                log!("Detected: {:?} days", days.len());
+                set_meal_edit(Some(days));
             }
             set_drag_start(None);
             set_drag_end(None);
@@ -159,8 +202,8 @@ pub fn InnerCalendar(
         <div class="vertical gap flex-1 flex" on:mouseup=on_drag_end>
             <div class="background-2 rounded padded gap horizontal center">
                 <div class="flex-1"></div>
-                <div class="flex-1 horizontal gap center">
-                    <button class="interactive rounded center">
+                <div class="flex-1 horizontal gap align-center space-between">
+                    <button class="icon-button interactive" title="Poprzedni miesiąc">
                         <LeftArrow />
                     </button>
                     {move || {
@@ -168,12 +211,20 @@ pub fn InnerCalendar(
                             .map(|d| format!("{}", d.format("%Y %B")))
                             .unwrap_or(String::new())
                     }}
-                    <button class="interactive rounded center">
+                    <button class="icon-button interactive" title="Następny miesiąc">
                         <RightArrow />
                     </button>
                 </div>
-                <div class="flex-1 flex-end">
-                    <button class="interactive rounded center">
+                <div class="flex-1 flex-end horizontal gap">
+                    <button class="icon-button interactive" title="Pobierz obecność">
+                        <DownloadIcon />
+                    </button>
+                    <button
+                        class="icon-button interactive"
+                        class:outline-white=selection_mode
+                        title="Przełącz tryb zaznaczania"
+                        on:click=move |_| set_selection_mode(!selection_mode())
+                    >
                         <SelectIcon />
                     </button>
                 </div>
@@ -212,12 +263,22 @@ pub fn InnerCalendar(
                                 on:mouseover=move |_| {
                                     set_drag_end(Some(day));
                                 }
-                                class:highlight=move || match (drag_start(), drag_end()) {
-                                    (Some(start), Some(end)) => {
-                                        (start <= end && start <= day && day <= end)
-                                            || (end <= start && end <= day && day <= start)
+                                class:highlight={
+                                    let dow = attendance.days_of_week.clone();
+                                    move || match (drag_start(), drag_end()) {
+                                        (Some(start), Some(end)) => {
+                                            is_active(
+                                                selection_mode(),
+                                                start,
+                                                end,
+                                                day,
+                                                &dow,
+                                                &attendance.start,
+                                                &attendance.end,
+                                            )
+                                        }
+                                        _ => false,
                                     }
-                                    _ => false,
                                 }
                             >
                                 <span class="no-select padded rounded">

@@ -329,6 +329,10 @@ button.fast-transition {
   outline: 2px solid gray;
 }
 
+.outline-white {
+  outline: 2px solid gray;
+}
+
 .interactive:disabled {
   color: gray;
 }
@@ -366,3 +370,45 @@ button.fast-transition {
 .fit-content {
   width: fit-content;
 }
+
+.icon-button {
+  border-radius: 5px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.date-break {
+  position: relative;
+
+  span {
+    position: relative;
+    color: gray;
+    background-color: var(--black-900);
+    z-index: 1;
+    padding: 0.5em;
+    user-select: none;
+  }
+}
+
+.date-break::before {
+  z-index: 0;
+  content: "";
+  height: 2px;
+  width: 100%;
+  background-color: gray;
+  position: absolute;
+  left: 0;
+  top: 50%;
+}
+
+.trail {
+  >*:not(:first-child)::before {
+    display: inline-block;
+    content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="white"><path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z"/></svg>');
+    height: 24px;
+  }
+}
+

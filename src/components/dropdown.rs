@@ -32,7 +32,7 @@ where
 
     view! {
         <div
-            class="vertical relative"
+            class="vertical relative flex-1"
             on:focusout=move |_| { set_active(false) }
             on:focusin=move |_| { set_active(true) }
             on:keydown=move |e| {

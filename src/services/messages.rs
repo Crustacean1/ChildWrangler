@@ -13,19 +13,36 @@ pub async fn get_contacts() -> Result<Vec<ContactDto>, ServerFnError> {
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
-    let results = sqlx::query!("WITH randomz AS (SELECT \"SenderNumber\" AS phone FROM inbox GROUP BY \"SenderNumber\")
-        SELECT fullname, COALESCE(guardians.phone,randomz.phone) AS phone, id FROM guardians FULL OUTER JOIN randomz ON randomz.phone = guardians.phone")
+    let guardians = sqlx::query!("WITH randomz AS (SELECT \"SenderNumber\" AS phone FROM inbox GROUP BY \"SenderNumber\")
+        SELECT fullname, COALESCE(guardians.phone,randomz.phone) AS phone, id FROM guardians 
+        LEFT JOIN randomz ON randomz.phone = guardians.phone OR randomz.phone = format('+48%s', guardians.phone)")
         .fetch_all(&pool)
-    .await?
-        .into_iter()
-    .filter_map(|row| {
-        match (row.id, row.phone, row.fullname){
-                (Some(id),phone, Some(fullname)) => Some(ContactDto::GuardianWithPhone(GuardianDto{id,fullname,phone})),
-                (None,Some(phone),None) => Some(ContactDto::Unknown(phone)),
-                _ => None
-    }})
-            .collect();
-    return Ok(results);
+    .await?.into_iter()
+        .map(|row| {
+            ContactDto::GuardianWithPhone(
+                GuardianDto{
+                    id: row.id,
+                    fullname: row.fullname,
+                phone: row.phone
+                }
+            )
+        })
+    ;
+
+    let unknowns = sqlx::query!("WITH randomz AS (SELECT \"SenderNumber\" AS phone FROM inbox GROUP BY \"SenderNumber\")
+        SELECT fullname, randomz.phone AS phone, id FROM randomz 
+        LEFT JOIN guardians ON randomz.phone = guardians.phone OR randomz.phone = format('+48%s', guardians.phone)
+        WHERE guardians.phone IS NULL")
+        .fetch_all(&pool)
+    .await?.into_iter()
+        .map(|row| {
+            ContactDto::Unknown(
+                row.phone
+            )
+        })
+    ;
+
+    return Ok(guardians.chain(unknowns).collect());
 }
 
 #[server]
@@ -62,7 +79,7 @@ pub async fn get_guardian_details(id: Uuid) -> Result<GuardianDetails, ServerFnE
 
     let inbox = match result.phone.clone() {
         Some(phone) => sqlx::query!(
-            "SELECT * FROM inbox WHERE \"SenderNumber\" LIKE $1",
+            "SELECT * FROM inbox WHERE \"SenderNumber\" = $1 OR \"SenderNumber\" = format('+48%s',$1)",
             &format!("%{}", &phone)
         )
         .fetch_all(&pool)
@@ -80,7 +97,7 @@ pub async fn get_guardian_details(id: Uuid) -> Result<GuardianDetails, ServerFnE
 
     let outbox = match result.phone.clone() {
         Some(phone) => sqlx::query!(
-            "SELECT * FROM sentitems WHERE \"DestinationNumber\" LIKE $1",
+            "SELECT * FROM sentitems WHERE \"DestinationNumber\" = $1 OR \"DestinationNumber\" = format('+48%s',$1)",
             &format!("%{}", &phone)
         )
         .fetch_all(&pool)

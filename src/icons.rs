@@ -10,4 +10,6 @@ pub mod left_arrow;
 pub mod right_arrow;
 pub mod phone;
 pub mod select;
+pub mod person;
+pub mod download;
 

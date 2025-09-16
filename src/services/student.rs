@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::dtos::{
     catering::{AllergyDto, GuardianDetailDto, GuardianDto, MealDto},
     details::StudentDetailsDto,
-    student::{CreateStudentDto, StudentDto, StudentInfoDto},
+    student::{CreateGuardianDto, CreateStudentDto, StudentDto, StudentInfoDto},
 };
 
 #[server]
@@ -16,13 +16,13 @@ pub async fn create_student(student: CreateStudentDto) -> Result<Uuid, ServerFnE
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
     let mut tr = pool.begin().await?;
 
-    let name = String::from(student.name.to_lowercase().trim());
-    let surname = String::from(student.surname.to_lowercase().trim());
+    let name = String::from(student.name.trim());
+    let surname = String::from(student.surname.trim());
 
     let allergies = student
         .allergies
         .into_iter()
-        .map(|a| String::from(a.to_lowercase().trim()))
+        .map(|a| String::from(a.trim()))
         .collect::<Vec<_>>();
 
     sqlx::query!(
@@ -239,6 +239,40 @@ pub async fn update_student(dto: StudentDetailsDto) -> Result<(), ServerFnError>
     )
     .execute(&mut *tr)
     .await?;
+
+    tr.commit().await?;
+    Ok(())
+}
+
+#[server]
+pub async fn create_guardian(dto: CreateGuardianDto) -> Result<(), ServerFnError> {
+    use sqlx::postgres::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+    let mut tr = pool.begin().await?;
+
+    let fullname = dto.fullname.trim();
+
+    if fullname.is_empty() {
+        return Err(ServerFnError::new("Guardian must have name"));
+    }
+
+    let guardian_id = sqlx::query!(
+        "INSERT INTO guardians (fullname, phone) VALUES ($1,$2) RETURNING id",
+        fullname,
+        dto.phone
+    )
+    .fetch_one(&mut *tr)
+    .await?
+    .id;
+
+    let result = sqlx::query!("INSERT INTO student_guardians (student_id, guardian_id) SELECT *,$1 FROM UNNEST($2::uuid[])", guardian_id, &dto.students).execute(&mut *tr).await?;
+
+    if result.rows_affected() as usize != dto.students.len() {
+        return Err(ServerFnError::new(
+            "Some students couldn't be assigned to guardian, check if all values are valid",
+        ));
+    }
 
     tr.commit().await?;
     Ok(())

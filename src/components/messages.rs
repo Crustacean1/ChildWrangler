@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use leptos::{either::Either, prelude::*};
 
 use crate::{
@@ -30,6 +32,8 @@ pub fn Messages(phone: String) -> impl IntoView {
     );
     let (msg, set_msg) = signal(String::new());
 
+    let sending_disabled = move || send_msg.pending()() || msg().trim().is_empty();
+
     view! {
         <Transition>
             <ErrorBoundary fallback=|_| {
@@ -52,9 +56,10 @@ pub fn Messages(phone: String) -> impl IntoView {
                                     />
                                     <button
                                         class="rounded padded interactive"
-                                        disabled=send_msg.pending()
+                                        disabled=sending_disabled
                                         on:click=move |_| {
                                             send_msg.dispatch(msg());
+                                            set_msg(String::new());
                                         }
                                     >
                                         Wyślij
@@ -71,32 +76,52 @@ pub fn Messages(phone: String) -> impl IntoView {
 
 #[component]
 pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
+    let mut sorted_messages = HashMap::new();
+
+    for message in messages {
+        let day = sorted_messages.entry(message.sent.date()).or_insert(vec![]);
+        day.push(message);
+        day.sort_by_key(|m| m.sent);
+    }
+
     view! {
-        <ul class="flex-1">
-            {if messages.is_empty() {
+        <ul class="flex-1 vertical gap">
+            {if sorted_messages.is_empty() {
                 Either::Left(view! { <li class="padded dashed rounded">Brak wiadomości</li> })
             } else {
                 Either::Right(view! {})
             }}
-            {messages
+            {sorted_messages
                 .iter()
-                .map(|message| {
+                .map(|(day, messages)| {
                     view! {
-                        <div
-                            class="rounded padded fit-content background-3 vertical"
-                            class:self-start=if let MessageType::Received(_) = message.msg_type {
-                                true
-                            } else {
-                                false
-                            }
-                            class:self-end=message.msg_type == MessageType::Sent
-                                || message.msg_type == MessageType::Pending
-                        >
-                            <span>{format!("{}", message.content)}</span>
-                            <small class="self-start gray">
-                                {format!("Odebrano: {}", message.sent.format("%H:%M:%S"))}
-                            </small>
+                        <div class="date-break">
+                            <span>{format!("{}", day.format("%d-%m-%Y"))}</span>
                         </div>
+                        {messages
+                            .iter()
+                            .map(|message| {
+                                view! {
+                                    <div
+                                        class="rounded padded fit-content background-3 vertical"
+                                        class:self-start=if let MessageType::Received(_) = message
+                                            .msg_type
+                                        {
+                                            true
+                                        } else {
+                                            false
+                                        }
+                                        class:self-end=message.msg_type == MessageType::Sent
+                                            || message.msg_type == MessageType::Pending
+                                    >
+                                        <span>{format!("{}", message.content)}</span>
+                                        <small class="self-end gray">
+                                            {format!("Odebrano: {}", message.sent.format("%H:%M:%S"))}
+                                        </small>
+                                    </div>
+                                }
+                            })
+                            .collect::<Vec<_>>()}
                     }
                 })
                 .collect::<Vec<_>>()}

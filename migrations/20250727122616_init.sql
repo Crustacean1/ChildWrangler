@@ -1,9 +1,11 @@
 CREATE TABLE guardians(
 	id uuid primary key default gen_random_uuid(),
+	created timestamp DEFAULT LOCALTIMESTAMP(),
 	removed bool default false,
 	fullname text not null,
 	phone text,
-	unique (fullname)
+	unique (fullname),
+	unique (phone)
 );
 
 CREATE TABLE groups(
@@ -80,12 +82,12 @@ CREATE TABLE processing_trigger (
 
 CREATE TABLE attendance_override (
 	id uuid primary key default gen_random_uuid(),
-	created timestamptz not null default NOW(),
+	created timestamp not null default LOCALTIMESTAMP(),
 	note text
 );
 
 CREATE TABLE attendance (
-	originated timestamptz not null default NOW(),
+	originated timestamp not null default LOCALTIMESTAMP(),
 	cause_id uuid not null,
 	target uuid not null,
 	day date not null ,

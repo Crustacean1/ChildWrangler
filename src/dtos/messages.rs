@@ -27,16 +27,15 @@ pub struct Message {
     pub id: i32,
     pub sent: NaiveDateTime,
     pub content: String,
-    pub msg_type: MessageType
+    pub msg_type: MessageType,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum MessageType {
     Sent,
     Received(bool),
-    Pending
+    Pending,
 }
-
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GuardianDetails {

@@ -98,16 +98,18 @@ pub fn InfoPage() -> impl IntoView {
 #[component]
 pub fn Breadcrumb(trail: Vec<GroupDto>) -> impl IntoView {
     view! {
-        <div class="horizontal gap">
+        <div class="horizontal trail">
             <For each=move || trail.clone() key=|g| g.id let:item>
-                <button
-                    class="interactive rounded padded"
-                    on:click=move |_| {
-                        use_navigate()(&format!("/attendance/{}", item.id), Default::default())
-                    }
-                >
-                    {item.name}
-                </button>
+                <div class="horizontal align-center">
+                    <button
+                        class="interactive rounded padded"
+                        on:click=move |_| {
+                            use_navigate()(&format!("/attendance/{}", item.id), Default::default())
+                        }
+                    >
+                        {item.name}
+                    </button>
+                </div>
             </For>
         </div>
     }
@@ -123,10 +125,10 @@ pub fn Catering(catering: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoVie
             <Breadcrumb trail />
 
             <div class="horizontal gap">
-                <button class="interactive rounded center" on:click=move |_| set_add_group(true)>
+                <button class="interactive icon-button" on:click=move |_| set_add_group(true)>
                     <AddGroupIcon />
                 </button>
-                <button class="interactive rounded center" on:click=move |_| set_edit_group(true)>
+                <button class="interactive icon-button" on:click=move |_| set_edit_group(true)>
                     <EditIcon />
                 </button>
             </div>
@@ -140,10 +142,6 @@ pub fn Catering(catering: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoVie
     }
 }
 
-fn Test(details: Signal<StudentDetailsDto>) -> impl IntoView {
-    view! { <div>Whatever</div> }
-}
-
 #[component]
 pub fn EmptyGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoView {
     let (add_group, set_add_group) = signal(false);
@@ -155,16 +153,16 @@ pub fn EmptyGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoView
         <div class="horizontal space-between">
             <Breadcrumb trail />
             <div class="horizontal gap">
-                <button class="interactive rounded center" on:click=move |_| set_add_student(true)>
+                <button class="interactive icon-button" on:click=move |_| set_add_student(true)>
                     <AddUserIcon />
                 </button>
-                <button class="interactive rounded center" on:click=move |_| set_add_group(true)>
+                <button class="interactive icon-button" on:click=move |_| set_add_group(true)>
                     <AddGroupIcon />
                 </button>
-                <button class="interactive rounded center" on:click=move |_| set_edit_group(true)>
+                <button class="interactive icon-button" on:click=move |_| set_edit_group(true)>
                     <EditIcon />
                 </button>
-                <button class="interactive rounded center" on:click=move |_| set_delete_group(true)>
+                <button class="interactive icon-button" on:click=move |_| set_delete_group(true)>
                     <DeleteIcon />
                 </button>
             </div>
@@ -194,16 +192,13 @@ pub fn NonemptyGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoV
         <div class="horizontal space-between">
             <Breadcrumb trail />
             <div class="horizontal gap">
-                <button
-                    class="interactive rounded center"
-                    on:click=move |_| { set_add_group(true) }
-                >
+                <button class="interactive icon-button" on:click=move |_| { set_add_group(true) }>
                     <AddGroupIcon />
                 </button>
-                <button class="interactive rounded center" on:click=move |_| set_edit_group(true)>
+                <button class="interactive icon-button" on:click=move |_| set_edit_group(true)>
                     <EditIcon />
                 </button>
-                <button class="interactive rounded center" on:click=move |_| set_delete_group(true)>
+                <button class="interactive icon-button" on:click=move |_| set_delete_group(true)>
                     <DeleteIcon />
                 </button>
             </div>
@@ -230,16 +225,13 @@ pub fn StudentGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoVi
         <div class="horizontal space-between">
             <Breadcrumb trail />
             <div class="horizontal gap">
-                <button
-                    class="interactive rounded center"
-                    on:click=move |_| { set_add_student(true) }
-                >
+                <button class="interactive icon-button" on:click=move |_| { set_add_student(true) }>
                     <AddUserIcon />
                 </button>
-                <button class="interactive rounded center" on:click=move |_| set_edit_group(true)>
+                <button class="interactive icon-button" on:click=move |_| set_edit_group(true)>
                     <EditIcon />
                 </button>
-                <button class="interactive rounded center" on:click=move |_| set_delete_group(true)>
+                <button class="interactive icon-button" on:click=move |_| set_delete_group(true)>
                     <DeleteIcon />
                 </button>
             </div>
@@ -257,11 +249,6 @@ pub fn StudentGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoVi
 }
 
 #[component]
-pub fn SaveStudentBar(student: ReadSignal<StudentDetailsDto>) -> impl IntoView {
-    view! { <div>Ridiculous</div> }
-}
-
-#[component]
 pub fn Student(student: StudentDetailsDto, trail: Vec<GroupDto>) -> impl IntoView {
     let (delete_student, set_delete_student) = signal(false);
     let (edit_student, set_edit_student) = signal(false);
@@ -275,13 +262,10 @@ pub fn Student(student: StudentDetailsDto, trail: Vec<GroupDto>) -> impl IntoVie
         <div class="horizontal space-between">
             <Breadcrumb trail />
             <div class="horizontal gap">
-                <button class="interactive rounded center" on:click=move |_| set_edit_student(true)>
+                <button class="interactive icon-button" on:click=move |_| set_edit_student(true)>
                     <EditIcon />
                 </button>
-                <button
-                    class="interactive rounded center"
-                    on:click=move |_| set_delete_student(true)
-                >
+                <button class="interactive icon-button" on:click=move |_| set_delete_student(true)>
                     <DeleteIcon />
                 </button>
             </div>

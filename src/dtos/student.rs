@@ -31,3 +31,10 @@ pub struct StudentInfoDto {
     pub guardians: Vec<GuardianDto>,
     pub allergies: Vec<AllergyDto>,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct CreateGuardianDto {
+    pub fullname: String,
+    pub phone: String,
+    pub students: Vec<Uuid>,
+}
