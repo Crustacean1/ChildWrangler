@@ -6,7 +6,7 @@ use crate::{
     components::{
         modal::Modal,
         modals::message_details::MessageDetailsModal,
-        snackbar::{use_snackbar,  SnackbarContext},
+        snackbar::{use_snackbar, SnackbarContext},
     },
     dtos::messages::{Message, MessageType},
     services::messages::{get_messages, send_message},
@@ -51,7 +51,9 @@ pub fn Messages(phone: String) -> impl IntoView {
                     >(
                         view! {
                             <div class="flex-1 background-2 vertical gap padded rounded">
+                            <div class="scrollable">
                                 <InnerMessages messages />
+                                </div>
                                 <div class="horizontal gap">
                                     <input
                                         class="padded rounded flex-1"

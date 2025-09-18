@@ -21,6 +21,7 @@ uuid = {version = "1.18.1", features=["serde", "v4", "js"]}
 serde = "1.0.219"
 sqlx = {version = "0.8.6", features=["postgres", "uuid", "chrono", "runtime-tokio"], optional = true}
 config = "0.15.15"
+serde_json = "1.0.145"
 
 [features]
 hydrate = [

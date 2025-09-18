@@ -79,9 +79,9 @@ pub fn into_token(word: &str, message: &Message, students: &[Student]) -> Token 
     let meals = students.iter().map(|s| s.meals.iter()).flatten();
 
     if let Some(date) = long_date_regex.captures(word) {
-        let day = date[0].parse();
-        let month = date[1].parse();
-        let year = date[2].parse();
+        let day = date[2].parse();
+        let month = date[4].parse();
+        let year = date[6].parse();
 
         if let (Ok(year), Ok(month), Ok(day)) = (year, month, day) {
             if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
@@ -93,9 +93,9 @@ pub fn into_token(word: &str, message: &Message, students: &[Student]) -> Token 
             Token::Unknown(word.into())
         }
     } else if let Some(date) = middle_date_regex.captures(word) {
-        let day = date[0].parse();
-        let month = date[1].parse();
-        let year: Result<i32, _> = date[2].parse();
+        let day = date[2].parse();
+        let month = date[4].parse();
+        let year: Result<i32, _> = date[6].parse();
 
         if let (Ok(year), Ok(month), Ok(day)) = (year, month, day) {
             let current_year = (message.arrived.year() / 10) * 10;
@@ -108,25 +108,31 @@ pub fn into_token(word: &str, message: &Message, students: &[Student]) -> Token 
             Token::Unknown(word.into())
         }
     } else if let Some(date) = short_date_regex.captures(word) {
-        let day = date[0].parse();
-        let month = date[1].parse();
+        println!("Matching the regex");
+        let day = date[2].parse();
+        let month = date[4].parse();
 
         let current_year = message.arrived.year();
+        println!("iiiiiFick3: {:?} {:?}", &date[2], &date[4]);
         if let (Ok(month), Ok(day)) = (month, day) {
             if let Some(date) = NaiveDate::from_ymd_opt(current_year, month, day) {
                 if date < message.arrived.date() {
                     if let Some(next_date) = date.checked_add_months(Months::new(12)) {
                         Token::Date(next_date)
                     } else {
+                        println!("Fick1");
                         Token::Unknown(word.into())
                     }
                 } else {
                     Token::Date(date)
                 }
             } else {
+                println!("Fick2");
+
                 Token::Unknown(word.into())
             }
         } else {
+            println!("Fick3: ");
             Token::Unknown(word.into())
         }
     } else {
@@ -193,7 +199,7 @@ where
     };
 
     let out_msg_id = enqueue_message(message, conn).await?;
-    save_trigger(out_msg_id, id, conn).await?;
+    //save_trigger(out_msg_id, id, conn).await?;
 
     Ok(())
 }

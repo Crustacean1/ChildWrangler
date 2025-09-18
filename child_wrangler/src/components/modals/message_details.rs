@@ -1,6 +1,14 @@
-use leptos::prelude::*;
+use std::collections::HashMap;
 
-use crate::{icons::refresh::RefreshIcon, services::messages::get_message_processing_info};
+use leptos::{either::Either, prelude::*};
+use uuid::Uuid;
+
+use crate::{
+    components::snackbar::{use_snackbar, SnackbarContext},
+    dtos::messages::{MessageProcessing, RequestError, Student, Token},
+    icons::refresh::RefreshIcon,
+    services::messages::{get_message_processing_info, requeue_message},
+};
 
 #[component]
 pub fn MessageDetailsModal(msg_id: i32) -> impl IntoView {
@@ -10,17 +18,108 @@ pub fn MessageDetailsModal(msg_id: i32) -> impl IntoView {
     );
 
     view! {
-        <MessageDetailsModalInner/>
+        <Suspense fallback=|| view!{<div>Loading</div>}>
+            <ErrorBoundary fallback=|_|  view!{<div>Error</div>}>
+        {move || Suspend::new(async move {
+            let details = details.await?;
+            Ok::<_,ServerFnError>(view!{
+
+        <MessageDetailsModalInner msg_id details/>
+            })
+        })}
+            </ErrorBoundary>
+        </Suspense>
     }
 }
 
 #[component]
-fn MessageDetailsModalInner() -> impl IntoView {
+fn MessageDetailsModalInner(
+    msg_id: i32,
+    details: HashMap<Uuid, Vec<MessageProcessing>>,
+) -> impl IntoView {
+    let snackbar = use_snackbar();
+    let reprocess = Action::new(move |_: &()| async move {
+        match requeue_message(msg_id).await {
+            Ok(_) => snackbar.success("Wiadomość zostanie ponownie przetworzona"),
+            Err(e) => snackbar.error("Nie udało się przetworzyć wiadomości ponownie", e),
+        }
+    });
+
     view! {
-        <h2 class="h2 horizontal gap">Szczegóły wiadomości
+        <div class="vertical gap">
+        <h2 class="h2 horizontal gap space-between">Szczegóły wiadomości
         <button class="interactive icon-button">
         <RefreshIcon/>
         </button>
         </h2>
+            <div class="vertical gap-0">
+            {details.into_iter().map(|(id,details)| {
+                view!{
+                    <div>{format!("Processing id: {}", id)}</div>
+                    {details.into_iter().map(|stage| match stage{
+                        MessageProcessing::Context(students) => Either::Left(Either::Left(Either::Left(view!{<ContextInfo students/>}))),
+                        MessageProcessing::Tokens(tokens) => Either::Left(Either::Left(Either::Right(view!{<TokenInfo tokens/>}))),
+                        MessageProcessing::Cancellation(cancellation_request) => Either::Left(Either::Right(Either::Left(view!{}))),
+                        MessageProcessing::StudentCancellation(student_cancellations) => Either::Left(Either::Right(Either::Right(view!{}))),
+                        MessageProcessing::RequestError(error) => Either::Right(view!{<ComponentError error/>}),
+                    }).collect::<Vec<_>>()}
+                }
+            }).collect::<Vec<_>>()}
+            </div>
+        </div>
+    }
+}
+
+#[component]
+pub fn ContextInfo(students: Vec<Student>) -> impl IntoView {
+    view! {
+        <div class="content-green vertical gap-0">
+        <span>
+            Kontekst wiadomości
+        </span>
+        <ul class="vertical gap-0">
+        {students.into_iter().map(|student| {
+            view!{
+                <li class="vertical gap-0 content-blue">
+                <span>{format!("{} {}", student.name, student.surname)}</span>
+                <span>{format!("Odmówienia przyjmowane do godziny: {}", student.grace_period.format("%H:%M:%S"))}</span>
+                <ul class="horizontal justify-center align-center gap flex-start">
+                <li>Korzysta z posiłków:</li>
+                {student.meals.into_iter().map(|meal| view!{<li class="pill">{format!("{}", meal.name)}</li>}).collect::<Vec<_>>()}
+                </ul>
+                </li>
+            }
+        }).collect::<Vec<_>>()}
+        </ul>
+        </div>
+    }
+}
+
+#[component]
+pub fn TokenInfo(tokens: Vec<Token>) -> impl IntoView {
+    view! {
+        <div class="content-green vertical gap-0">
+        <span>Interpretacja wiadomości</span>
+        <div class="horizontal gap">
+        {tokens.into_iter().map(|token|
+            match token {
+                Token::Student(uuid) => Either::Left(Either::Left(Either::Left(view!{<div class="pill outline-white">{format!("{}", uuid)}</div>}))),
+                Token::Date(naive_date) => Either::Left(Either::Left(Either::Right(view!{<div class="pill outline-white">{format!("{}", naive_date)}</div>}))),
+                Token::Meal(uuid) => Either::Left(Either::Right(Either::Left(view!{<div class="pill outline-white">{format!("{}",uuid)}</div>}))),
+                Token::Unknown(i) => Either::Left(Either::Right(Either::Right(view!{<div class="pill outline-red">{format!("{}",i)}</div>}))),
+                Token::Ambiguous(i) => Either::Right(view!{<div class="pill outline-red">{format!("{}", i)}</div>}),
+            }
+            ).collect::<Vec<_>>()}
+        </div>
+        </div>
+    }
+}
+
+#[component]
+pub fn ComponentError(error: RequestError) -> impl IntoView {
+    view! {
+        <div class="content-red">
+        {format!("{:?} ", error)}
+        </div>
     }
 }

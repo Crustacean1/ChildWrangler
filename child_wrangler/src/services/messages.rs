@@ -5,7 +5,10 @@ use uuid::Uuid;
 
 use crate::dtos::{
     catering::GuardianDetailDto,
-    messages::{ContactDto, GuardianDetails, GuardianDto, GuardianStudent, Message, MessageProcessing, MessageType},
+    messages::{
+        ContactDto, GuardianDetails, GuardianDto, GuardianStudent, Message, MessageProcessing,
+        MessageType,
+    },
 };
 
 #[server]
@@ -233,11 +236,20 @@ pub async fn get_message_processing_info(
     let processing_info = sqlx::query!(
         "SELECT processing_info.* FROM processing_trigger 
     INNER JOIN processing_info ON processing_info.cause_id = processing_trigger.processing_id
-    WHERE message_id = $1",
+    WHERE message_id = $1
+    ORDER BY id",
         msg
     )
     .fetch_all(&pool)
     .await?;
 
-    Ok(HashMap::new())
+    let mut result = HashMap::new();
+
+    for info in processing_info {
+        if let Ok(process) = serde_json::from_value(info.value) {
+            result.entry(info.cause_id).or_insert(vec![]).push(process);
+        }
+    }
+
+    Ok(result)
 }

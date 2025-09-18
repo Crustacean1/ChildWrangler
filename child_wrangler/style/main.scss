@@ -443,3 +443,32 @@ button.fast-transition {
   max-height: 20em;
   overflow: auto;
 }
+
+.content-green {
+  background-color: rgb(50, 125, 50);
+  outline: 2px solid rgb(0, 200, 0);
+  padding: 0.5em;
+  border-radius: 5px;
+}
+
+.content-red {
+  background-color: rgb(125, 50, 50);
+  outline: 2px solid rgb(200, 0, 0);
+  padding: 0.5em;
+  border-radius: 5px;
+}
+
+.content-blue {
+  background-color: rgb(50, 50, 125);
+  outline: 2px solid rgb(0, 0, 200);
+  padding: 0.5em;
+  border-radius: 5px;
+}
+
+.pill {
+  padding: 0.5em;
+  border-radius: 1em;
+  background-color: var(--black-400);
+  width: fit-content;
+}
+
