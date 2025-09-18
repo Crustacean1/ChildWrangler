@@ -6,7 +6,7 @@ use crate::{icons::refresh::RefreshIcon, services::messages::get_message_process
 pub fn MessageDetailsModal(msg_id: i32) -> impl IntoView {
     let details = Resource::new(
         || (),
-        |_| async move { get_message_processing_info(msg_id).await },
+        move |_| async move { get_message_processing_info(msg_id).await },
     );
 
     view! {

@@ -1,10 +1,12 @@
 pub mod cancellation;
-pub mod dto;
 pub mod levenshtein;
 pub mod tests;
 
 use std::{collections::HashMap, env, time::Duration};
 
+use child_wrangler::dtos::messages::{
+    Meal, MessageProcessing, RequestError, Student, StudentCancellation, Token,
+};
 use chrono::{Datelike, Months, NaiveDate, NaiveDateTime};
 use itertools::Itertools;
 use regex::Regex;
@@ -15,7 +17,6 @@ use uuid::Uuid;
 
 use crate::{
     cancellation::{construct_response, into_cancellations, into_request, save_attendance},
-    dto::{Meal, MessageProcessing, RequestError, Student, StudentCancellation, Token},
     levenshtein::levenshtein,
 };
 

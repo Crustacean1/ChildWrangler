@@ -3,15 +3,13 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
+use child_wrangler::dtos::messages::{CancellationRequest, CancellationResult, RequestError};
 use chrono::{Days, NaiveTime};
 use itertools::Itertools;
 use sqlx::{Connection, Error, Executor, Postgres};
 use uuid::Uuid;
 
-use crate::{
-    AttendanceCancellation, Message, OutMsg, Student, StudentCancellation, Token,
-    dto::{CancellationRequest, CancellationResult, RequestError},
-};
+use crate::{AttendanceCancellation, Message, OutMsg, Student, StudentCancellation, Token};
 
 pub async fn save_attendance<C>(
     request: AttendanceCancellation,

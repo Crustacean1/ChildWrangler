@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::dtos::{
     catering::GuardianDetailDto,
-    messages::{ContactDto, GuardianDetails, GuardianDto, GuardianStudent, Message, MessageType},
+    messages::{ContactDto, GuardianDetails, GuardianDto, GuardianStudent, Message, MessageProcessing, MessageType},
 };
 
 #[server]
@@ -233,7 +233,8 @@ pub async fn get_message_processing_info(
     let processing_info = sqlx::query!(
         "SELECT processing_info.* FROM processing_trigger 
     INNER JOIN processing_info ON processing_info.cause_id = processing_trigger.processing_id
-    WHERE message_id = $1"
+    WHERE message_id = $1",
+        msg
     )
     .fetch_all(&pool)
     .await?;
