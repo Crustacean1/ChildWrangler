@@ -3,7 +3,11 @@ use std::collections::HashMap;
 use leptos::{either::Either, prelude::*};
 
 use crate::{
-    components::snackbar::{use_snackbar, MsgType, SnackbarContext},
+    components::{
+        modal::Modal,
+        modals::message_details::MessageDetailsModal,
+        snackbar::{use_snackbar,  SnackbarContext},
+    },
     dtos::messages::{Message, MessageType},
     services::messages::{get_messages, send_message},
 };
@@ -76,6 +80,8 @@ pub fn Messages(phone: String) -> impl IntoView {
 
 #[component]
 pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
+    let (show_details, set_show_details) = signal(None::<i32>);
+
     let mut sorted_messages = HashMap::new();
 
     for message in messages {
@@ -92,17 +98,18 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
                 Either::Right(view! {})
             }}
             {sorted_messages
-                .iter()
+                .into_iter()
                 .map(|(day, messages)| {
                     view! {
                         <div class="date-break">
                             <span>{format!("{}", day.format("%d-%m-%Y"))}</span>
                         </div>
                         {messages
-                            .iter()
+                            .into_iter()
                             .map(|message| {
                                 view! {
                                     <div
+                                    on:click=move |_| set_show_details(Some(message.id))
                                         class="rounded padded fit-content background-3 vertical"
                                         class:self-start=if let MessageType::Received(_) = message
                                             .msg_type
@@ -126,5 +133,14 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
                 })
                 .collect::<Vec<_>>()}
         </ul>
+        <Modal is_open={move ||show_details().is_some()} on_close=move || {set_show_details(None);}>
+            {move || show_details().map(|msg_id| {
+        view!{
+
+            <MessageDetailsModal msg_id/>
+        }
+
+        })}
+        </Modal>
     }
 }

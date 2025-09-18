@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use leptos::prelude::*;
 use uuid::Uuid;
 
@@ -200,4 +202,41 @@ pub async fn get_messages(phone: String) -> Result<Vec<Message>, ServerFnError> 
     });
 
     Ok(inbox.chain(sent).chain(pending).collect())
+}
+
+#[server]
+pub async fn requeue_message(msg_id: i32) -> Result<(), ServerFnError> {
+    use sqlx::postgres::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+    let mut tr = pool.begin().await?;
+
+    sqlx::query!(
+        "UPDATE inbox SET \"Processed\" = false WHERE \"ID\" = $1",
+        msg_id
+    )
+    .execute(&mut *tr)
+    .await?;
+
+    tr.commit().await?;
+    Ok(())
+}
+
+#[server]
+pub async fn get_message_processing_info(
+    msg: i32,
+) -> Result<HashMap<Uuid, Vec<MessageProcessing>>, ServerFnError> {
+    use sqlx::postgres::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+
+    let processing_info = sqlx::query!(
+        "SELECT processing_info.* FROM processing_trigger 
+    INNER JOIN processing_info ON processing_info.cause_id = processing_trigger.processing_id
+    WHERE message_id = $1"
+    )
+    .fetch_all(&pool)
+    .await?;
+
+    Ok(HashMap::new())
 }

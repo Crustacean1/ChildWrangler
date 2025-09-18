@@ -45,3 +45,4 @@ pub struct GuardianDetails {
     pub students: Vec<GuardianStudent>,
     pub messages: Vec<Message>,
 }
+

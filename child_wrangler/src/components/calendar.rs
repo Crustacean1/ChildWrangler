@@ -55,8 +55,15 @@ pub fn Calendar() -> impl IntoView {
     };
 
     let attendance = Resource::new(
-        move || (year(), month(), target().unwrap_or_default()),
-        |(year, month, target)| async move {
+        move || {
+            (
+                year(),
+                month(),
+                target().unwrap_or_default(),
+                group_version(),
+            )
+        },
+        |(year, month, target, _)| async move {
             get_month_attendance(GetMonthAttendanceDto {
                 target,
                 year,
@@ -304,7 +311,7 @@ pub fn InnerCalendar(
                                         view! {
                                             <div class="flex flex-1 center">
                                                 <div
-                                                    class="grid gap-0"
+                                                    class="grid gap"
                                                     style:grid-template-columns="1fr 2em"
                                                 >
                                                     {attendance
@@ -317,7 +324,7 @@ pub fn InnerCalendar(
                                                                 .and_then(|d| d.get(&meal.id));
                                                             view! {
                                                                 <div
-                                                                    class="interactive padded rounded no-select"
+                                                                    class="interactive padded rounded no-select text-left"
                                                                     class:outline-green=status
                                                                         .map(|e| *e == EffectiveAttendance::Present)
                                                                         .unwrap_or(true)
