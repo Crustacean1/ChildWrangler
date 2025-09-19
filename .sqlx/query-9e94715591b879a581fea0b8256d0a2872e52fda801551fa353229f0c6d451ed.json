@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT students.id, students.name, students.surname, caterings.grace_period, ARRAY_AGG((meals.id,meals.name)) AS \"meals: Vec<(Uuid,String)> \", caterings.since, caterings.until FROM students \n        INNER JOIN student_guardians ON student_guardians.student_id = students.id\n        INNER JOIN guardians ON student_guardians.guardian_id = guardians.id\n        INNER JOIN group_relations ON group_relations.child = students.id\n        INNER JOIN caterings ON caterings.group_id = group_relations.parent\n        INNER JOIN catering_meals ON catering_meals.catering_id = caterings.id\n        INNER JOIN meals ON meals.id = catering_meals.meal_id\n        WHERE guardians.id = $1\n        GROUP BY students.id,caterings.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "surname",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "grace_period",
+        "type_info": "Time"
+      },
+      {
+        "ordinal": 4,
+        "name": "meals: Vec<(Uuid,String)> ",
+        "type_info": "RecordArray"
+      },
+      {
+        "ordinal": 5,
+        "name": "since",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 6,
+        "name": "until",
+        "type_info": "Date"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      false,
+      false
+    ]
+  },
+  "hash": "9e94715591b879a581fea0b8256d0a2872e52fda801551fa353229f0c6d451ed"
+}

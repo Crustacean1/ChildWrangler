@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE inbox SET \"Processed\" = true WHERE \"ID\" = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e932b23f7998fd4a4614e3295d4db17a98654bfc365fd0556be01b324b9e1127"
+}

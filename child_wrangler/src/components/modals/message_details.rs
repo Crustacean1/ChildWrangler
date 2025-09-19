@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::{
     components::snackbar::{use_snackbar, SnackbarContext},
-    dtos::messages::{MessageProcessing, RequestError, Student, Token},
+    dtos::messages::{CancellationRequest, MessageProcessing, RequestError, Student, Token},
     icons::refresh::RefreshIcon,
     services::messages::{get_message_processing_info, requeue_message},
 };
@@ -59,7 +59,7 @@ fn MessageDetailsModalInner(
                     {details.into_iter().map(|stage| match stage{
                         MessageProcessing::Context(students) => Either::Left(Either::Left(Either::Left(view!{<ContextInfo students/>}))),
                         MessageProcessing::Tokens(tokens) => Either::Left(Either::Left(Either::Right(view!{<TokenInfo tokens/>}))),
-                        MessageProcessing::Cancellation(cancellation_request) => Either::Left(Either::Right(Either::Left(view!{}))),
+                        MessageProcessing::Cancellation(request) => Either::Left(Either::Right(Either::Left(view!{<CancellationInfo request/>}))),
                         MessageProcessing::StudentCancellation(student_cancellations) => Either::Left(Either::Right(Either::Right(view!{}))),
                         MessageProcessing::RequestError(error) => Either::Right(view!{<ComponentError error/>}),
                     }).collect::<Vec<_>>()}
@@ -120,6 +120,16 @@ pub fn ComponentError(error: RequestError) -> impl IntoView {
     view! {
         <div class="content-red">
         {format!("{:?} ", error)}
+        </div>
+    }
+}
+
+#[component]
+pub fn CancellationInfo(request: CancellationRequest) -> impl IntoView {
+    view! {
+        <div class="content-green vertical gap">
+            {format!("Czas trwania: od {} do {}", request.since, request.until)}
+            {request.students.into_iter().map(|s| view!{<div>format!("{}", student.name)</div>}).collect::<Vec<_>>()}
         </div>
     }
 }

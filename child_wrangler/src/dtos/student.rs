@@ -36,5 +36,6 @@ pub struct StudentInfoDto {
 pub struct CreateGuardianDto {
     pub fullname: String,
     pub phone: String,
+    #[serde(default)]
     pub students: Vec<Uuid>,
 }
