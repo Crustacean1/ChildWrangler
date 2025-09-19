@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO group_relations (child,parent,level) SELECT $1,parent,level + 1 FROM group_relations WHERE child=$2 UNION SELECT $1::uuid,$1::uuid,0",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "48deb4da438a6dd12fd77d367d6edee11ad9599990fdeebd4b19852b986c8203"
+}

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE inbox SET \"Processed\" = true WHERE \"ID\" = $1",
+  "query": "UPDATE inbox SET \"Processed\" = false WHERE \"ID\" = $1",
   "describe": {
     "columns": [],
     "parameters": {
@@ -10,5 +10,5 @@
     },
     "nullable": []
   },
-  "hash": "e932b23f7998fd4a4614e3295d4db17a98654bfc365fd0556be01b324b9e1127"
+  "hash": "1d6f775b3105e6dd6dc6bc63e18744bdbcba06dbb2117e0421412035ce11a3ae"
 }

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO attendance (cause_id,target,day,meal_id,value) SELECT $1,$2,day,meal_id, false FROM UNNEST($3::date[]) AS arg1(day) \n                    CROSS JOIN UNNEST($4::uuid[]) AS arg2(meal_id)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "DateArray",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "20f16d84bd3539c1fecec08559816213acef8794301e36f5720a92568c493535"
+}

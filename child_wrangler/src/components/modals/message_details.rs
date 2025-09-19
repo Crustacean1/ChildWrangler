@@ -5,7 +5,9 @@ use uuid::Uuid;
 
 use crate::{
     components::snackbar::{use_snackbar, SnackbarContext},
-    dtos::messages::{CancellationRequest, MessageProcessing, RequestError, Student, Token},
+    dtos::messages::{
+        CancellationRequest, MessageProcessing, RequestError, Student, StudentCancellation, Token,
+    },
     icons::refresh::RefreshIcon,
     services::messages::{get_message_processing_info, requeue_message},
 };
@@ -60,7 +62,7 @@ fn MessageDetailsModalInner(
                         MessageProcessing::Context(students) => Either::Left(Either::Left(Either::Left(view!{<ContextInfo students/>}))),
                         MessageProcessing::Tokens(tokens) => Either::Left(Either::Left(Either::Right(view!{<TokenInfo tokens/>}))),
                         MessageProcessing::Cancellation(request) => Either::Left(Either::Right(Either::Left(view!{<CancellationInfo request/>}))),
-                        MessageProcessing::StudentCancellation(student_cancellations) => Either::Left(Either::Right(Either::Right(view!{}))),
+                        MessageProcessing::StudentCancellation(cancellation) => Either::Left(Either::Right(Either::Right(view!{<StudentCancellation cancellation/>}))),
                         MessageProcessing::RequestError(error) => Either::Right(view!{<ComponentError error/>}),
                     }).collect::<Vec<_>>()}
                 }
@@ -129,7 +131,30 @@ pub fn CancellationInfo(request: CancellationRequest) -> impl IntoView {
     view! {
         <div class="content-green vertical gap">
             {format!("Czas trwania: od {} do {}", request.since, request.until)}
-            {request.students.into_iter().map(|s| view!{<div>format!("{}", student.name)</div>}).collect::<Vec<_>>()}
+            <div>
+                <span>Uczniowie</span>
+            {request.students.into_iter().map(|s| view!{<div class="pill">{format!("{}", s)}</div>}).collect::<Vec<_>>()}
+            </div>
+            <div>
+                <span>Posiłki</span>
+            {if request.meals.is_empty() {Either::Left(view!{<div>Wszystkie</div>})} else {
+            Either::Right(request.meals.into_iter().map(|meal| view!{<div>{format!("{}", meal)}</div>}).collect::<Vec<_>>())
+        }}
+            </div>
         </div>
     }
+}
+
+#[component]
+pub fn StudentCancellation(cancellation: Vec<StudentCancellation>) -> impl IntoView {
+    view! {<div class="content-green gap vertical">
+            <span>Odwołania</span>
+        {cancellation.into_iter().map(|cancellation| view!{
+            <div class="content-blue vertical gap">
+            <span>{format!("Id {}", cancellation.id)}</span>
+            <span>{format!("Meals: {:?}", cancellation.meals)}</span>
+            <span>{format!("Od: {} do: {}", cancellation.since, cancellation.until)}</span>
+            </div>
+        }).collect::<Vec<_>>()}
+    </div>}
 }

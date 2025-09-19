@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT groups.id, groups.name FROM group_relations INNER JOIN groups ON groups.id = group_relations.parent WHERE group_relations.child = $1 ORDER BY level DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "1824b2d62b61af5c8034a86c26715216a6e797699fb4bbb3c781a6f43da30540"
+}

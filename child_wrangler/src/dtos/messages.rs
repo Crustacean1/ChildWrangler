@@ -46,7 +46,6 @@ pub struct GuardianDetails {
     pub fullname: String,
     pub phone: Option<String>,
     pub students: Vec<GuardianStudent>,
-    pub messages: Vec<Message>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

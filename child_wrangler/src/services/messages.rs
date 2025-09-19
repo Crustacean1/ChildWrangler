@@ -56,70 +56,39 @@ pub async fn get_guardian_details(id: Uuid) -> Result<GuardianDetails, ServerFnE
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
-    let row = sqlx::query!(
-        "SELECT guardians.id, guardians.fullname, guardians.phone, ARRAY_AGG((students.id, students.name, students.surname)) AS \"students: Vec<(Uuid,String,String)> \" FROM guardians 
-        INNER JOIN student_guardians ON student_guardians.guardian_id = guardians.id
-        INNER JOIN students ON students.id = student_guardians.student_id
-        WHERE guardians.id=$1
-        GROUP BY guardians.id",
+    let guardian = sqlx::query!(
+        "SELECT guardians.id, guardians.fullname, guardians.phone FROM guardians
+        WHERE guardians.id=$1",
         id
     )
     .fetch_one(&pool)
     .await?;
+
+    let students = sqlx::query!(
+        "SELECT students.id, students.name, students.surname FROM guardians 
+        INNER JOIN student_guardians ON student_guardians.guardian_id = guardians.id
+        INNER JOIN students ON students.id = student_guardians.student_id
+        WHERE guardians.id=$1",
+        id
+    )
+    .fetch_all(&pool)
+    .await?;
+
     let mut result = GuardianDetails {
-        id: row.id,
-        phone: row.phone,
-        fullname: row.fullname,
-        students: row
-            .students
-            .map(|students| {
-                students
-                    .into_iter()
-                    .map((|(id, name, surname)| GuardianStudent { id, name, surname }))
-                    .collect()
-            })
-            .unwrap_or(vec![]),
-        messages: vec![],
+        id: guardian.id,
+        phone: guardian.phone,
+        fullname: guardian.fullname,
+        students: students
+            .into_iter()
+            .map(
+                (|row| GuardianStudent {
+                    id: row.id,
+                    name: row.name,
+                    surname: row.surname,
+                }),
+            )
+            .collect()
     };
-
-    let inbox = match result.phone.clone() {
-        Some(phone) => sqlx::query!(
-            "SELECT * FROM inbox WHERE \"SenderNumber\" = $1 OR \"SenderNumber\" = format('+48%s',$1)",
-            &format!("%{}", &phone)
-        )
-        .fetch_all(&pool)
-        .await?
-        .into_iter()
-        .map(|row| Message {
-            id: row.ID,
-            sent: row.ReceivingDateTime,
-            content: row.TextDecoded,
-            msg_type: MessageType::Received(row.Processed),
-        })
-        .collect(),
-        None => vec![],
-    };
-
-    let outbox = match result.phone.clone() {
-        Some(phone) => sqlx::query!(
-            "SELECT * FROM sentitems WHERE \"DestinationNumber\" = $1 OR \"DestinationNumber\" = format('+48%s',$1)",
-            &format!("%{}", &phone)
-        )
-        .fetch_all(&pool)
-        .await?
-        .into_iter()
-        .map(|row| Message {
-            id: row.ID,
-            sent: row.SendingDateTime,
-            content: row.TextDecoded,
-            msg_type: MessageType::Sent,
-        })
-        .collect(),
-        None => vec![],
-    };
-
-    result.messages = inbox.into_iter().chain(outbox.into_iter()).collect();
-    result.messages.sort_by(|a, b| a.sent.cmp(&b.sent));
 
     Ok(result)
 }

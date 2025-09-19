@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
-use leptos::{either::Either, prelude::*};
+use leptos::{either::Either, logging::log, prelude::*};
 
 use crate::{
     components::{
@@ -51,7 +51,7 @@ pub fn Messages(phone: String) -> impl IntoView {
                     >(
                         view! {
                             <div class="flex-1 background-2 vertical gap padded rounded">
-                            <div class="scrollable">
+                            <div class="">
                                 <InnerMessages messages />
                                 </div>
                                 <div class="horizontal gap">
@@ -84,7 +84,7 @@ pub fn Messages(phone: String) -> impl IntoView {
 pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
     let (show_details, set_show_details) = signal(None::<i32>);
 
-    let mut sorted_messages = HashMap::new();
+    let mut sorted_messages = BTreeMap::new();
 
     for message in messages {
         let day = sorted_messages.entry(message.sent.date()).or_insert(vec![]);

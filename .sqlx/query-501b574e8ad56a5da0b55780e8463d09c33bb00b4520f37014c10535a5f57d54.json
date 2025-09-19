@@ -1,0 +1,54 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT ON (day,meal_id) day, meal_id, value, target, cause_id, attendance_override.id AS \"o_id: Option<Uuid>\" FROM effective_attendance \n            INNER JOIN group_relations ON group_relations.parent = effective_attendance.target\n            LEFT JOIN attendance_override ON attendance_override.id = effective_attendance.cause_id\n            LEFT JOIN processing_trigger ON processing_trigger.processing_id = cause_id\n            WHERE group_relations.child=$1 AND (value = false OR level = 0) AND day >= $2 AND day < $3\n            ORDER BY day, meal_id, level DESC\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "day",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 1,
+        "name": "meal_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "value",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 3,
+        "name": "target",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "cause_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "o_id: Option<Uuid>",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "501b574e8ad56a5da0b55780e8463d09c33bb00b4520f37014c10535a5f57d54"
+}

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT *, guardians.id AS guardian_id FROM inbox \n            INNER JOIN guardians ON guardians.phone = inbox.\"SenderNumber\"  OR inbox.\"SenderNumber\" = format('+48%s', guardians.phone)\n            WHERE \"Processed\" = false FOR UPDATE SKIP LOCKED LIMIT 1",
+  "query": "SELECT * FROM inbox WHERE \"SenderNumber\" LIKE $1",
   "describe": {
     "columns": [
       {
@@ -67,40 +67,12 @@
         "ordinal": 12,
         "name": "Status",
         "type_info": "Int4"
-      },
-      {
-        "ordinal": 13,
-        "name": "id",
-        "type_info": "Uuid"
-      },
-      {
-        "ordinal": 14,
-        "name": "created",
-        "type_info": "Timestamp"
-      },
-      {
-        "ordinal": 15,
-        "name": "removed",
-        "type_info": "Bool"
-      },
-      {
-        "ordinal": 16,
-        "name": "fullname",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 17,
-        "name": "phone",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 18,
-        "name": "guardian_id",
-        "type_info": "Uuid"
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Text"
+      ]
     },
     "nullable": [
       false,
@@ -115,14 +87,8 @@
       false,
       false,
       false,
-      false,
-      false,
-      true,
-      true,
-      false,
-      true,
       false
     ]
   },
-  "hash": "27d1d05b2326d49f6ecc3868a5326ab56e542cb14c2c6e7e7d37feff554ba3f4"
+  "hash": "a85f5ea7345dd2cd2b69dc4b93f203e05d31b2cce94c9e5a0adaaa8570fcc4fd"
 }

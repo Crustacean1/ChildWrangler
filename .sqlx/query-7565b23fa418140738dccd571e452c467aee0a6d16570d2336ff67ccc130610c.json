@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT attendance.originated, attendance.value  FROM attendance \n        LEFT JOIN attendance_override ON attendance_override.id = attendance.cause_id\n        WHERE target=$1 AND day = $2 ORDER BY originated",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "originated",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 1,
+        "name": "value",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "7565b23fa418140738dccd571e452c467aee0a6d16570d2336ff67ccc130610c"
+}

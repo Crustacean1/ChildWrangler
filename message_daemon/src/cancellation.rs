@@ -25,7 +25,7 @@ where
         INNER JOIN group_relations ON group_relations.child = $1
         INNER JOIN caterings ON caterings.group_id = group_relations.parent
         INNER JOIN catering_meals ON catering_meals.meal_id = meals.id AND catering_meals.catering_id = caterings.id
-        INNER JOIN generate_series(LEAST(GREATEST($3::date,caterings.since),caterings.until),LEAST(GREATEST($4::date,caterings.since),caterings.until), '1 DAY') AS days(day) ON (caterings.dow >> EXTRACT(DOW FROM day)::integer)&1 = 1
+        INNER JOIN generate_series(LEAST(GREATEST($3::date,caterings.since),caterings.until),LEAST(GREATEST($4::date,caterings.since),caterings.until), '1 DAY') AS days(day) ON (caterings.dow >> (EXTRACT(DOW FROM day)::integer + 6) % 7)&1 = 1
 ", student.id, &student.meals, student.since, student.until, cause_id).execute(&mut *connection).await?;
     }
 
@@ -159,6 +159,7 @@ pub fn into_cancellations(
     AttendanceCancellation {
         students: students
             .into_iter()
+            .filter(|s| request.students.iter().any(|s2| *s2 == s.id))
             .filter_map(|student| {
                 let student_meals: Vec<_> = student.meals.iter().map(|m| m.id).collect();
                 let meals = if request_meals.iter().any(|_| true) {

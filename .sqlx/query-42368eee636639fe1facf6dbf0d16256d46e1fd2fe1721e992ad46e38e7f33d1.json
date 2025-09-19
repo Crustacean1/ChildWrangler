@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT students.id, students.name, students.surname, parents.name AS parent_name FROM students\n    LEFT JOIN group_relations ON group_relations.child = students.id AND group_relations.level = 1\n    LEFT JOIN groups AS parents ON parents.id = group_relations.parent\n    WHERE students.removed=false",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "surname",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "parent_name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "42368eee636639fe1facf6dbf0d16256d46e1fd2fe1721e992ad46e38e7f33d1"
+}
