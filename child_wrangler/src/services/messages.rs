@@ -87,7 +87,7 @@ pub async fn get_guardian_details(id: Uuid) -> Result<GuardianDetails, ServerFnE
                     surname: row.surname,
                 }),
             )
-            .collect()
+            .collect(),
     };
 
     Ok(result)

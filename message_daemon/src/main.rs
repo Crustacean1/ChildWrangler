@@ -2,7 +2,7 @@ pub mod cancellation;
 pub mod levenshtein;
 pub mod tests;
 
-use std::{collections::HashMap, env, time::Duration};
+use std::{env, time::Duration};
 
 use child_wrangler::dtos::messages::{
     Meal, MessageProcessing, RequestError, Student, StudentCancellation, Token,
@@ -269,7 +269,7 @@ where
 pub async fn fetch_message(pool: &PgPool) -> Result<Option<()>, Error> {
     let mut tr = pool.begin().await?;
     let Some((message,guardian_id)) = sqlx::query!(
-        "SELECT *, guardians.id AS guardian_id FROM inbox 
+        "SELECT inbox.*, guardians.id AS guardian_id FROM inbox 
             INNER JOIN guardians ON guardians.phone = inbox.\"SenderNumber\"  OR inbox.\"SenderNumber\" = format('+48%s', guardians.phone)
             WHERE \"Processed\" = false FOR UPDATE SKIP LOCKED LIMIT 1"
     )

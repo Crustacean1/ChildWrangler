@@ -181,9 +181,10 @@ pub async fn get_attendance_history(
     let history = sqlx::query!(
         "SELECT attendance.originated, attendance.value  FROM attendance 
         LEFT JOIN attendance_override ON attendance_override.id = attendance.cause_id
-        WHERE target=$1 AND day = $2 ORDER BY originated",
+        WHERE target=$1 AND day = $2 AND meal_id = $3 ORDER BY originated",
         dto.target,
-        dto.day
+        dto.date,
+        dto.meal_id
     )
     .fetch_all(&pool)
     .await?;

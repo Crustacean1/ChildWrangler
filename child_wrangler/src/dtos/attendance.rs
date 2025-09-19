@@ -59,8 +59,9 @@ pub struct UpdateAttendanceDto {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GetAttendanceHistoryDto {
-    pub day: NaiveDate,
+    pub date: NaiveDate,
     pub target: Uuid,
+    pub meal_id: Uuid,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

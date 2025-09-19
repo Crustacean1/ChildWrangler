@@ -11,7 +11,10 @@ use uuid::Uuid;
 use crate::{
     components::{
         modal::Modal,
-        modals::{meal_count_modal::MealCountModal, meal_edit_modal::MealEditModal},
+        modals::{
+            meal_count_modal::MealCountModal, meal_edit_modal::MealEditModal,
+            meal_history_modal::MealHistoryModal,
+        },
     },
     dtos::attendance::{
         EffectiveAttendance, EffectiveMonthAttendance, GetEffectiveMonthAttendance,
@@ -128,7 +131,7 @@ pub fn InnerCalendar(
     attendance: MonthAttendanceDto,
     local_attendance: EffectiveMonthAttendance,
 ) -> impl IntoView {
-    //let (meal_history, set_meal_history) = signal(false);
+    let (meal_history, set_meal_history) = signal(None::<(Uuid, Uuid, NaiveDate)>);
     //let (meal_count, set_meal_count) = signal(false);
     let (meal_edit, set_meal_edit) = signal(None::<Vec<_>>);
     let (selection_mode, set_selection_mode) = signal(false);
@@ -322,9 +325,11 @@ pub fn InnerCalendar(
                                                                 .attendance
                                                                 .get(&day)
                                                                 .and_then(|d| d.get(&meal.id));
+                                                            let meal_id = meal.id;
                                                             view! {
                                                                 <div
                                                                     class="interactive padded rounded no-select text-left"
+                                                                    on:click=move |_| set_meal_history(Some((meal_id, target, day)))
                                                                     class:outline-green=status
                                                                         .map(|e| *e == EffectiveAttendance::Present)
                                                                         .unwrap_or(true)
@@ -343,7 +348,7 @@ pub fn InnerCalendar(
                                                                 >
                                                                     {meal.name.clone()}
                                                                 </div>
-                                                                <div
+                                                                <button
                                                                     class="padded no-select interactive rounded"
                                                                     on:mousedown=|e| {
                                                                         e.stop_propagation();
@@ -358,7 +363,7 @@ pub fn InnerCalendar(
                                                                             .map(|i| *i)
                                                                             .unwrap_or(0),
                                                                     )}
-                                                                </div>
+                                                                </button>
                                                             }
                                                         })
                                                         .collect::<Vec<_>>()}
@@ -395,5 +400,8 @@ pub fn InnerCalendar(
                 }
             }
         </Modal>
+    <Modal is_open=move|| meal_history().is_some() on_close=move || set_meal_history(None)>
+        {move || meal_history().map(|(meal_id,target,date)| view!{<MealHistoryModal meal_id target date/>})}
+    </Modal>
     }
 }
