@@ -1,0 +1,4 @@
+FROM alpine
+ADD ./gammu-init.sh /
+RUN apk add gammu envsubst
+ENTRYPOINT ["/bin/sh", "-c", "./gammu-init.sh"]

@@ -1,0 +1,8 @@
+FROM ubuntu:noble
+
+RUN apt-get update && apt-get install -y curl
+RUN curl https://sh.rustup.rs -sSf -o ./rustinstall 
+RUN chmod +x ./rustinstall
+RUN ./rustinstall -y 
+RUN apt-get install -yqq gcc-arm-linux-gnueabihf
+RUN PATH="$PATH:/root/.cargo/bin" rustup target add armv7-unknown-linux-gnueabihf
