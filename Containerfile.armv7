@@ -1,4 +1,4 @@
-FROM ubuntu:noble
+FROM ubuntu:noble AS builder
 
 RUN apt-get update && apt-get install -y curl build-essential
 RUN curl https://sh.rustup.rs -sSf -o ./rustinstall 
@@ -13,5 +13,15 @@ RUN cargo install cargo-leptos
 
 COPY ./wrangler /wrangler
 WORKDIR /wrangler
+
+RUN echo "[target.armv7-unknown-linux-gnueabihf]\n\
+linker = \"arm-linux-gnueabihf-gcc\"" >> ~/.cargo/config 
+
 RUN rustup target add armv7-unknown-linux-gnueabihf && rustup target add wasm32-unknown-unknown && cargo leptos build --release -vv
+
+FROM alpine
+
+COPY --from=builder /wrangler/target/ /wrangler
+
+ENTRYPOINT ["/wrangler/child-wrangler"]
 
