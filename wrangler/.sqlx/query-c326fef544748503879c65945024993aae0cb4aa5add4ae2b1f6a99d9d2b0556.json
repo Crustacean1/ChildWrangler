@@ -1,0 +1,98 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT inbox.*, guardians.id AS guardian_id FROM inbox \n            INNER JOIN guardians ON guardians.phone = inbox.\"SenderNumber\"  OR inbox.\"SenderNumber\" = format('+48%s', guardians.phone)\n            WHERE \"Processed\" = false FOR UPDATE SKIP LOCKED LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "UpdatedInDB",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 1,
+        "name": "ReceivingDateTime",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 2,
+        "name": "Text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "SenderNumber",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "Coding",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "UDH",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "SMSCNumber",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "Class",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "TextDecoded",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "ID",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "RecipientID",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "Processed",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 12,
+        "name": "Status",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "guardian_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c326fef544748503879c65945024993aae0cb4aa5add4ae2b1f6a99d9d2b0556"
+}
