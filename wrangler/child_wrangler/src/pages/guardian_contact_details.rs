@@ -1,3 +1,4 @@
+use dto::messages::GuardianDetails;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos_router::hooks::use_params;
@@ -7,7 +8,6 @@ use uuid::Uuid;
 use crate::components::messages::Messages;
 use crate::components::modal::Modal;
 use crate::components::modals::modify_guardian_phone::ModifyGuardianModal;
-use crate::dtos::messages::GuardianDetails;
 use crate::icons::edit::EditIcon;
 use crate::icons::phone::PhoneIcon;
 use crate::services::messages::get_guardian_details;

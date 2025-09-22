@@ -1,12 +1,9 @@
+use dto::catering::{AllergyDto, GuardianDto};
+use dto::details::{EntityDto, GroupDetailsDto, StudentDetailsDto};
+use dto::group::{CreateGroupDto, GroupDto, GroupInfoDto, ModifyGroupDto, SearchTerm};
 use leptos::logging::log;
 use leptos::prelude::*;
 use uuid::Uuid;
-
-use crate::dtos::{
-    catering::{AllergyDto, GuardianDto},
-    details::{EntityDto, GroupDetailsDto, StudentDetailsDto},
-    group::{CreateGroupDto, GroupDto, GroupInfoDto, ModifyGroupDto, SearchTerm},
-};
 
 #[server]
 pub async fn create_group(group: CreateGroupDto) -> Result<Uuid, ServerFnError> {

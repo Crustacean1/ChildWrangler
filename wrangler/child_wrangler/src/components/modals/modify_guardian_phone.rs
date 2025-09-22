@@ -1,8 +1,8 @@
+use dto::{catering::GuardianDetailDto, messages::GuardianDetails};
 use leptos::prelude::*;
 
 use crate::{
     components::snackbar::{use_snackbar, SnackbarContext},
-    dtos::{catering::GuardianDetailDto, messages::GuardianDetails},
     services::messages::update_guardian,
 };
 

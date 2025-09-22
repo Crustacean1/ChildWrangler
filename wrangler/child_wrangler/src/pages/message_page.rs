@@ -1,13 +1,8 @@
+use dto::messages::ContactDto;
 use leptos::{either::Either, prelude::*};
 use leptos_router::components::Outlet;
 
-use crate::{
-    dtos::{
-        catering::{GuardianDetailDto, GuardianDto},
-        messages::ContactDto,
-    },
-    services::{messages::get_contacts, student::get_guardians},
-};
+use crate::services::{messages::get_contacts, student::get_guardians};
 
 #[component]
 pub fn MessagePage() -> impl IntoView {

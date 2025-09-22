@@ -7,12 +7,12 @@ use leptos::{html, prelude::*};
 use leptos_router::hooks::{use_navigate, use_params};
 use uuid::Uuid;
 
-use crate::dtos::group::GroupDto;
-use crate::dtos::student::StudentDto;
 use crate::icons::arrow_down::ArrowDown;
 use crate::pages::attendance_page::{AttendanceParams, GroupVersion};
 use crate::services::group::get_groups;
 use crate::services::student::get_students;
+use dto::group::GroupDto;
+use dto::student::StudentDto;
 
 #[derive(Clone, Debug)]
 pub struct TreeItem {

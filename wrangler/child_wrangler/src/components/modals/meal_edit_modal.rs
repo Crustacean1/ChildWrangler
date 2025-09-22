@@ -1,10 +1,10 @@
 use chrono::NaiveDate;
+use dto::attendance::{CateringMealDto, UpdateAttendanceDto};
 use leptos::{logging::log, prelude::*};
 use uuid::Uuid;
 
 use crate::{
     components::snackbar::{use_snackbar, SnackbarContext},
-    dtos::attendance::{CateringMealDto, UpdateAttendanceDto},
     services::attendance::update_attendance,
 };
 

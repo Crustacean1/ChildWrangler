@@ -1,6 +1,7 @@
 use std::iter;
 
 use chrono::{NaiveDate, NaiveTime, Weekday};
+use dto::catering::{CreateCateringDto, MealDto};
 use leptos::{either::Either, logging::log, prelude::*};
 use uuid::Uuid;
 
@@ -10,7 +11,6 @@ use crate::{
         modal::Modal,
         snackbar::{use_snackbar, SnackbarContext},
     },
-    dtos::catering::{CreateCateringDto, MealDto},
     icons::close::CloseIcon,
     services::{catering::create_catering, student::get_meals},
 };

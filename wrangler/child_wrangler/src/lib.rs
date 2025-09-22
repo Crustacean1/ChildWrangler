@@ -2,7 +2,6 @@ pub mod app;
 pub mod pages;
 pub mod components;
 pub mod services;
-pub mod dtos;
 pub mod icons;
 
 #[cfg(feature = "hydrate")]

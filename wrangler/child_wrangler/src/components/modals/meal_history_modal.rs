@@ -1,15 +1,21 @@
 use chrono::NaiveDate;
+use dto::attendance::{AttendanceHistoryItemDto, GetAttendanceHistoryDto};
 use leptos::prelude::*;
 use uuid::Uuid;
 
-use crate::{dtos::attendance::{AttendanceHistoryItemDto, GetAttendanceHistoryDto}, services::attendance::get_attendance_history};
+use crate::services::attendance::get_attendance_history;
 
 #[component]
 pub fn MealHistoryModal(meal_id: Uuid, target: Uuid, date: NaiveDate) -> impl IntoView {
     let history = Resource::new(
         || (),
         move |_| async move {
-            get_attendance_history(GetAttendanceHistoryDto{meal_id, target, date}).await
+            get_attendance_history(GetAttendanceHistoryDto {
+                meal_id,
+                target,
+                date,
+            })
+            .await
         },
     );
 

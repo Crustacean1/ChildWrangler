@@ -1,8 +1,9 @@
+use dto::group::SearchTerm;
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 
 use crate::{
-    components::dropdown::Dropdown, dtos::group::SearchTerm, pages::attendance_page::GroupVersion,
+    components::dropdown::Dropdown, pages::attendance_page::GroupVersion,
     services::group::get_search_terms,
 };
 

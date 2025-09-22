@@ -7,12 +7,12 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-leptos = { version = "0.8.0", features = ["nightly"] }
-leptos_router = { version = "0.8.0", features = ["nightly"] }
-axum = { version = "0.8.0", optional = true }
+leptos = { version = "0.8.5", features = ["nightly"] }
+leptos_router = { version = "0.8.5", features = ["nightly"] }
+axum = { version = "0.8.4", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
-leptos_axum = { version = "0.8.0", optional = true }
-leptos_meta = { version = "0.8.0" }
+leptos_axum = { version = "0.8.5", optional = true }
+leptos_meta = { version = "0.8.5" }
 tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 wasm-bindgen = { version = "=0.2.103", optional = true }
 web-sys = {version = "0.3.77", features=["DataTransfer", "HtmlDialogElement"]}
@@ -22,6 +22,7 @@ serde = "1.0.219"
 sqlx = {version = "0.8.6", features=["postgres", "uuid", "chrono", "runtime-tokio"], optional = true}
 config = "0.15.15"
 serde_json = "1.0.145"
+dto = {path = "../dto"}
 
 [features]
 hydrate = [
@@ -65,12 +66,6 @@ site-addr = "127.0.0.1:3000"
 # The port to use for automatic reload monitoring
 reload-port = 3001
 
-# [Optional] Command to use when running end2end tests. It will run in the end2end dir.
-#   [Windows] for non-WSL use "npx.cmd playwright test"
-#   This binary name can be checked in Powershell with Get-Command npx
-end2end-cmd = "npx playwright test"
-end2end-dir = "end2end"
-
 #  The browserlist query used for optimizing the CSS.
 browserquery = "defaults"
 
@@ -86,8 +81,6 @@ bin-features = ["ssr"]
 #
 # Optional. Defaults to false.
 bin-default-features = false
-
-bin-target-triple="armv7-unknown-linux-gnueabihf"
 
 # The features to use when compiling the lib target
 #

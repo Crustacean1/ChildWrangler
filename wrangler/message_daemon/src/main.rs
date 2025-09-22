@@ -4,7 +4,7 @@ pub mod tests;
 
 use std::{env, time::Duration};
 
-use child_wrangler::dtos::messages::{
+use dto::messages::{
     Meal, MessageProcessing, RequestError, Student, StudentCancellation, Token,
 };
 use chrono::{Datelike, Months, NaiveDate, NaiveDateTime};

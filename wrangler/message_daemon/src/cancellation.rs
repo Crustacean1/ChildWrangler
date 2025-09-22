@@ -3,7 +3,7 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-use child_wrangler::dtos::messages::{CancellationRequest, CancellationResult, RequestError};
+use dto::messages::{CancellationRequest, CancellationResult, RequestError};
 use chrono::{Days, NaiveTime};
 use itertools::Itertools;
 use sqlx::{Connection, Error, Executor, Postgres};

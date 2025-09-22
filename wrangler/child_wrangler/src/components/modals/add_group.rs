@@ -1,9 +1,9 @@
+use dto::group::CreateGroupDto;
 use leptos::prelude::*;
 use uuid::Uuid;
 
 use crate::{
     components::snackbar::{use_snackbar, SnackbarContext},
-    dtos::group::CreateGroupDto,
     services::group::create_group,
 };
 

@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
+use dto::messages::{Message, MessageType};
 use leptos::{either::Either, logging::log, prelude::*};
 
 use crate::{
@@ -8,7 +9,6 @@ use crate::{
         modals::message_details::MessageDetailsModal,
         snackbar::{use_snackbar, SnackbarContext},
     },
-    dtos::messages::{Message, MessageType},
     services::messages::{get_messages, send_message},
 };
 

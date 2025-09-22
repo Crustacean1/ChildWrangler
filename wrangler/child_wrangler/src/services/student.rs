@@ -1,12 +1,9 @@
+use dto::catering::{AllergyDto, GuardianDto, MealDto};
+use dto::details::StudentDetailsDto;
+use dto::student::{CreateGuardianDto, CreateStudentDto, StudentDto};
 use leptos::logging::log;
 use leptos::prelude::*;
 use uuid::Uuid;
-
-use crate::dtos::{
-    catering::{AllergyDto, GuardianDetailDto, GuardianDto, MealDto},
-    details::StudentDetailsDto,
-    student::{CreateGuardianDto, CreateStudentDto, StudentDto, StudentInfoDto},
-};
 
 #[server]
 pub async fn create_student(student: CreateStudentDto) -> Result<Uuid, ServerFnError> {

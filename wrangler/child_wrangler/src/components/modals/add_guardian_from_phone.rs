@@ -1,3 +1,4 @@
+use dto::student::{CreateGuardianDto, StudentDto};
 use leptos::{either::Either, prelude::*};
 
 use crate::{
@@ -5,7 +6,6 @@ use crate::{
         dropdown::Dropdown,
         snackbar::{use_snackbar, SnackbarContext},
     },
-    dtos::student::{CreateGuardianDto, StudentDto},
     icons::close::CloseIcon,
     services::student::{create_guardian, get_students},
 };

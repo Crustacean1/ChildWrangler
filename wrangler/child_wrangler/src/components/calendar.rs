@@ -4,6 +4,9 @@ use std::{
 };
 
 use chrono::{Datelike, Days, Month, Months, NaiveDate, Utc, Weekday};
+use dto::attendance::{
+    EffectiveAttendance, EffectiveMonthAttendance, GetEffectiveMonthAttendance, GetMonthAttendanceDto, MonthAttendanceDto
+};
 use leptos::{either::Either, logging::log, prelude::*};
 use leptos_router::hooks::use_params;
 use uuid::Uuid;
@@ -15,10 +18,6 @@ use crate::{
             meal_count_modal::MealCountModal, meal_edit_modal::MealEditModal,
             meal_history_modal::MealHistoryModal,
         },
-    },
-    dtos::attendance::{
-        EffectiveAttendance, EffectiveMonthAttendance, GetEffectiveMonthAttendance,
-        GetMonthAttendanceDto, MonthAttendanceDto,
     },
     icons::{
         download::DownloadIcon, left_arrow::LeftArrow, right_arrow::RightArrow, select::SelectIcon,

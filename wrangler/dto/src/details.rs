@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::dtos::{
+use crate::{
     catering::{AllergyDto, GuardianDto},
     group::GroupDto,
 };

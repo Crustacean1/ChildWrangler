@@ -1,3 +1,7 @@
+use dto::{
+    details::{EntityDto, GroupDetailsDto, StudentDetailsDto},
+    group::GroupDto,
+};
 use leptos::{either::Either, prelude::*};
 use leptos_router::hooks::{use_navigate, use_params};
 use uuid::Uuid;
@@ -10,10 +14,6 @@ use crate::{
             add_group::AddGroupModal, add_student::AddStudentModal, delete_group::DeleteGroupModal,
             delete_student::DeleteStudentModal, modify_group::ModifyGroupModal,
         },
-    },
-    dtos::{
-        details::{GroupDetailsDto, StudentDetailsDto},
-        group::GroupDto,
     },
     icons::{add_group::AddGroupIcon, add_user::AddUserIcon, delete::DeleteIcon, edit::EditIcon},
     pages::attendance_page::{AttendanceParams, GroupVersion},
@@ -58,33 +58,33 @@ pub fn InfoPage() -> impl IntoView {
                         ServerFnError,
                     >(
                         match info {
-                            crate::dtos::details::EntityDto::Student(student) => {
+                            EntityDto::Student(student) => {
                                 Either::Left(
                                     Either::Left(Either::Left(view! { <Student student trail /> })),
                                 )
                             }
-                            crate::dtos::details::EntityDto::Group(group) => {
+                            EntityDto::Group(group) => {
                                 Either::Left(
                                     Either::Left(
                                         Either::Right(view! { <NonemptyGroup group trail /> }),
                                     ),
                                 )
                             }
-                            crate::dtos::details::EntityDto::StudentGroup(group) => {
+                            EntityDto::StudentGroup(group) => {
                                 Either::Left(
                                     Either::Right(
                                         Either::Right(view! { <StudentGroup group trail /> }),
                                     ),
                                 )
                             }
-                            crate::dtos::details::EntityDto::LeafGroup(group) => {
+                            EntityDto::LeafGroup(group) => {
                                 Either::Left(
                                     Either::Right(
                                         Either::Left(view! { <EmptyGroup group trail /> }),
                                     ),
                                 )
                             }
-                            crate::dtos::details::EntityDto::Catering(catering) => {
+                            EntityDto::Catering(catering) => {
                                 Either::Right(view! { <Catering catering trail /> })
                             }
                         },

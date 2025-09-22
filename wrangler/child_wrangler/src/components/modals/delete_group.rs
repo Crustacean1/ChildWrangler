@@ -1,9 +1,9 @@
+use dto::group::GroupInfoDto;
 use leptos::prelude::*;
 use uuid::Uuid;
 
 use crate::{
     components::snackbar::{use_snackbar, SnackbarContext},
-    dtos::group::GroupInfoDto,
     services::group::{delete_group, get_group_info},
 };
 

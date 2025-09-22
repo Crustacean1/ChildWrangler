@@ -1,13 +1,11 @@
 use std::collections::HashMap;
 
+use dto::messages::{CancellationRequest, MessageProcessing, RequestError, Student, Token};
 use leptos::{either::Either, prelude::*};
 use uuid::Uuid;
 
 use crate::{
     components::snackbar::{use_snackbar, SnackbarContext},
-    dtos::messages::{
-        CancellationRequest, MessageProcessing, RequestError, Student, StudentCancellation, Token,
-    },
     icons::refresh::RefreshIcon,
     services::messages::{get_message_processing_info, requeue_message},
 };
@@ -146,7 +144,7 @@ pub fn CancellationInfo(request: CancellationRequest) -> impl IntoView {
 }
 
 #[component]
-pub fn StudentCancellation(cancellation: Vec<StudentCancellation>) -> impl IntoView {
+pub fn StudentCancellation(cancellation: Vec<dto::messages::StudentCancellation>) -> impl IntoView {
     view! {<div class="content-green gap vertical">
             <span>Odwołania</span>
         {cancellation.into_iter().map(|cancellation| view!{

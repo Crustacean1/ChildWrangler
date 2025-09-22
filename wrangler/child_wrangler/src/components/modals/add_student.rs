@@ -1,3 +1,4 @@
+use dto::{catering::{AllergyDto, GuardianDto}, details::StudentDetailsDto, student::CreateStudentDto};
 use leptos::{either::Either, logging::log, prelude::*};
 use uuid::Uuid;
 
@@ -5,11 +6,6 @@ use crate::{
     components::{
         dropdown::Dropdown,
         snackbar::{use_snackbar, SnackbarContext},
-    },
-    dtos::{
-        catering::{AllergyDto, GuardianDetailDto, GuardianDto},
-        details::StudentDetailsDto,
-        student::CreateStudentDto,
     },
     icons::close::CloseIcon,
     services::student::{create_student, get_allergies, get_guardians, update_student},

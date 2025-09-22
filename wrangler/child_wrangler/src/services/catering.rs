@@ -1,8 +1,8 @@
+use dto::catering::CreateCateringDto;
 use leptos::logging::log;
 use leptos::prelude::*;
 use uuid::Uuid;
 
-use crate::dtos::catering::CreateCateringDto;
 
 #[server]
 pub async fn create_catering(catering_dto: CreateCateringDto) -> Result<Uuid, ServerFnError> {

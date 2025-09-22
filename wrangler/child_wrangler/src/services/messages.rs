@@ -1,15 +1,8 @@
 use std::collections::HashMap;
 
+use dto::{catering::GuardianDetailDto, messages::{ContactDto, GuardianDetails, GuardianDto, GuardianStudent, Message, MessageProcessing, MessageType}};
 use leptos::prelude::*;
 use uuid::Uuid;
-
-use crate::dtos::{
-    catering::GuardianDetailDto,
-    messages::{
-        ContactDto, GuardianDetails, GuardianDto, GuardianStudent, Message, MessageProcessing,
-        MessageType,
-    },
-};
 
 #[server]
 pub async fn get_contacts() -> Result<Vec<ContactDto>, ServerFnError> {
