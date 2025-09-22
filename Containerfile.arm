@@ -1,4 +1,0 @@
-FROM debian
-COPY ./build/ /
-
-ENTRYPOINT ["/armv7-unknown-linux-gnueabihf/release/child_wrangler"]
