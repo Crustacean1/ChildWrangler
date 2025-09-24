@@ -1,0 +1,39 @@
+name: Gitea Actions Demo
+run-name: ${{ gitea.actor }} is testing out Gitea Actions 🚀
+on: [push]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: > 
+          echo "-----BEGIN CERTIFICATE-----
+          MIICNTCCAZegAwIBAgIQXtujpNQ3zYCa/ooXW9vd9jAKBggqhkjOPQQDBDA3MRAw
+          DgYDVQQKEwdIb21lTGFiMREwDwYDVQQLEwhCYXNlbWVudDEQMA4GA1UEAxMHdGVz
+          dC1jYTAeFw0yNTA0MDUxMjA2MThaFw0yNTA3MDQxMjA2MThaMDcxEDAOBgNVBAoT
+          B0hvbWVMYWIxETAPBgNVBAsTCEJhc2VtZW50MRAwDgYDVQQDEwd0ZXN0LWNhMIGb
+          MBAGByqGSM49AgEGBSuBBAAjA4GGAAQAcbbGb3cvVZmGImdwHxS7SrghGMBbqx+P
+          PSUX0Umfsvay7u6bDaOq/6ytkFWamebR28iawhNLbwVeQSOmedxVEL0A/5AXT5U8
+          sHB8eXkKCi0CmabrL+Q1ynLqaK1hwa9xDhVCbnBBABuwWCMYV2a5mGT0xJXflCNc
+          tJ/z/UmF1AMwHGajQjBAMA4GA1UdDwEB/wQEAwICpDAPBgNVHRMBAf8EBTADAQH/
+          MB0GA1UdDgQWBBTFJDjNzzpcTJ0GvrlegWPFcNYjEDAKBggqhkjOPQQDBAOBiwAw
+          gYcCQWH1KxIMW3bDuSozSBnBulOLwUESqxHgFb3ArFjAM4KwCLMsu6Rv47JAh9k3
+          +Rihowp4WJSMoKbsW1toL0yH4vPpAkIAw5U8GqWU8ZNIb4lFKIOU2ImeLqV8WRgj
+          iUClCrBfDI0Yq/nlbvR15vMaQQwEaDJt+nDo88Q2o8JvO44U/zI35qY=
+          -----END CERTIFICATE-----" > /usr/local/share/ca-certificates/kubernetes.crt
+      - run: update-ca-certificates 
+      - run: apt-get update
+      - run: apt-get install curl
+      - run: install -m 0755 -d /etc/apt/keyrings
+      - run: curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+      - run: chmod a+r /etc/apt/keyrings/docker.asc
+      - run: echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+      - run: apt-get update
+      - run: apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - run: docker build -t gitea.lan/crustacean/child-wrangler:$(git rev-parse --short HEAD) 
+          -t gitea.lan/crustacean/child-wrangler:latest
+          .
+      - run: docker login --username crustacean --password ${{ secrets.REGISTRY_PASSWORD }} gitea.lan
+      - run: docker push -a gitea.lan/crustacean/child-wrangler:$(git rev-parse --short HEAD)

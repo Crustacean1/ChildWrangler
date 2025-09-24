@@ -15,17 +15,19 @@ COPY ./wrangler /wrangler
 WORKDIR /wrangler
 
 RUN echo "[target.armv7-unknown-linux-gnueabihf]\n\
-linker = \"arm-linux-gnueabihf-gcc\"" >> ~/.cargo/config 
+linker = \"arm-linux-gnueabihf-gcc\"" >> ~/.cargo/config.toml
 
-RUN rustup target add armv7-unknown-linux-gnueabihf && rustup target add wasm32-unknown-unknown && LEPTOS_BIN_TARGET_TRIPLE="armv7-unknown-linux-gnueabihf" cargo leptos build --release
-RUN rustup target add armv7-unknown-linux-gnueabihf && rustup target add wasm32-unknown-unknown && cargo build --release --target armv7-unknown-linux-gnueabihf --bin message_daemon
+RUN rustup target add armv7-unknown-linux-gnueabihf 
+RUN rustup target add wasm32-unknown-unknown
+RUN LEPTOS_BIN_TARGET_TRIPLE="armv7-unknown-linux-gnueabihf" cargo leptos build --release
+RUN cargo build --release --target armv7-unknown-linux-gnueabihf --bin message_daemon
 
-FROM --platform=linux/arm docker.io/debian:trixie AS child_wrangler
+FROM --platform=linux/arm docker.io/ubuntu:noble AS child_wrangler
 
 WORKDIR /wrangler
+
 COPY --from=builder /wrangler/target/armv7-unknown-linux-gnueabihf/release/child_wrangler /wrangler/
-COPY --from=builder /wrangler/child_wrangler/target/site  /wrangler/site
-ENV LEPTOS_SITE_ROOT="site"
+COPY --from=builder /wrangler/child_wrangler/target/site  /wrangler/target/site
 
 ENTRYPOINT ["/wrangler/child_wrangler"]
 
