@@ -28,7 +28,7 @@ FROM --platform=linux/arm docker.io/ubuntu:noble AS child_wrangler
 WORKDIR /wrangler
 
 COPY --from=builder /wrangler/target/armv7-unknown-linux-gnueabihf/release/child_wrangler /wrangler/
-COPY --from=builder /wrangler/child_wrangler/target/site  /wrangler/target/site
+COPY --from=builder /wrangler/target/site  /wrangler/target/site
 
 ENTRYPOINT ["/wrangler/child_wrangler"]
 
