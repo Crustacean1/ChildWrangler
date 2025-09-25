@@ -32,4 +32,6 @@ pub fn MealHistoryModal(meal_id: Uuid, target: Uuid, date: NaiveDate) -> impl In
 }
 
 #[component]
-pub fn MealHistoryModalInner(history: Vec<AttendanceHistoryItemDto>) -> impl IntoView {}
+pub fn MealHistoryModalInner(history: Vec<AttendanceHistoryItemDto>) -> impl IntoView {
+
+}
