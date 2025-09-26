@@ -32,10 +32,10 @@ jobs:
       - run: apt-get install -y podman
       - name: Check out repository code
         uses: actions/checkout@v4
-      - run: docker build -t gitea.lan/kamilkowalski/child-wrangler:$(git rev-parse --short HEAD) 
-          -t gitea.lan/kamilkowalski/child-wrangler:latest
+      - run: docker build -t gitea.lan/crustacean/child-wrangler:$(git rev-parse --short HEAD) 
+          -t gitea.lan/crustacean/child-wrangler:latest
           -f Containerfile.armv7
           --target child_wrangler
           .
-      - run: docker login --username kamilkowalski --password "${{ secrets.REGISTRY_PASSWORD }}" gitea.lan
-      - run: docker push -a gitea.lan/kamilkowalski/child-wrangler:$(git rev-parse --short HEAD)
+      - run: docker login --username crustacean --password "${{ secrets.REGISTRY_PASSWORD }}" gitea.lan
+      - run: docker push -a gitea.lan/crustacean/child-wrangler:$(git rev-parse --short HEAD)
