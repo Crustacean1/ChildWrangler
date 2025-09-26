@@ -8,8 +8,6 @@ jobs:
       - run: > 
           echo "${{ secrets.k8s_cert}}" | base64 -d > /usr/local/share/ca-certificates/kubernetes.crt
       - run: update-ca-certificates 
-      - run: cat /usr/local/share/ca-certificates/kubernetes.crt
-      - run: curl -v https://gitea.lan
       - run: apt-get update
       - run: apt-get install curl
       - run: install -m 0755 -d /etc/apt/keyrings
