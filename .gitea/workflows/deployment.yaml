@@ -5,8 +5,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - run: > 
-          echo "${{ secrets.k8s_cert}}" | base64 -d > /usr/local/share/ca-certificates/kubernetes.crt
+      - run: echo "${{ secrets.k8s_cert}}" | base64 -d > /usr/local/share/ca-certificates/kubernetes.crt
+      - run: echo "${{ secrets.k8s_cert}}" | base64 -d > /etc/ssl/certs/kubernetes.crt
       - run: update-ca-certificates 
       - run: apt-get update
       - run: apt-get install curl
