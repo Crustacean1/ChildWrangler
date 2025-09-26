@@ -8,14 +8,6 @@ jobs:
       - run: echo "${{ secrets.k8s_cert}}" | base64 -d > /usr/local/share/ca-certificates/kubernetes.crt
       - run: echo "${{ secrets.k8s_cert}}" | base64 -d > /etc/ssl/certs/kubernetes.crt
       - run: update-ca-certificates 
-      - run: apt-get update
-      - run: apt-get install curl
-      - run: install -m 0755 -d /etc/apt/keyrings
-      - run: curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-      - run: chmod a+r /etc/apt/keyrings/docker.asc
-      - run: echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-      - run: apt-get update
-      - run: apt-get install -y podman
       - name: Check out repository code
         uses: actions/checkout@v4
       - run: docker login --username crustacean --password ${{ secrets.REGISTRY_PASSWORD }} gitea.lan
