@@ -36,5 +36,6 @@ jobs:
           -f Containerfile.armv7
           --target child_wrangler
           .
+      - run: docker --version
       - run: docker login --username crustacean --password ${{ secrets.REGISTRY_PASSWORD }} gitea.lan
       - run: docker push -a gitea.lan/crustacean/child-wrangler:latest
