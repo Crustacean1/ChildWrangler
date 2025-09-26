@@ -1,5 +1,4 @@
-name: Gitea Actions Demo
-run-name: ${{ gitea.actor }} is testing out Gitea Actions 🚀
+name: Release Child Wrangler image
 on: [push]
 
 jobs:
@@ -37,5 +36,5 @@ jobs:
           -f Containerfile.armv7
           --target child_wrangler
           .
-      - run: docker login --username crustacean --password "${{ secrets.REGISTRY_PASSWORD }}" gitea.lan
+      - run: docker login --username crustacean --password ${{ secrets.REGISTRY_PASSWORD }} gitea.lan
       - run: docker push -a gitea.lan/crustacean/child-wrangler:$(git rev-parse --short HEAD)
