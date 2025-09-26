@@ -6,20 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: > 
-          echo "-----BEGIN CERTIFICATE-----\n
-          MIICNTCCAZegAwIBAgIQT3KFb57RvI1jZc90wQyQ6DAKBggqhkjOPQQDBDA3MRAw\n
-          DgYDVQQKEwdIb21lTGFiMREwDwYDVQQLEwhCYXNlbWVudDEQMA4GA1UEAxMHdGVz\n
-          dC1jYTAeFw0yNTA4MTQxNDU3MjBaFw0yNTExMTIxNDU3MjBaMDcxEDAOBgNVBAoT\n
-          B0hvbWVMYWIxETAPBgNVBAsTCEJhc2VtZW50MRAwDgYDVQQDEwd0ZXN0LWNhMIGb\n
-          MBAGByqGSM49AgEGBSuBBAAjA4GGAAQALLOsD8kcPOmnH35/eqoxT3tC6q7KecET\n
-          thB5W/mUpR83CLoP/c7cx5OcgoyVOU/2EcXyumd/IzPflrKfl94+Y+8Bqhl+XqDM\n
-          uZJ8sDAh7b4o3sG7kK1lo9vEEfz/5ZyeDFzkmOoTRzBCxmew3hPRsfSvy+r0lSUy\n
-          S6kUJNWGD5IxVnujQjBAMA4GA1UdDwEB/wQEAwICpDAPBgNVHRMBAf8EBTADAQH/\n
-          MB0GA1UdDgQWBBSzHRFuxcmC+o9uhOfhHkD5c9UBtDAKBggqhkjOPQQDBAOBiwAw\n
-          gYcCQgGDohSZgszQrSw8pwju7vdxIz2h8SUdCYbWEx3VLgMhxf8RrkGDMTdCKaCs\n
-          VRzrXmwjAcMhJC8i++3fgYv6aqEJ6QJBUbfZcRnKj3Bigg/iRMOY+WFewZUNSoz7\n
-          LMsE69G5gKrELnmcCeY30WuYCcefZzGngASCl2Ip2O5ODxHHEebMQj4=\n
-          -----END CERTIFICATE-----" > /usr/local/share/ca-certificates/kubernetes.crt
+          echo ${{ secrets.k8s_cert}} | base64 -d > /usr/local/share/ca-certificates/kubernetes.crt
       - run: update-ca-certificates 
       - run: cat /usr/local/share/ca-certificates/kubernetes.crt
       - run: curl -v https://gitea.lan
