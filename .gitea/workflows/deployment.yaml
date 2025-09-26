@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: > 
-          echo ${{ secrets.k8s_cert}} | base64 -d > /usr/local/share/ca-certificates/kubernetes.crt
+          echo "${{ secrets.k8s_cert}}" | base64 -d > /usr/local/share/ca-certificates/kubernetes.crt
       - run: update-ca-certificates 
       - run: cat /usr/local/share/ca-certificates/kubernetes.crt
       - run: curl -v https://gitea.lan
