@@ -6,14 +6,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "${{ secrets.k8s_cert}}" | base64 -d > /usr/local/share/ca-certificates/kubernetes.crt
-      - run: echo "${{ secrets.k8s_cert}}" | base64 -d > /etc/ssl/certs/kubernetes.crt
+      - run: mkdir -p /etc/docker/certs.d/gitea.lan/ && echo "${{ secrets.k8s_cert}}" | base64 -d > /etc/docker/certs.d/gitea.lan/ca.crt
       - run: update-ca-certificates 
+      #- run: apt-get update && apt-get install -y podman
       - name: Check out repository code
         uses: actions/checkout@v4
       - run: docker login --username crustacean --password ${{ secrets.REGISTRY_PASSWORD }} gitea.lan
-      - run: docker build -t gitea.lan/crustacean/child-wrangler
-          -t gitea.lan/crustacean/child-wrangler:$(git rev-parse --short HEAD) 
+      - run: docker build -t gitea.lan/crustacean/child-wrangler:$(git rev-parse --short HEAD) 
+          -t gitea.lan/crustacean/child-wrangler:latest 
           -f Containerfile.armv7
-          --push
+          --load
           --target child_wrangler
           .
+      - run: docker push -a gitea.lan/crustacean/child-wrangler
