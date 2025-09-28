@@ -1,0 +1,19 @@
+[Unit]
+Description=Postgres database
+After=network.target
+
+[Container]
+Image=docker.io/postgres@sha256:1c6d2f6e4d30d49c529e09a627e8178db5011dde88d955eb08db2e135e64aa09
+Volume=postgres_data:/var/lib/postgresql/data
+PublishPort=5432:5432/tcp
+Network=wrangler.network
+ContainerName=postgres
+Environment=POSTGRES_USER=admin
+Environment=POSTGRES_PASSWORD=PzM9ZQaVx58rDF0hwzhri2iqeSafMWCMyTEfjsZPmNuxIX2WqaWmN1lE91vFu2Bj
+Environment=TZ=Europe/Warsaw
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

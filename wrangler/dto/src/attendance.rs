@@ -26,7 +26,7 @@ pub struct MonthAttendanceDto {
     pub attendance: BTreeMap<NaiveDate, BTreeMap<Uuid, u32>>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
 pub enum EffectiveAttendance {
     Present,
     Cancelled,
@@ -75,4 +75,31 @@ pub enum AttendanceItemDto {
 pub struct AttendanceHistoryItemDto {
     pub time: NaiveDateTime,
     pub item: AttendanceItemDto,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum MealStatus {
+    Init,
+    Overriden,
+    Cancelled,
+    Blocked(Uuid),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AttendanceHistoryDto {
+    pub status: MealStatus,
+    pub events: Vec<AttendanceHistoryItemDto>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GetAttendanceBreakdownDto {
+    pub meal_id: Uuid,
+    pub target: Uuid,
+    pub date: NaiveDate,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AttendanceBreakdownDto {
+    pub meal: String,
+    pub attendance: HashMap<Uuid, (String, i64)>,
 }

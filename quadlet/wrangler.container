@@ -1,0 +1,18 @@
+[Unit]
+Description=Child Wrangler service
+After=network.target
+
+[Container]
+Image=gitea.lan/crustacean/child-wrangler:latest
+Network=wrangler.network
+NetworkAlias=wrangler
+PublishPort=2137:2137
+Environment=CONNECTION_STRING=postgres://admin:PzM9ZQaVx58rDF0hwzhri2iqeSafMWCMyTEfjsZPmNuxIX2WqaWmN1lE91vFu2Bj@postgres/wrangler
+Environment=LEPTOS_SITE_ADDR=0.0.0.0:2137
+Environment=TZ=Europe/Warsaw
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

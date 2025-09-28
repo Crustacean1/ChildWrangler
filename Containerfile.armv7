@@ -19,6 +19,7 @@ linker = \"arm-linux-gnueabihf-gcc\"" >> ~/.cargo/config.toml
 
 RUN rustup target add armv7-unknown-linux-gnueabihf 
 RUN rustup target add wasm32-unknown-unknown
+RUN cargo test
 RUN LEPTOS_BIN_TARGET_TRIPLE="armv7-unknown-linux-gnueabihf" cargo leptos build --release
 RUN cargo build --release --target armv7-unknown-linux-gnueabihf --bin message_daemon
 

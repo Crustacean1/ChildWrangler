@@ -163,6 +163,10 @@ ul {
   color: gray;
 }
 
+.yellow {
+  color: yellow;
+}
+
 .red {
   color: red;
 }
@@ -200,7 +204,9 @@ ul {
 }
 
 .error {
-  background-color: red;
+  background-color: rgb(100, 15, 15);
+  outline: 2px dashed red;
+  margin: 10px;
 }
 
 .reverse-vertical {
@@ -327,7 +333,7 @@ button.fast-transition {
 }
 
 .outline-gray {
-  color: gray;
+  outline: 1px solid gray;
 }
 
 .outline-white {
@@ -472,3 +478,31 @@ button.fast-transition {
   width: fit-content;
 }
 
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: auto auto;
+}
+
+.max-height-15 {
+  max-height: 15em;
+  overflow: auto;
+}
+
+.flex-4 {
+  flex: 4;
+}
+
+.h3 {
+  font-weight: 300;
+  padding: 0;
+  margin: 0;
+}
+
+.outline-1-hover:hover {
+  outline: 1px solid white;
+}
+
+.rounded-3{
+  border-radius: 1em;
+}

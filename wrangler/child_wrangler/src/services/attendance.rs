@@ -1,6 +1,9 @@
 use chrono::{Days, Months, NaiveDate};
 use dto::attendance::{
-    AttendanceHistoryItemDto, CateringMealDto, EffectiveAttendance, EffectiveMonthAttendance, GetAttendanceHistoryDto, GetEffectiveMonthAttendance, GetMonthAttendanceDto, MonthAttendanceDto, UpdateAttendanceDto
+    AttendanceBreakdownDto, AttendanceHistoryDto, AttendanceHistoryItemDto, AttendanceItemDto,
+    CateringMealDto, EffectiveAttendance, EffectiveMonthAttendance, GetAttendanceBreakdownDto,
+    GetAttendanceHistoryDto, GetEffectiveMonthAttendance, GetMonthAttendanceDto, MealStatus,
+    MonthAttendanceDto, UpdateAttendanceDto,
 };
 use std::collections::{BTreeMap, HashMap};
 use uuid::Uuid;
@@ -171,14 +174,15 @@ pub async fn update_attendance(dto: UpdateAttendanceDto) -> Result<(), ServerFnE
 #[server]
 pub async fn get_attendance_history(
     dto: GetAttendanceHistoryDto,
-) -> Result<Vec<AttendanceHistoryItemDto>, ServerFnError> {
+) -> Result<AttendanceHistoryDto, ServerFnError> {
     use sqlx::postgres::PgPool;
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
     let history = sqlx::query!(
-        "SELECT attendance.originated, attendance.value  FROM attendance 
+        "SELECT attendance.originated, attendance.value , attendance_override.note AS note, processing_trigger.message_id AS msg_id FROM attendance 
         LEFT JOIN attendance_override ON attendance_override.id = attendance.cause_id
+        LEFT JOIN processing_trigger ON processing_trigger.processing_id = attendance.cause_id
         WHERE target=$1 AND day = $2 AND meal_id = $3 ORDER BY originated",
         dto.target,
         dto.date,
@@ -187,5 +191,98 @@ pub async fn get_attendance_history(
     .fetch_all(&pool)
     .await?;
 
-    todo!();
+    let history = history
+        .into_iter()
+        .map(|row| {
+            if let Some(msg_id) = row.msg_id {
+                AttendanceHistoryItemDto {
+                    time: row.originated,
+                    item: AttendanceItemDto::Cancellation(msg_id, String::new(), String::new()),
+                }
+            } else if let Some(note) = row.note {
+                AttendanceHistoryItemDto {
+                    time: row.originated,
+                    item: AttendanceItemDto::Override(note, false),
+                }
+            } else {
+                AttendanceHistoryItemDto {
+                    time: row.originated,
+                    item: AttendanceItemDto::Init,
+                }
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let events = sqlx::query!("SELECT note, processing_id, target, level FROM group_relations
+    INNER JOIN effective_attendance ON effective_attendance.target = group_relations.parent
+    LEFT JOIN attendance_override ON attendance_override.id = effective_attendance.cause_id
+    LEFT JOIN processing_trigger ON processing_trigger.processing_id = effective_attendance.cause_id
+    WHERE group_relations.child = $1 AND effective_attendance.day = $2 AND effective_attendance.meal_id = $3 AND ((level > 0 AND value = false) OR level = 0)
+    ORDER BY level DESC LIMIT 1", dto.target, dto.date, dto.meal_id)
+    .fetch_optional(&pool)
+    .await?;
+
+    log!("Wtf: {:?}", events);
+    Ok(AttendanceHistoryDto {
+        events: history,
+        status: if let Some(events) = events {
+            if events.level != 0 {
+                MealStatus::Blocked(events.target.unwrap_or(Uuid::nil()))
+            } else if events.note.is_some() {
+                MealStatus::Overriden
+            } else if events.processing_id.is_some() {
+                MealStatus::Cancelled
+            } else {
+                MealStatus::Init
+            }
+        } else {
+            MealStatus::Init
+        },
+    })
+}
+
+#[server]
+pub async fn get_attendance_breakdown(
+    dto: GetAttendanceBreakdownDto,
+) -> Result<AttendanceBreakdownDto, ServerFnError> {
+    use sqlx::postgres::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+
+    let meal = sqlx::query!("SELECT * FROM meals WHERE meals.id = $1", dto.meal_id)
+        .fetch_one(&pool)
+        .await?
+        .name;
+
+    let attendance = sqlx::query!("SELECT group_relations.child AS id, SUM(rooted_attendance.present::int) AS attendance FROM group_relations
+    INNER JOIN rooted_attendance ON rooted_attendance.root = group_relations.child AND rooted_attendance.day = $2 AND rooted_attendance.meal_id = $3
+    WHERE group_relations.parent=$1 AND group_relations.level = 1
+    GROUP BY group_relations.child", dto.target, dto.date, dto.meal_id)
+        .fetch_all(&pool).await?;
+
+    let names = sqlx::query!(
+        "SELECT COALESCE(groups.name, FORMAT('%s %s', students.name, students.surname)) AS name, COALESCE(groups.id,students.id) AS id FROM group_relations
+    LEFT JOIN students ON students.id = group_relations.child
+    LEFT JOIN groups ON groups.id = group_relations.child
+    WHERE group_relations.parent = $1",
+        dto.target
+    )
+    .fetch_all(&pool)
+    .await?.into_iter().filter_map(|row| {
+
+Some((row.id?,row.name?))
+        })
+        .collect::<HashMap<_,_>>();
+
+    let attendance = attendance
+        .into_iter()
+        .filter_map(|row| {
+            Some((
+                row.id,
+                (names.get(&row.id)?.clone(), row.attendance.unwrap_or(0)),
+            ))
+        })
+        .collect();
+
+    Ok(AttendanceBreakdownDto { attendance, meal })
 }

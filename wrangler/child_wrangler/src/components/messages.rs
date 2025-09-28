@@ -51,8 +51,8 @@ pub fn Messages(phone: String) -> impl IntoView {
                     >(
                         view! {
                             <div class="flex-1 background-2 vertical gap padded rounded">
-                            <div class="">
-                                <InnerMessages messages />
+                                <div class="">
+                                    <InnerMessages messages />
                                 </div>
                                 <div class="horizontal gap">
                                     <input
@@ -111,7 +111,7 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
                             .map(|message| {
                                 view! {
                                     <div
-                                    on:click=move |_| set_show_details(Some(message.id))
+                                        on:click=move |_| set_show_details(Some(message.id))
                                         class="rounded padded fit-content background-3 vertical"
                                         class:self-start=if let MessageType::Received(_) = message
                                             .msg_type
@@ -135,14 +135,18 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
                 })
                 .collect::<Vec<_>>()}
         </ul>
-        <Modal is_open={move ||show_details().is_some()} on_close=move || {set_show_details(None);}>
-            {move || show_details().map(|msg_id| {
-        view!{
-
-            <MessageDetailsModal msg_id/>
-        }
-
-        })}
+        <Modal
+            is_open=move || show_details().is_some()
+            on_close=move || {
+                set_show_details(None);
+            }
+        >
+            {move || {
+                show_details()
+                    .map(|msg_id| {
+                        view! { <MessageDetailsModal msg_id /> }
+                    })
+            }}
         </Modal>
     }
 }

@@ -1,0 +1,15 @@
+[Unit]
+Description=Message Daemon service
+After=network.target
+
+[Container]
+Image=gitea.lan/kamilkowalski/message_daemon:latest
+Network=wrangler.network
+Environment=DATABASE_URL=postgres://admin:PzM9ZQaVx58rDF0hwzhri2iqeSafMWCMyTEfjsZPmNuxIX2WqaWmN1lE91vFu2Bj@postgres/wrangler
+Environment=TZ=Europe/Warsaw
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target default.target

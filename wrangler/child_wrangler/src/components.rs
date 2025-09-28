@@ -7,4 +7,5 @@ pub mod snackbar;
 pub mod tree;
 pub mod calendar;
 pub mod messages;
+pub mod loader;
 

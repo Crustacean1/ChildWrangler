@@ -1,5 +1,5 @@
 use chrono::NaiveDate;
-use dto::attendance::{AttendanceHistoryItemDto, GetAttendanceHistoryDto};
+use dto::attendance::{AttendanceHistoryDto, AttendanceHistoryItemDto, GetAttendanceHistoryDto};
 use leptos::prelude::*;
 use uuid::Uuid;
 
@@ -20,18 +20,36 @@ pub fn MealHistoryModal(meal_id: Uuid, target: Uuid, date: NaiveDate) -> impl In
     );
 
     view! {
-        <Suspense fallback=|| view!{<div>Loading</div>}>
-            <ErrorBoundary fallback=|_| view!{<div>Error</div>}>
+        <Suspense fallback=|| view! { <div>Loading</div> }>
+            <ErrorBoundary fallback=|_| {
+                view! { <div>Error</div> }
+            }>
                 {Suspend::new(async move {
-            let history = history.await?;
-            Ok::<_,ServerFnError>(view!{})
-        })}
+                    let history = history.await?;
+                    Ok::<_, ServerFnError>(view! { <MealHistoryModalInner history /> })
+                })}
             </ErrorBoundary>
         </Suspense>
     }
 }
 
 #[component]
-pub fn MealHistoryModalInner(history: Vec<AttendanceHistoryItemDto>) -> impl IntoView {
-
+pub fn MealHistoryModalInner(history: AttendanceHistoryDto) -> impl IntoView {
+    view! {
+        <h3>{format!("{:?}", history.status)}</h3>
+        <ul>
+            {history
+                .events
+                .into_iter()
+                .map(|att| {
+                    view! {
+                        <li>
+                            <h4>{format!("{}", att.time)}</h4>
+                            {format!("{:?}", att.item)}
+                        </li>
+                    }
+                })
+                .collect::<Vec<_>>()}
+        </ul>
+    }
 }

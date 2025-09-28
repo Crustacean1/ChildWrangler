@@ -9,8 +9,11 @@ use leptos_router::{
 use crate::{
     components::{searchbar::Searchbar, snackbar::Snackbar},
     pages::{
-        attendance_page::{AttendancePage, GroupVersion}, detail_page::DetailPage,
-        guardian_contact_details::GuardianContactDetails, message_page::MessagePage,
+        attendance_dashboard::AttendanceDashboard,
+        attendance_page::{AttendancePage, GroupVersion},
+        detail_page::DetailPage,
+        guardian_contact_details::GuardianContactDetails,
+        message_page::MessagePage,
         unknown_contact_details::UnknownContactDetails,
     },
 };
@@ -101,14 +104,7 @@ pub fn App() -> impl IntoView {
                         </ParentRoute>
                         <ParentRoute path=path!("attendance") view=AttendancePage>
                             <Route path=path!(":target/:year/:month") view=DetailPage />
-                            <Route
-                                path=path!("/")
-                                view=|| {
-                                    view! {
-                                        <div class="group-not-selected">Nie wybrano grupy</div>
-                                    }
-                                }
-                            />
+                            <Route path=path!("/") view=AttendanceDashboard />
                             <Route
                                 path=path!(":target")
                                 view=|| {

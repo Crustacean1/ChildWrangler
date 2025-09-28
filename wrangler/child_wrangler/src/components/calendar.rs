@@ -1,11 +1,13 @@
 use std::{
     cmp::{max, min},
+    collections::{BTreeMap, HashMap},
     iter,
 };
 
 use chrono::{Datelike, Days, Month, Months, NaiveDate, Utc, Weekday};
 use dto::attendance::{
-    EffectiveAttendance, EffectiveMonthAttendance, GetEffectiveMonthAttendance, GetMonthAttendanceDto, MonthAttendanceDto
+    CateringMealDto, EffectiveAttendance, EffectiveMonthAttendance, GetEffectiveMonthAttendance,
+    GetMonthAttendanceDto, MonthAttendanceDto,
 };
 use leptos::{either::Either, logging::log, prelude::*};
 use leptos_router::hooks::use_params;
@@ -13,6 +15,7 @@ use uuid::Uuid;
 
 use crate::{
     components::{
+        loader::Loader,
         modal::Modal,
         modals::{
             meal_count_modal::MealCountModal, meal_edit_modal::MealEditModal,
@@ -95,31 +98,33 @@ pub fn Calendar() -> impl IntoView {
     );
 
     view! {
-        <Suspense>
-            <ErrorBoundary fallback=|_| {
-                view! {}
-            }>
-                {move || Suspend::new(async move {
-                    let attendance = attendance.await?;
-                    let local_attendance = local_attendance.await?;
-                    Ok::<
-                        _,
-                        ServerFnError,
-                    >(
-                        view! {
-                            <InnerCalendar
-                                target=target().unwrap_or_default()
-                                year=year() as i32
-                                month=month()
-                                attendance
-                                local_attendance
-                            />
-                        },
-                    )
-                })}
-            </ErrorBoundary>
-        </Suspense>
+        <Loader>
+            {move || Suspend::new(async move {
+                let attendance = attendance.await?;
+                let local_attendance = local_attendance.await?;
+                Ok::<
+                    _,
+                    ServerFnError,
+                >(
+                    view! {
+                        <InnerCalendar
+                            target=target().unwrap_or_default()
+                            year=year() as i32
+                            month=month()
+                            attendance
+                            local_attendance
+                        />
+                    },
+                )
+            })}
+        </Loader>
     }
+}
+
+pub enum CalendarDay {
+    OtherMonth,
+    OtherDow(NaiveDate),
+    Day(NaiveDate, Vec<(Uuid, String, u32, EffectiveAttendance)>),
 }
 
 #[component]
@@ -131,21 +136,39 @@ pub fn InnerCalendar(
     local_attendance: EffectiveMonthAttendance,
 ) -> impl IntoView {
     let (meal_history, set_meal_history) = signal(None::<(Uuid, Uuid, NaiveDate)>);
+    let (meal_count, set_meal_count) = signal(None::<(Uuid, Uuid, NaiveDate)>);
     //let (meal_count, set_meal_count) = signal(false);
     let (meal_edit, set_meal_edit) = signal(None::<Vec<_>>);
     let (selection_mode, set_selection_mode) = signal(false);
 
     let start = NaiveDate::from_ymd_opt(year, month, 1).unwrap();
 
-    let end = start
-        .checked_add_months(Months::new(1))
-        .and_then(|end| end.checked_sub_days(Days::new(1)))
-        .unwrap();
-
     let (drag_start, set_drag_start) = signal(None::<NaiveDate>);
     let (drag_end, set_drag_end) = signal(None::<NaiveDate>);
 
-    let dow = attendance.days_of_week.clone();
+    let selection_filter = |mode: bool, start: NaiveDate, end: NaiveDate, day: NaiveDate| {
+        return false;
+    };
+
+    let end_date = NaiveDate::from_ymd_opt(year, month, 1)
+        .and_then(|d| d.checked_add_months(Months::new(1)))
+        .and_then(|d| d.checked_add_days(Days::new(d.weekday().num_days_from_sunday() as u64)));
+
+    let calendar_days = iter::successors(
+        NaiveDate::from_ymd_opt(year, month, 1).and_then(|day| {
+            day.checked_sub_days(Days::new(day.weekday().num_days_from_monday() as u64))
+        }),
+        |day| {
+            end_date.as_ref().and_then(|end_date| {
+                if day <= end_date {
+                    day.checked_add_days(Days::new(1))
+                } else {
+                    None
+                }
+            })
+        },
+    );
+
     let is_active = move |mode,
                           r_start: NaiveDate,
                           r_end: NaiveDate,
@@ -216,6 +239,36 @@ pub fn InnerCalendar(
         }
     };
 
+    let daily_attendance = calendar_days.map(|day| {
+        if day.month() != month && day >= attendance.start && day <= attendance.end {
+            CalendarDay::OtherMonth
+        } else if !attendance.days_of_week[day.weekday().num_days_from_monday() as usize] {
+            CalendarDay::OtherDow(day)
+        } else {
+            let meals = attendance
+                .meals
+                .iter()
+                .map(|m| {
+                    (
+                        m.id,
+                        m.name.clone(),
+                        *attendance
+                            .attendance
+                            .get(&day)
+                            .and_then(|d| d.get(&m.id))
+                            .unwrap_or(&0),
+                        *local_attendance
+                            .attendance
+                            .get(&day)
+                            .and_then(|a| a.get(&m.id))
+                            .unwrap_or(&EffectiveAttendance::Present),
+                    )
+                })
+                .collect::<Vec<_>>();
+            CalendarDay::Day(day, meals)
+        }
+    });
+
     view! {
         <div class="vertical gap flex-1 flex" on:mouseup=on_drag_end>
             <div class="background-2 rounded padded gap horizontal center">
@@ -247,6 +300,7 @@ pub fn InnerCalendar(
                     </button>
                 </div>
             </div>
+
             <div class="background-2 flex-1 rounded padded grid-7">
                 {iter::successors(
                         Some(Weekday::Mon),
@@ -266,141 +320,113 @@ pub fn InnerCalendar(
                             .map(|_| view! { <div></div> })
                             .collect::<Vec<_>>()
                     })}
-                {iter::successors(
-                        Some(start),
-                        |day| { if *day < end { day.checked_add_days(Days::new(1)) } else { None } },
-                    )
-                    .map(|day| {
-                        view! {
-                            <div
-                                class="background-3 padded rounded vertical"
-                                on:mousedown=move |_| {
-                                    set_drag_start(Some(day));
-                                    set_drag_end(Some(day));
-                                }
-                                on:mouseover=move |_| {
-                                    set_drag_end(Some(day));
-                                }
-                                class:highlight={
-                                    let dow = attendance.days_of_week.clone();
-                                    move || match (drag_start(), drag_end()) {
-                                        (Some(start), Some(end)) => {
-                                            is_active(
-                                                selection_mode(),
-                                                start,
-                                                end,
-                                                day,
-                                                &dow,
-                                                &attendance.start,
-                                                &attendance.end,
-                                            )
+                {daily_attendance
+                    .into_iter()
+                    .map(|day| match day {
+                        CalendarDay::OtherMonth => {
+                            Either::Left(
+                                Either::Left(
+                                    view! { <div class="rounded background-2 outline-gray"></div> },
+                                ),
+                            )
+                        }
+                        CalendarDay::OtherDow(date) => {
+                            Either::Left(
+                                Either::Right(
+                                    view! {
+                                        <div class="padded rounded background-2 outline-gray ">
+                                            <h3 class="h3 gray">
+                                                {format!("{}", date.format("%d %B"))}
+                                            </h3>
+                                        </div>
+                                    },
+                                ),
+                            )
+                        }
+                        CalendarDay::Day(date, meals) => {
+                            Either::Right(
+                                view! {
+                                    <Day
+                                        date
+                                        meals
+                                        on_meal_select=move |meal_id| {
+                                            set_meal_history(Some((meal_id, target, date)))
                                         }
-                                        _ => false,
-                                    }
-                                }
-                            >
-                                <span class="no-select padded rounded">
-                                    {format!("{}", day.format("%d %B"))}
-                                </span>
-                                {if attendance
-                                    .days_of_week[day.weekday().num_days_from_monday() as usize]
-                                    && day >= attendance.start && day <= attendance.end
-                                {
-                                    Either::Left(
-                                        // Nested too deep: TODO: simplify or extract
-                                        //
-
-                                        view! {
-                                            <div class="flex flex-1 center">
-                                                <div
-                                                    class="grid gap"
-                                                    style:grid-template-columns="1fr 2em"
-                                                >
-                                                    {attendance
-                                                        .meals
-                                                        .iter()
-                                                        .map(|meal| {
-                                                            let status = local_attendance
-                                                                .attendance
-                                                                .get(&day)
-                                                                .and_then(|d| d.get(&meal.id));
-                                                            let meal_id = meal.id;
-                                                            view! {
-                                                                <div
-                                                                    class="interactive padded rounded no-select text-left"
-                                                                    on:click=move |_| set_meal_history(Some((meal_id, target, day)))
-                                                                    class:outline-green=status
-                                                                        .map(|e| *e == EffectiveAttendance::Present)
-                                                                        .unwrap_or(true)
-                                                                    class:outline-red=status
-                                                                        .map(|e| *e == EffectiveAttendance::Absent)
-                                                                        .unwrap_or(false)
-                                                                    class:outline-yellow=status
-                                                                        .map(|e| *e == EffectiveAttendance::Cancelled)
-                                                                        .unwrap_or(false)
-                                                                    class:outline-gray=status
-                                                                        .map(|e| *e == EffectiveAttendance::Blocked)
-                                                                        .unwrap_or(false)
-                                                                    on:mousedown=|e| {
-                                                                        e.stop_propagation();
-                                                                    }
-                                                                >
-                                                                    {meal.name.clone()}
-                                                                </div>
-                                                                <button
-                                                                    class="padded no-select interactive rounded"
-                                                                    on:mousedown=|e| {
-                                                                        e.stop_propagation();
-                                                                    }
-                                                                >
-                                                                    {format!(
-                                                                        "{}",
-                                                                        attendance
-                                                                            .attendance
-                                                                            .get(&day)
-                                                                            .and_then(|m| m.get(&meal.id))
-                                                                            .map(|i| *i)
-                                                                            .unwrap_or(0),
-                                                                    )}
-                                                                </button>
-                                                            }
-                                                        })
-                                                        .collect::<Vec<_>>()}
-                                                </div>
-                                            </div>
-                                        },
-                                    )
-                                } else {
-                                    Either::Right(view! {})
-                                }}
-                            </div>
+                                        on_count_select=move |meal_id| {
+                                            set_meal_count(Some((meal_id, target, date)))
+                                        }
+                                        on_drag=|| {}
+                                        on_drop=|| {}
+                                    />
+                                },
+                            )
                         }
                     })
                     .collect::<Vec<_>>()}
             </div>
         </div>
-        <Modal is_open=move || meal_edit().is_some() on_close=move || set_meal_edit(None)>
-            {
-                let meals = attendance.meals.clone();
-                move || match meal_edit() {
-                    Some(days) => {
-                        Either::Left(
-                            view! {
-                                <MealEditModal
-                                    days
-                                    meals=meals.clone()
-                                    target
-                                    on_close=move |_| { set_meal_edit(None) }
-                                />
-                            },
-                        )
-                    }
-                    None => Either::Right(view! {}),
-                }
-            }
+
+        <Modal is_open=move || meal_history().is_some() on_close=move || set_meal_history(None)>
+            {move || {
+                meal_history()
+                    .map(|(meal_id, target, date)| {
+                        view! { <MealHistoryModal meal_id target date /> }
+                    })
+            }}
         </Modal>
-    <Modal is_open=move|| meal_history().is_some() on_close=move || set_meal_history(None)>
-        {move || meal_history().map(|(meal_id,target,date)| view!{<MealHistoryModal meal_id target date/>})}
-    </Modal>
+        <Modal is_open=move || meal_count().is_some() on_close=move || set_meal_count(None)>
+            {move || {
+                meal_count()
+                    .map(|(meal_id, target, date)| view! { <MealCountModal meal_id target date /> })
+            }}
+        </Modal>
+    }
+}
+
+#[component]
+pub fn Day(
+    date: NaiveDate,
+    meals: Vec<(Uuid, String, u32, EffectiveAttendance)>,
+    on_drag: impl Fn() + Send + Sync + Copy + 'static,
+    on_drop: impl Fn() + Send + Sync + Copy + 'static,
+    on_meal_select: impl Fn(Uuid) + Send + Sync + Copy + 'static,
+    on_count_select: impl Fn(Uuid) + Send + Sync + Copy + 'static,
+) -> impl IntoView {
+    view! {
+        <div class="vertical gap background-3 rounded padded no-select outline-1-hover fast-transition">
+            <h3 class=" h3">{format!("{}", date.format("%e %B"))}</h3>
+            {meals
+                .into_iter()
+                .map(|(meal_id, meal_name, attendance, status)| {
+                    view! {
+                        <div class="horizontal gap flex-1 horizontal align-center">
+                            <div
+                                class="flex-4 interactive padded rounded no-select text-left flex justify-center align-center"
+                                // on:click=move |_| set_meal_history(Some((meal_id, target, day)))
+                                class:green=status == EffectiveAttendance::Present
+                                class:red=status == EffectiveAttendance::Absent
+                                class:yellow=status == EffectiveAttendance::Cancelled
+                                class:gray=status == EffectiveAttendance::Blocked
+                                on:mousedown=|e| {
+                                    e.stop_propagation();
+                                }
+                            >
+                                {meal_name.clone()}
+                            </div>
+
+                            <button
+                                class="flex-1 padded no-select interactive rounded"
+                                // on:click=move |_| set_meal_count(Some((meal_id, target,day)))
+                                on:mousedown=|e| {
+                                    e.stop_propagation();
+                                }
+                            >
+                                {format!("{}", attendance)}
+                            </button>
+                        </div>
+                    }
+                })
+                .collect::<Vec<_>>()}
+        </div>
     }
 }

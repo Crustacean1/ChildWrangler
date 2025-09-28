@@ -4,10 +4,8 @@ pub mod tests;
 
 use std::{env, time::Duration};
 
-use dto::messages::{
-    Meal, MessageProcessing, RequestError, Student, StudentCancellation, Token,
-};
 use chrono::{Datelike, Months, NaiveDate, NaiveDateTime};
+use dto::messages::{Meal, MessageProcessing, RequestError, Student, StudentCancellation, Token};
 use itertools::Itertools;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -108,31 +106,25 @@ pub fn into_token(word: &str, message: &Message, students: &[Student]) -> Token 
             Token::Unknown(word.into())
         }
     } else if let Some(date) = short_date_regex.captures(word) {
-        println!("Matching the regex");
         let day = date[2].parse();
         let month = date[4].parse();
 
         let current_year = message.arrived.year();
-        println!("iiiiiFick3: {:?} {:?}", &date[2], &date[4]);
         if let (Ok(month), Ok(day)) = (month, day) {
             if let Some(date) = NaiveDate::from_ymd_opt(current_year, month, day) {
                 if date < message.arrived.date() {
                     if let Some(next_date) = date.checked_add_months(Months::new(12)) {
                         Token::Date(next_date)
                     } else {
-                        println!("Fick1");
                         Token::Unknown(word.into())
                     }
                 } else {
                     Token::Date(date)
                 }
             } else {
-                println!("Fick2");
-
                 Token::Unknown(word.into())
             }
         } else {
-            println!("Fick3: ");
             Token::Unknown(word.into())
         }
     } else {
@@ -281,11 +273,8 @@ pub async fn fetch_message(pool: &PgPool) -> Result<Option<()>, Error> {
         sender: row.SenderNumber,
         arrived: row.ReceivingDateTime,
     },row.guardian_id)) else {
-    println!("No message detected :(");
         return Ok(None);
     };
-
-    println!("Message detected!");
 
     let students = sqlx::query!(
         "SELECT students.id, students.name, students.surname, caterings.grace_period, ARRAY_AGG((meals.id,meals.name)) AS \"meals: Vec<(Uuid,String)> \", caterings.since, caterings.until FROM students 
