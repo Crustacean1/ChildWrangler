@@ -23,6 +23,8 @@ sqlx = {version = "0.8.6", features=["postgres", "uuid", "chrono", "runtime-toki
 config = "0.15.15"
 serde_json = "1.0.145"
 dto = {path = "../dto"}
+log = "0.4.28"
+env_logger = "0.11.8"
 
 [features]
 hydrate = [
