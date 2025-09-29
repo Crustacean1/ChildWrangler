@@ -4,7 +4,6 @@ use std::{
     iter,
 };
 
-use base64::{prelude::BASE64_STANDARD, Engine};
 use chrono::{Datelike, Days, Month, Months, NaiveDate, Utc, Weekday};
 use dto::attendance::{
     CateringMealDto, EffectiveAttendance, EffectiveMonthAttendance, GetEffectiveMonthAttendance,
