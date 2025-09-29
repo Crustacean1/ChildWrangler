@@ -103,3 +103,12 @@ pub struct AttendanceBreakdownDto {
     pub meal: String,
     pub attendance: HashMap<Uuid, (String, i64)>,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct MonthlyStudentAttendanceDto {
+    pub student_id: Uuid,
+    pub name: String,
+    pub surname: String,
+    pub attendance: u32,
+    pub group: String,
+}

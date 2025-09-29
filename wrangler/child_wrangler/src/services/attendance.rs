@@ -3,7 +3,7 @@ use dto::attendance::{
     AttendanceBreakdownDto, AttendanceHistoryDto, AttendanceHistoryItemDto, AttendanceItemDto,
     CateringMealDto, EffectiveAttendance, EffectiveMonthAttendance, GetAttendanceBreakdownDto,
     GetAttendanceHistoryDto, GetEffectiveMonthAttendance, GetMonthAttendanceDto, MealStatus,
-    MonthAttendanceDto, UpdateAttendanceDto,
+    MonthAttendanceDto, MonthlyStudentAttendanceDto, UpdateAttendanceDto,
 };
 use std::collections::{BTreeMap, HashMap};
 use uuid::Uuid;
@@ -285,4 +285,63 @@ Some((row.id?,row.name?))
         .collect();
 
     Ok(AttendanceBreakdownDto { attendance, meal })
+}
+
+#[server]
+pub async fn get_monthly_summary(
+    target: Uuid,
+    year: i32,
+    month: u32,
+) -> Result<String, ServerFnError> {
+    use sqlx::postgres::PgPool;
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+    use csv::WriterBuilder;
+
+    let start = NaiveDate::from_ymd_opt(year, month, 1).ok_or(ServerFnError::new(
+        "Failed to construct start date from provided arguments",
+    ))?;
+    let end = start
+        .checked_add_months(Months::new(1))
+        .ok_or(ServerFnError::new(
+            "Failed to construct end date from provided arguments",
+        ))?;
+
+    let catering_group_id = sqlx::query!(
+        "SELECT group_id FROM group_relations
+    INNER JOIN caterings ON caterings.group_id = group_relations.parent
+    WHERE group_relations.child = $1",
+        target
+    )
+    .fetch_one(&pool)
+    .await?
+    .group_id;
+
+    let attendance = sqlx::query!(
+        "WITH student_attendance AS (SELECT student_id, COUNT(*) AS student_attendance FROM rooted_attendance 
+    WHERE root = $1 AND day >= $2 AND day < $3
+    GROUP BY student_id)
+    SELECT groups.name AS group_name, students.name, students.surname, students.id, student_attendance AS attendance FROM student_attendance
+    INNER JOIN students ON student_attendance.student_id = students.id
+    INNER JOIN group_relations AS direct_relation ON direct_relation.level = 1 AND direct_relation.child = students.id
+    INNER JOIN groups ON groups.id = direct_relation.parent",catering_group_id, start, end)
+        .fetch_all(&pool)
+        .await?
+    .into_iter()
+        .map(|row| MonthlyStudentAttendanceDto{
+            student_id: row.id,
+            name: row.name,
+            surname: row.surname,
+            attendance: row.attendance.unwrap_or(0) as u32,
+            group: row.group_name,
+        }).collect::<Vec<_>>();
+
+    let mut wrtr = WriterBuilder::new().from_writer(vec![]);
+
+    for student in attendance {
+        wrtr.serialize(student)?;
+    }
+
+    wrtr.flush()?;
+
+    Ok(String::from_utf8(wrtr.into_inner()?)?)
 }

@@ -4,14 +4,23 @@ use std::{
     iter,
 };
 
+use base64::{prelude::BASE64_STANDARD, Engine};
 use chrono::{Datelike, Days, Month, Months, NaiveDate, Utc, Weekday};
 use dto::attendance::{
     CateringMealDto, EffectiveAttendance, EffectiveMonthAttendance, GetEffectiveMonthAttendance,
     GetMonthAttendanceDto, MonthAttendanceDto,
 };
+use leptos::wasm_bindgen::JsCast;
 use leptos::{either::Either, logging::log, prelude::*};
-use leptos_router::hooks::use_params;
+
+use leptos_router::hooks::{use_navigate, use_params};
 use uuid::Uuid;
+use wasm_bindgen_futures::JsFuture;
+use web_sys::{
+    js_sys::Array,
+    wasm_bindgen::{prelude::Closure, JsValue},
+    window, Blob, FileSystemFileHandle, FileSystemWritableFileStream,
+};
 
 use crate::{
     components::{
@@ -21,12 +30,13 @@ use crate::{
             meal_count_modal::MealCountModal, meal_edit_modal::MealEditModal,
             meal_history_modal::MealHistoryModal,
         },
+        snackbar::{self, use_snackbar, SnackbarContext},
     },
     icons::{
         download::DownloadIcon, left_arrow::LeftArrow, right_arrow::RightArrow, select::SelectIcon,
     },
     pages::attendance_page::{AttendanceParams, GroupVersion},
-    services::attendance::{get_effective_attendance, get_month_attendance},
+    services::attendance::{get_effective_attendance, get_month_attendance, get_monthly_summary},
 };
 
 #[component]
@@ -121,6 +131,31 @@ pub fn Calendar() -> impl IntoView {
     }
 }
 
+async fn save_to_file(summary: &str) {
+    let array = Array::new();
+    array.push(&JsValue::from_str(summary));
+
+    if let Ok(blob) = Blob::new_with_str_sequence(&array) {
+        wasm_bindgen_futures::spawn_local(async move {
+            async move {
+                let promise = web_sys::window().map(|window| window.show_save_file_picker());
+                if let Some(Ok(promise)) = promise {
+                    let handle = JsFuture::from(promise)
+                        .await
+                        .and_then(|handle| handle.dyn_into::<FileSystemFileHandle>())?;
+                    let writable = JsFuture::from(handle.create_writable())
+                        .await
+                        .and_then(|writable| writable.dyn_into::<FileSystemWritableFileStream>())?;
+                    JsFuture::from(writable.write_with_blob(&blob)?).await?;
+                    JsFuture::from(writable.close()).await?;
+                }
+                Ok::<_, JsValue>(())
+            }
+            .await;
+        });
+    }
+}
+
 pub enum CalendarDay {
     OtherMonth,
     OtherDow(NaiveDate),
@@ -135,6 +170,9 @@ pub fn InnerCalendar(
     attendance: MonthAttendanceDto,
     local_attendance: EffectiveMonthAttendance,
 ) -> impl IntoView {
+    let navigate = use_navigate();
+
+    let snackbar = use_snackbar();
     let (meal_history, set_meal_history) = signal(None::<(Uuid, Uuid, NaiveDate)>);
     let (meal_count, set_meal_count) = signal(None::<(Uuid, Uuid, NaiveDate)>);
     //let (meal_count, set_meal_count) = signal(false);
@@ -148,6 +186,20 @@ pub fn InnerCalendar(
 
     let selection_filter = |mode: bool, start: NaiveDate, end: NaiveDate, day: NaiveDate| {
         return false;
+    };
+
+    let download_summary = {
+        Action::new(move |_: &()| async move {
+            if let Ok(summary) = get_monthly_summary(target, year, month).await {
+                save_to_file(&summary).await;
+            } else {
+                snackbar.error("Nie udało się pobrac danych o obecności", "");
+            }
+        })
+    };
+
+    let on_download = move |_| {
+        download_summary.dispatch(());
     };
 
     let end_date = NaiveDate::from_ymd_opt(year, month, 1)
@@ -286,7 +338,7 @@ pub fn InnerCalendar(
                     </button>
                 </div>
                 <div class="flex-1 flex-end horizontal gap">
-                    <button class="icon-button interactive" title="Pobierz obecność">
+                    <button class="icon-button interactive" title="Pobierz obecność" on:click=on_download>
                         <DownloadIcon />
                     </button>
                     <button
