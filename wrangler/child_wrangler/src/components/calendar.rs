@@ -231,7 +231,6 @@ pub fn InnerCalendar(
                     )
                 });
                 let days: Vec<_> = days.collect();
-                log!("Detected: {:?} days", days.len());
                 set_meal_edit(Some(days));
             }
             set_drag_start(None);
@@ -393,7 +392,10 @@ pub fn Day(
     on_count_select: impl Fn(Uuid) + Send + Sync + Copy + 'static,
 ) -> impl IntoView {
     view! {
-        <div class="vertical gap background-3 rounded padded no-select outline-1-hover fast-transition">
+        <div class="vertical gap background-3 rounded padded no-select outline-1-hover fast-transition"
+        on:mousedown=move |_| on_drag()
+        on:mouseup=move |_| on_drop()
+        >
             <h3 class=" h3">{format!("{}", date.format("%e %B"))}</h3>
             {meals
                 .into_iter()
@@ -402,7 +404,7 @@ pub fn Day(
                         <div class="horizontal gap flex-1 horizontal align-center">
                             <div
                                 class="flex-4 interactive padded rounded no-select text-left flex justify-center align-center"
-                                // on:click=move |_| set_meal_history(Some((meal_id, target, day)))
+                                on:click=move |_| on_meal_select(meal_id)
                                 class:green=status == EffectiveAttendance::Present
                                 class:red=status == EffectiveAttendance::Absent
                                 class:yellow=status == EffectiveAttendance::Cancelled
@@ -416,7 +418,7 @@ pub fn Day(
 
                             <button
                                 class="flex-1 padded no-select interactive rounded"
-                                // on:click=move |_| set_meal_count(Some((meal_id, target,day)))
+                                 on:click=move |_| on_count_select(meal_id)
                                 on:mousedown=|e| {
                                     e.stop_propagation();
                                 }

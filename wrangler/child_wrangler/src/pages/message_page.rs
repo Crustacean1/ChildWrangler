@@ -2,22 +2,21 @@ use dto::messages::ContactDto;
 use leptos::{either::Either, prelude::*};
 use leptos_router::components::Outlet;
 
-use crate::services::{messages::get_contacts, student::get_guardians};
+use crate::{
+    components::loader::Loader,
+    services::{messages::get_contacts, student::get_guardians},
+};
 
 #[component]
 pub fn MessagePage() -> impl IntoView {
     let contacts = Resource::new(|| (), |_| async move { get_contacts().await });
     view! {
-        <Suspense>
-            <ErrorBoundary fallback=|_| {
-                view! { <div>Error</div> }
-            }>
+        <Loader>
                 {move || Suspend::new(async move {
                     let contacts = contacts.await?;
                     Ok::<_, ServerFnError>(view! { <InnerMessagePage contacts /> })
                 })}
-            </ErrorBoundary>
-        </Suspense>
+        </Loader>
     }
 }
 
@@ -52,9 +51,9 @@ pub fn InnerMessagePage(contacts: Vec<ContactDto>) -> impl IntoView {
     };
 
     view! {
-        <div class="horizontal flex-1 gap">
+        <div class="horizontal flex-1 gap overflow-hidden">
             <div class="vertical background-2 gap padded w-20 rounded">
-                <div class="scrollable">
+                <div class="overflow-auto">
                     <ul class="flex-1 vertical gap-2">
                         {move || {
                             searched_contacts()

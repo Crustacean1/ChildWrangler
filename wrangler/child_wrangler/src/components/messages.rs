@@ -50,10 +50,9 @@ pub fn Messages(phone: String) -> impl IntoView {
                         ServerFnError,
                     >(
                         view! {
-                            <div class="flex-1 background-2 vertical gap padded rounded">
-                                <div class="">
+                            <div class="flex-1 background-2 vertical gap padded rounded overflow-hidden">
                                     <InnerMessages messages />
-                                </div>
+                            </div>
                                 <div class="horizontal gap">
                                     <input
                                         class="padded rounded flex-1"
@@ -71,7 +70,6 @@ pub fn Messages(phone: String) -> impl IntoView {
                                         Wyślij
                                     </button>
                                 </div>
-                            </div>
                         },
                     )
                 })}
@@ -93,7 +91,7 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
     }
 
     view! {
-        <ul class="flex-1 vertical gap">
+        <div class="overflow-auto flex-1 reverse-vertical gap">
             {if sorted_messages.is_empty() {
                 Either::Left(view! { <li class="padded dashed rounded">Brak wiadomości</li> })
             } else {
@@ -101,13 +99,12 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
             }}
             {sorted_messages
                 .into_iter()
+                            .rev()
                 .map(|(day, messages)| {
                     view! {
-                        <div class="date-break">
-                            <span>{format!("{}", day.format("%d-%m-%Y"))}</span>
-                        </div>
                         {messages
                             .into_iter()
+                            .rev()
                             .map(|message| {
                                 view! {
                                     <div
@@ -131,10 +128,13 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
                                 }
                             })
                             .collect::<Vec<_>>()}
+                        <div class="date-break">
+                            <span>{format!("{}", day.format("%d-%m-%Y"))}</span>
+                        </div>
                     }
                 })
                 .collect::<Vec<_>>()}
-        </ul>
+        </div>
         <Modal
             is_open=move || show_details().is_some()
             on_close=move || {

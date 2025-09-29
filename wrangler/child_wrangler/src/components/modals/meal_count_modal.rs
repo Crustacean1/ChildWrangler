@@ -46,7 +46,7 @@ pub fn MealCountModalInner(
     view! {
         <h2 class="h2">{format!("Obecność  {}", date)}</h2>
         <h3 class="h2">{format!("Posiłek: {}", attendance.meal)}</h3>
-        <div class="grid-2 gap max-height-15">
+        <div class="grid-2 gap">
             {attendance
                 .attendance
                 .into_iter()

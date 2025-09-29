@@ -394,14 +394,12 @@ button.fast-transition {
     position: relative;
     color: gray;
     background-color: var(--black-900);
-    z-index: 1;
     padding: 0.5em;
     user-select: none;
   }
 }
 
 .date-break::before {
-  z-index: 0;
   content: "";
   height: 2px;
   width: 100%;
@@ -419,26 +417,8 @@ button.fast-transition {
   }
 }
 
-.scrollable {
-  >ul {
-    position: absolute;
-    scrollbar-width: none;
-    left: 0;
-    top: 0;
-    overflow: auto;
-    max-height: 100%;
-    width: 100%;
-  }
-
-  position: relative;
-
-  //height: 100%;
-  flex: 1;
-  display: flex;
-  flex-flow: column;
-
-  overflow:hidden;
-
+.overflow-auto {
+  overflow: auto;
 }
 
 .max-h-20 {
@@ -503,6 +483,10 @@ button.fast-transition {
   outline: 1px solid white;
 }
 
-.rounded-3{
+.rounded-3 {
   border-radius: 1em;
+}
+
+.overflow-hidden {
+  overflow: hidden;
 }

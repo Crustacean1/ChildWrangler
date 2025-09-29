@@ -8,12 +8,10 @@ use uuid::Uuid;
 
 use crate::{
     components::{
-        calendar::Calendar,
-        modal::Modal,
-        modals::{
+        calendar::Calendar, loader::Loader, modal::Modal, modals::{
             add_group::AddGroupModal, add_student::AddStudentModal, delete_group::DeleteGroupModal,
             delete_student::DeleteStudentModal, modify_group::ModifyGroupModal,
-        },
+        }
     },
     icons::{add_group::AddGroupIcon, add_user::AddUserIcon, delete::DeleteIcon, edit::EditIcon},
     pages::attendance_page::{AttendanceParams, GroupVersion},
@@ -46,10 +44,7 @@ pub fn InfoPage() -> impl IntoView {
     let info = Resource::new(id, |id| async move { get_details(id).await });
     let trail = Resource::new(id, |id| async move { get_breadcrumbs(id).await });
     view! {
-        <Suspense fallback=|| view! { <div>Loading</div> }>
-            <ErrorBoundary fallback=|_| {
-                view! { <div>Error</div> }
-            }>
+        <Loader>
                 {move || Suspend::new(async move {
                     let info = info.await?;
                     let trail = trail.await?;
@@ -90,8 +85,7 @@ pub fn InfoPage() -> impl IntoView {
                         },
                     )
                 })}
-            </ErrorBoundary>
-        </Suspense>
+        </Loader>
     }
 }
 
