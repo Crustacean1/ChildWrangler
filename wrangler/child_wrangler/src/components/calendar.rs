@@ -42,6 +42,7 @@ use crate::{
 pub fn Calendar() -> impl IntoView {
     let GroupVersion(group_version, set_group_version) = use_context().unwrap();
 
+    let snackbar = use_snackbar();
     let params = use_params::<AttendanceParams>();
     let params = move || params.read();
 
@@ -131,14 +132,20 @@ pub fn Calendar() -> impl IntoView {
 }
 
 async fn save_to_file(summary: &str) {
+    let snackbar = use_snackbar();
+
     let array = Array::new();
     array.push(&JsValue::from_str(summary));
 
+    log!("Stage1");
     if let Ok(blob) = Blob::new_with_str_sequence(&array) {
+        log!("Stage2");
         wasm_bindgen_futures::spawn_local(async move {
-            async move {
+            match async move {
+                log!("Stage3");
                 let promise = web_sys::window().map(|window| window.show_save_file_picker());
                 if let Some(Ok(promise)) = promise {
+                    log!("Stage4");
                     let handle = JsFuture::from(promise)
                         .await
                         .and_then(|handle| handle.dyn_into::<FileSystemFileHandle>())?;
@@ -150,7 +157,11 @@ async fn save_to_file(summary: &str) {
                 }
                 Ok::<_, JsValue>(())
             }
-            .await;
+            .await
+            {
+                Ok(_) => snackbar.success("Zapisano obecność"),
+                Err(e) => snackbar.error("Nie udało się zapisać obecności", ""),
+            }
         });
     }
 }
@@ -170,8 +181,8 @@ pub fn InnerCalendar(
     local_attendance: EffectiveMonthAttendance,
 ) -> impl IntoView {
     let navigate = use_navigate();
-
     let snackbar = use_snackbar();
+
     let (meal_history, set_meal_history) = signal(None::<(Uuid, Uuid, NaiveDate)>);
     let (meal_count, set_meal_count) = signal(None::<(Uuid, Uuid, NaiveDate)>);
     //let (meal_count, set_meal_count) = signal(false);
