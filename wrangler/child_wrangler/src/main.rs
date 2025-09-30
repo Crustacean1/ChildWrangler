@@ -9,6 +9,7 @@ async fn main() {
     use leptos::logging::log;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
+    use axum_server::tls_rustls::RustlsConfig;
     use sqlx::PgPool;
 
     env_logger::init();
@@ -55,12 +56,11 @@ async fn main() {
     // run our app with hyper
     // `axum::Server` is a re-export of `hyper::Server`
     log::info!("listening on http://{}", &addr);
-    let listener = tokio::net::TcpListener::bind(&addr).await.expect(&format!(
-        "Failed to create listener on specified address {:?}",
-        addr
-    ));
 
-    axum::serve(listener, app.into_make_service())
+    log!("Addr: {}", addr);
+    let config = RustlsConfig::from_pem_file("cert.pem", "key.pem").await.expect("Failed to read certificate");
+    axum_server::bind_rustls(addr, config)
+        .serve(app.into_make_service())
         .await
         .unwrap();
 }

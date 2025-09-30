@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-leptos = { version = "0.8.5", features = ["nightly"] }
+leptos = { version = "0.8.5", features = ["nightly", "rustls", "tracing"] }
 leptos_router = { version = "0.8.5", features = ["nightly"] }
 axum = { version = "0.8.4", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
@@ -27,6 +27,7 @@ log = "0.4.28"
 env_logger = "0.11.8"
 csv = {version = "1.3.1", optional = true}
 wasm-bindgen-futures = "0.4.54"
+axum-server = {version = "0.7.2", features = ["tls-rustls", "rustls-pemfile"], optional = true}
 
 [features]
 hydrate = [
@@ -36,6 +37,7 @@ hydrate = [
 ]
 ssr = [
     "dep:axum",
+	"dep:axum-server",
     "dep:tokio",
     "dep:leptos_axum",
     "leptos/ssr",
