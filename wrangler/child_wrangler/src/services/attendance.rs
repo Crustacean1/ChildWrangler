@@ -317,7 +317,7 @@ pub async fn get_monthly_summary(
     .group_id;
 
     let attendance = sqlx::query!(
-        "WITH student_attendance AS (SELECT student_id, COUNT(*) AS student_attendance FROM rooted_attendance 
+        "WITH student_attendance AS (SELECT student_id, SUM(present::int) AS student_attendance FROM rooted_attendance 
     WHERE root = $1 AND day >= $2 AND day < $3
     GROUP BY student_id)
     SELECT groups.name AS group_name, students.name, students.surname, students.id, student_attendance AS attendance FROM student_attendance
