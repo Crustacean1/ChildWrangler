@@ -18,10 +18,11 @@ jobs:
           --load
           --target child_wrangler
           .
-      - run: docker build -t gitea.lan/crustacean/child-wrangler:$(git rev-parse --short HEAD) 
+      - run: docker push -a gitea.lan/crustacean/child-wrangler
+      - run: docker build -t gitea.lan/crustacean/message-daemon:$(git rev-parse --short HEAD) 
           -t gitea.lan/crustacean/message-daemon:latest 
           -f Containerfile.armv7
           --load
           --target message_daemon
           .
-      - run: docker push -a gitea.lan/crustacean/message_daemon
+      - run: docker push -a gitea.lan/crustacean/message-daemon
