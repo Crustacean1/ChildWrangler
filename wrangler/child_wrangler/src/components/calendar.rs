@@ -183,8 +183,12 @@ pub fn InnerCalendar(
     attendance: MonthAttendanceDto,
     local_attendance: EffectiveMonthAttendance,
 ) -> impl IntoView {
-    let navigate = use_navigate();
     let snackbar = use_snackbar();
+
+    let next_month =
+        NaiveDate::from_ymd_opt(year, month, 1).and_then(|d| d.checked_add_months(Months::new(1)));
+    let prev_month =
+        NaiveDate::from_ymd_opt(year, month, 1).and_then(|d| d.checked_sub_months(Months::new(1)));
 
     let (meal_history, set_meal_history) = signal(None::<(Uuid, Uuid, NaiveDate)>);
     let (meal_count, set_meal_count) = signal(None::<(Uuid, Uuid, NaiveDate)>);
@@ -338,18 +342,20 @@ pub fn InnerCalendar(
             <div class="background-2 rounded padded gap horizontal center">
                 <div class="flex-1"></div>
                 <div class="flex-1 horizontal gap align-center space-between">
-                    <A >
-                        <button class="icon-button interactive" title="Poprzedni miesiąc">
+                    <A href="">
+                        <span class="icon-button interactive" title="Poprzedni miesiąc">
                         <LeftArrow />
-            </button>
+            </span>
                     </A>
                     {move || {
                         NaiveDate::from_ymd_opt(year, month, 1)
                             .map(|d| format!("{}", d.format("%Y %B")))
                             .unwrap_or(String::new())
                     }}
-                    <A class="icon-button interactive" title="Następny miesiąc">
+                    <A href=move || next_month.map(|next| format!("/attendance/{}/{}/{}", target, next.year(),next.month())).unwrap_or(format!("/attendance/{}", target))>
+            <span class="icon-button interactive" title="Następny miesiąc">
                         <RightArrow />
+            </span>
                     </A>
                 </div>
                 <div class="flex-1 flex-end horizontal gap">
