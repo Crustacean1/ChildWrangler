@@ -45,46 +45,40 @@ pub fn InfoPage() -> impl IntoView {
     let trail = Resource::new(id, |id| async move { get_breadcrumbs(id).await });
     view! {
         <Loader>
-                {move || Suspend::new(async move {
-                    let info = info.await?;
-                    let trail = trail.await?;
-                    Ok::<
-                        _,
-                        ServerFnError,
-                    >(
-                        match info {
-                            EntityDto::Student(student) => {
-                                Either::Left(
-                                    Either::Left(Either::Left(view! { <Student student trail /> })),
-                                )
-                            }
-                            EntityDto::Group(group) => {
-                                Either::Left(
-                                    Either::Left(
-                                        Either::Right(view! { <NonemptyGroup group trail /> }),
-                                    ),
-                                )
-                            }
-                            EntityDto::StudentGroup(group) => {
-                                Either::Left(
-                                    Either::Right(
-                                        Either::Right(view! { <StudentGroup group trail /> }),
-                                    ),
-                                )
-                            }
-                            EntityDto::LeafGroup(group) => {
-                                Either::Left(
-                                    Either::Right(
-                                        Either::Left(view! { <EmptyGroup group trail /> }),
-                                    ),
-                                )
-                            }
-                            EntityDto::Catering(catering) => {
-                                Either::Right(view! { <Catering catering trail /> })
-                            }
-                        },
-                    )
-                })}
+            {move || Suspend::new(async move {
+                let info = info.await?;
+                let trail = trail.await?;
+                Ok::<
+                    _,
+                    ServerFnError,
+                >(
+                    match info {
+                        EntityDto::Student(student) => {
+                            Either::Left(
+                                Either::Left(Either::Left(view! { <Student student trail /> })),
+                            )
+                        }
+                        EntityDto::Group(group) => {
+                            Either::Left(
+                                Either::Left(Either::Right(view! { <NonemptyGroup group trail /> })),
+                            )
+                        }
+                        EntityDto::StudentGroup(group) => {
+                            Either::Left(
+                                Either::Right(Either::Right(view! { <StudentGroup group trail /> })),
+                            )
+                        }
+                        EntityDto::LeafGroup(group) => {
+                            Either::Left(
+                                Either::Right(Either::Left(view! { <EmptyGroup group trail /> })),
+                            )
+                        }
+                        EntityDto::Catering(catering) => {
+                            Either::Right(view! { <Catering catering trail /> })
+                        }
+                    },
+                )
+            })}
         </Loader>
     }
 }

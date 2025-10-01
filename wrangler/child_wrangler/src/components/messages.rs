@@ -51,25 +51,25 @@ pub fn Messages(phone: String) -> impl IntoView {
                     >(
                         view! {
                             <div class="flex-1 background-2 vertical gap padded rounded overflow-hidden">
-                                    <InnerMessages messages />
+                                <InnerMessages messages />
                             </div>
-                                <div class="horizontal gap">
-                                    <input
-                                        class="padded rounded flex-1"
-                                        autocomplete="off"
-                                        bind:value=(msg, set_msg)
-                                    />
-                                    <button
-                                        class="rounded padded interactive"
-                                        disabled=sending_disabled
-                                        on:click=move |_| {
-                                            send_msg.dispatch(msg());
-                                            set_msg(String::new());
-                                        }
-                                    >
-                                        Wyślij
-                                    </button>
-                                </div>
+                            <div class="horizontal gap">
+                                <input
+                                    class="padded rounded flex-1"
+                                    autocomplete="off"
+                                    bind:value=(msg, set_msg)
+                                />
+                                <button
+                                    class="rounded padded interactive"
+                                    disabled=sending_disabled
+                                    on:click=move |_| {
+                                        send_msg.dispatch(msg());
+                                        set_msg(String::new());
+                                    }
+                                >
+                                    Wyślij
+                                </button>
+                            </div>
                         },
                     )
                 })}
@@ -99,7 +99,7 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
             }}
             {sorted_messages
                 .into_iter()
-                            .rev()
+                .rev()
                 .map(|(day, messages)| {
                     view! {
                         {messages

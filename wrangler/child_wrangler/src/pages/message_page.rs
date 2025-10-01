@@ -12,10 +12,10 @@ pub fn MessagePage() -> impl IntoView {
     let contacts = Resource::new(|| (), |_| async move { get_contacts().await });
     view! {
         <Loader>
-                {move || Suspend::new(async move {
-                    let contacts = contacts.await?;
-                    Ok::<_, ServerFnError>(view! { <InnerMessagePage contacts /> })
-                })}
+            {move || Suspend::new(async move {
+                let contacts = contacts.await?;
+                Ok::<_, ServerFnError>(view! { <InnerMessagePage contacts /> })
+            })}
         </Loader>
     }
 }

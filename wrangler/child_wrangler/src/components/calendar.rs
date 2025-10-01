@@ -344,22 +344,32 @@ pub fn InnerCalendar(
                 <div class="flex-1 horizontal gap align-center space-between">
                     <A href="">
                         <span class="icon-button interactive" title="Poprzedni miesiąc">
-                        <LeftArrow />
-            </span>
+                            <LeftArrow />
+                        </span>
                     </A>
                     {move || {
                         NaiveDate::from_ymd_opt(year, month, 1)
                             .map(|d| format!("{}", d.format("%Y %B")))
                             .unwrap_or(String::new())
                     }}
-                    <A href=move || next_month.map(|next| format!("/attendance/{}/{}/{}", target, next.year(),next.month())).unwrap_or(format!("/attendance/{}", target))>
-            <span class="icon-button interactive" title="Następny miesiąc">
-                        <RightArrow />
-            </span>
+                    <A href=move || {
+                        next_month
+                            .map(|next| {
+                                format!("/attendance/{}/{}/{}", target, next.year(), next.month())
+                            })
+                            .unwrap_or(format!("/attendance/{}", target))
+                    }>
+                        <span class="icon-button interactive" title="Następny miesiąc">
+                            <RightArrow />
+                        </span>
                     </A>
                 </div>
                 <div class="flex-1 flex-end horizontal gap">
-                    <button class="icon-button interactive" title="Pobierz obecność" on:click=on_download>
+                    <button
+                        class="icon-button interactive"
+                        title="Pobierz obecność"
+                        on:click=on_download
+                    >
                         <DownloadIcon />
                     </button>
                     <button
@@ -459,9 +469,10 @@ pub fn Day(
     on_count_select: impl Fn(Uuid) + Send + Sync + Copy + 'static,
 ) -> impl IntoView {
     view! {
-        <div class="vertical gap background-3 rounded padded no-select outline-1-hover fast-transition"
-        on:mousedown=move |_| on_drag()
-        on:mouseup=move |_| on_drop()
+        <div
+            class="vertical gap background-3 rounded padded no-select outline-1-hover fast-transition"
+            on:mousedown=move |_| on_drag()
+            on:mouseup=move |_| on_drop()
         >
             <h3 class=" h3">{format!("{}", date.format("%e %B"))}</h3>
             {meals
@@ -485,7 +496,7 @@ pub fn Day(
 
                             <button
                                 class="flex-1 padded no-select interactive rounded"
-                                 on:click=move |_| on_count_select(meal_id)
+                                on:click=move |_| on_count_select(meal_id)
                                 on:mousedown=|e| {
                                     e.stop_propagation();
                                 }
