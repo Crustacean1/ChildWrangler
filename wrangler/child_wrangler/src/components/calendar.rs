@@ -218,7 +218,9 @@ pub fn InnerCalendar(
     let end_date = NaiveDate::from_ymd_opt(year, month, 1)
         .and_then(|d| d.checked_add_months(Months::new(1)))
         .and_then(|d| {
-            d.checked_add_days(Days::new(7 - d.weekday().num_days_from_monday() as u64))
+            d.checked_add_days(Days::new(
+                (7 - d.weekday().num_days_from_monday()) as u64 % 7,
+            ))
         });
 
     let calendar_days = iter::successors(
@@ -357,11 +359,13 @@ pub fn InnerCalendar(
                             <LeftArrow />
                         </span>
                     </A>
+                    <h3 class="h3" style:width="10em">
                     {move || {
                         NaiveDate::from_ymd_opt(year, month, 1)
                             .map(|d| format!("{}", d.format("%Y %B")))
                             .unwrap_or(String::new())
                     }}
+                    </h3>
                     <A href=change_month(next_month)>
                         <span class="icon-button interactive" title="Następny miesiąc">
                             <RightArrow />

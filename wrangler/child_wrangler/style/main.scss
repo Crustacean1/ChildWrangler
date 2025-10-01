@@ -490,3 +490,22 @@ button.fast-transition {
 .overflow-hidden {
   overflow: hidden;
 }
+
+.rounded-decoration {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+}
+
+.align-start {
+  align-items: flex-start;
+}
+
+.rounded-decoration::before {
+  content: "";
+  width: 1em;
+  height: 1em;
+  background-color: red;
+  display: inline-block;
+  border-radius: 5px;
+}
