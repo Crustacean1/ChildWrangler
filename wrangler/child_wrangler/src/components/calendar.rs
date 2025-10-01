@@ -140,15 +140,11 @@ async fn save_to_file(summary: &str) {
     let array = Array::new();
     array.push(&JsValue::from_str(summary));
 
-    log!("Stage1");
     if let Ok(blob) = Blob::new_with_str_sequence(&array) {
-        log!("Stage2");
         wasm_bindgen_futures::spawn_local(async move {
             match async move {
-                log!("Stage3");
                 let promise = web_sys::window().map(|window| window.show_save_file_picker());
                 if let Some(Ok(promise)) = promise {
-                    log!("Stage4");
                     let handle = JsFuture::from(promise)
                         .await
                         .and_then(|handle| handle.dyn_into::<FileSystemFileHandle>())?;
@@ -163,7 +159,7 @@ async fn save_to_file(summary: &str) {
             .await
             {
                 Ok(_) => snackbar.success("Zapisano obecność"),
-                Err(e) => snackbar.error("Nie udało się zapisać obecności", ""),
+                Err(_) => snackbar.error("Nie udało się zapisać obecności", ""),
             }
         });
     }
@@ -221,7 +217,9 @@ pub fn InnerCalendar(
 
     let end_date = NaiveDate::from_ymd_opt(year, month, 1)
         .and_then(|d| d.checked_add_months(Months::new(1)))
-        .and_then(|d| d.checked_add_days(Days::new(d.weekday().num_days_from_sunday() as u64)));
+        .and_then(|d| {
+            d.checked_add_days(Days::new(7 - d.weekday().num_days_from_monday() as u64))
+        });
 
     let calendar_days = iter::successors(
         NaiveDate::from_ymd_opt(year, month, 1).and_then(|day| {
@@ -229,11 +227,13 @@ pub fn InnerCalendar(
         }),
         |day| {
             end_date.as_ref().and_then(|end_date| {
-                if day <= end_date {
-                    day.checked_add_days(Days::new(1))
-                } else {
-                    None
-                }
+                day.checked_add_days(Days::new(1)).and_then(|d| {
+                    if d >= *end_date {
+                        None
+                    } else {
+                        Some(d)
+                    }
+                })
             })
         },
     );
@@ -308,9 +308,12 @@ pub fn InnerCalendar(
     };
 
     let daily_attendance = calendar_days.map(|day| {
-        if day.month() != month && day >= attendance.start && day <= attendance.end {
+        if day.month() != month {
             CalendarDay::OtherMonth
-        } else if !attendance.days_of_week[day.weekday().num_days_from_monday() as usize] {
+        } else if !attendance.days_of_week[day.weekday().num_days_from_monday() as usize]
+            || day < attendance.start
+            || day > attendance.end
+        {
             CalendarDay::OtherDow(day)
         } else {
             let meals = attendance
@@ -337,12 +340,19 @@ pub fn InnerCalendar(
         }
     });
 
+    let change_month = |date: Option<NaiveDate>| {
+        move || {
+            date.map(|next| format!("/attendance/{}/{}/{}", target, next.year(), next.month()))
+                .unwrap_or(format!("/attendance/{}", target))
+        }
+    };
+
     view! {
         <div class="vertical gap flex-1 flex" on:mouseup=on_drag_end>
             <div class="background-2 rounded padded gap horizontal center">
                 <div class="flex-1"></div>
                 <div class="flex-1 horizontal gap align-center space-between">
-                    <A href="">
+                    <A href=change_month(prev_month)>
                         <span class="icon-button interactive" title="Poprzedni miesiąc">
                             <LeftArrow />
                         </span>
@@ -352,13 +362,7 @@ pub fn InnerCalendar(
                             .map(|d| format!("{}", d.format("%Y %B")))
                             .unwrap_or(String::new())
                     }}
-                    <A href=move || {
-                        next_month
-                            .map(|next| {
-                                format!("/attendance/{}/{}/{}", target, next.year(), next.month())
-                            })
-                            .unwrap_or(format!("/attendance/{}", target))
-                    }>
+                    <A href=change_month(next_month)>
                         <span class="icon-button interactive" title="Następny miesiąc">
                             <RightArrow />
                         </span>
