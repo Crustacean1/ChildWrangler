@@ -12,7 +12,10 @@ use dto::attendance::{
 use leptos::wasm_bindgen::JsCast;
 use leptos::{either::Either, logging::log, prelude::*};
 
-use leptos_router::hooks::{use_navigate, use_params};
+use leptos_router::{
+    components::A,
+    hooks::{use_navigate, use_params},
+};
 use uuid::Uuid;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
@@ -335,17 +338,19 @@ pub fn InnerCalendar(
             <div class="background-2 rounded padded gap horizontal center">
                 <div class="flex-1"></div>
                 <div class="flex-1 horizontal gap align-center space-between">
-                    <button class="icon-button interactive" title="Poprzedni miesiąc">
+                    <A >
+                        <button class="icon-button interactive" title="Poprzedni miesiąc">
                         <LeftArrow />
-                    </button>
+            </button>
+                    </A>
                     {move || {
                         NaiveDate::from_ymd_opt(year, month, 1)
                             .map(|d| format!("{}", d.format("%Y %B")))
                             .unwrap_or(String::new())
                     }}
-                    <button class="icon-button interactive" title="Następny miesiąc">
+                    <A class="icon-button interactive" title="Następny miesiąc">
                         <RightArrow />
-                    </button>
+                    </A>
                 </div>
                 <div class="flex-1 flex-end horizontal gap">
                     <button class="icon-button interactive" title="Pobierz obecność" on:click=on_download>
@@ -375,12 +380,6 @@ pub fn InnerCalendar(
                         }
                     })
                     .collect::<Vec<_>>()}
-                {NaiveDate::from_ymd_opt(year, month, 1)
-                    .map(|day| {
-                        (0..day.weekday().num_days_from_monday())
-                            .map(|_| view! { <div></div> })
-                            .collect::<Vec<_>>()
-                    })}
                 {daily_attendance
                     .into_iter()
                     .map(|day| match day {

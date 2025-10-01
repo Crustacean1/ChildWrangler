@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO caterings (group_id, grace_period, dow, since, until) VALUES ($1,$2,$3,$4,$5) RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Time",
+        "Int2",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f4bb4b4836261fb66571be06ddafb3ca2bc4928a386f03bff6159add63637ef0"
+}

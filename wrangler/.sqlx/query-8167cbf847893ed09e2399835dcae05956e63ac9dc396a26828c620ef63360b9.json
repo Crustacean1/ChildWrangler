@@ -1,0 +1,136 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM sentitems WHERE \"DestinationNumber\" LIKE $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "UpdatedInDB",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 1,
+        "name": "InsertIntoDB",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 2,
+        "name": "SendingDateTime",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 3,
+        "name": "DeliveryDateTime",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 4,
+        "name": "Text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "DestinationNumber",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "Coding",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "UDH",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "SMSCNumber",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "Class",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "TextDecoded",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "ID",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 12,
+        "name": "SenderID",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 13,
+        "name": "SequencePosition",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 14,
+        "name": "Status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 15,
+        "name": "StatusError",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 16,
+        "name": "TPMR",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 17,
+        "name": "RelativeValidity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 18,
+        "name": "CreatorID",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 19,
+        "name": "StatusCode",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8167cbf847893ed09e2399835dcae05956e63ac9dc396a26828c620ef63360b9"
+}

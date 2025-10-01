@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH randomz AS (SELECT \"SenderNumber\" AS phone FROM inbox GROUP BY \"SenderNumber\")\n        SELECT fullname, randomz.phone AS phone, id FROM randomz \n        LEFT JOIN guardians ON randomz.phone = guardians.phone OR randomz.phone = format('+48%s', guardians.phone)\n        WHERE guardians.phone IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "fullname",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "phone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "dde05143a865a093f7680d3a26c8177d6feef4b96a7ae3ead61a30d694cb5e6c"
+}

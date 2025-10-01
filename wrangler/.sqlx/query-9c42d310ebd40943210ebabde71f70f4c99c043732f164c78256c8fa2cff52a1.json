@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS student_count FROM groups \n                    INNER JOIN group_relations AS s_gr ON s_gr.parent = groups.id AND s_gr.level > 0\n                    INNER JOIN students ON students.id = s_gr.child\n                    WHERE students.removed = false\n                    GROUP BY groups.id\n                    HAVING groups.id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "student_count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "9c42d310ebd40943210ebabde71f70f4c99c043732f164c78256c8fa2cff52a1"
+}

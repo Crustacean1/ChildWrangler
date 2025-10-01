@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO attendance (cause_id, target, day, meal_id, value) \nSELECT $2, $1, day, meal_id, true FROM caterings \nINNER JOIN group_relations ON group_relations.parent = caterings.group_id AND group_relations.child = $1\nINNER JOIN generate_series(caterings.since, caterings.until, '1 day') as days(day) ON ((caterings.dow >> (EXTRACT(DOW FROM day)::smallint + 6) % 7 )&1) = 1\nINNER JOIN catering_meals ON catering_meals.catering_id = caterings.id\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a8a243418d8d60231cfd7c7bce55350dff5776b5c0a55f6bb96a35450ad5e367"
+}

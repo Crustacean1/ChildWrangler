@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO group_relations (child,parent,level) VALUES ($1,$1,0)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d467b37c231f0b2252ed2da7b20c9a37a653b9022e3826e6e7a5c9facb0f4d53"
+}
