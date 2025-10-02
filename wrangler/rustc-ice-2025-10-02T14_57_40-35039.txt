@@ -1,0 +1,87 @@
+thread 'rustc' panicked at compiler/rustc_errors/src/lib.rs:385:17:
+assertion `left == right` failed: all spans must be disjoint
+  left: Some([SubstitutionPart { span: child_wrangler/src/pages/attendance_dashboard.rs:59:86: 59:120 (#0), snippet: "" }, SubstitutionPart { span: child_wrangler/src/pages/attendance_dashboard.rs:59:94: 59:94 (#0), snippet: " {" }])
+ right: None
+stack backtrace:
+   0:     0x7f071fdc5c6b - std::backtrace::Backtrace::create::hf2cdf45ef3ed086d
+   1:     0x7f071fdc5bb5 - std::backtrace::Backtrace::force_capture::h2585f39ca8d3d26e
+   2:     0x7f071ede92d2 - std[77a1cc23a66842e]::panicking::update_hook::<alloc[5793c07ce8da0dc1]::boxed::Box<rustc_driver_impl[7957692c824605fa]::install_ice_hook::{closure#1}>>::{closure#0}
+   3:     0x7f071fdc6baf - std::panicking::panic_with_hook::hec79047d0e3763b9
+   4:     0x7f071fdc696a - std::panicking::panic_handler::{{closure}}::h7672db6682236712
+   5:     0x7f071fdc0969 - std::sys::backtrace::__rust_end_short_backtrace::he84b7422acf06859
+   6:     0x7f071fda149d - __rustc[8706850ec95f189]::rust_begin_unwind
+   7:     0x7f071d100890 - core::panicking::panic_fmt::h75813c13ad278d24
+   8:     0x7f071e7dde63 - core::panicking::assert_failed_inner::ha803d6ca8c817517
+   9:     0x7f071ee18bd8 - core[c2c3797b95dbd559]::panicking::assert_failed::<core[c2c3797b95dbd559]::option::Option<&[rustc_errors[2689fc3b0a50564a]::SubstitutionPart; 2usize]>, core[c2c3797b95dbd559]::option::Option<&[rustc_errors[2689fc3b0a50564a]::SubstitutionPart; 2usize]>>
+  10:     0x7f072189c3ef - <core[c2c3797b95dbd559]::iter::adapters::filter_map::FilterMap<core[c2c3797b95dbd559]::iter::adapters::cloned::Cloned<core[c2c3797b95dbd559]::iter::adapters::filter::Filter<core[c2c3797b95dbd559]::slice::iter::Iter<rustc_errors[2689fc3b0a50564a]::Substitution>, <rustc_errors[2689fc3b0a50564a]::CodeSuggestion>::splice_lines::{closure#0}>>, <rustc_errors[2689fc3b0a50564a]::CodeSuggestion>::splice_lines::{closure#1}> as core[c2c3797b95dbd559]::iter::traits::iterator::Iterator>::next
+  11:     0x7f072189d5df - <rustc_errors[2689fc3b0a50564a]::emitter::HumanEmitter>::emit_suggestion_default
+  12:     0x7f0721955bd3 - <rustc_errors[2689fc3b0a50564a]::emitter::HumanEmitter as rustc_errors[2689fc3b0a50564a]::emitter::Emitter>::emit_diagnostic
+  13:     0x7f0721953870 - <rustc_errors[2689fc3b0a50564a]::json::Diagnostic>::from_errors_diagnostic
+  14:     0x7f0721952f6a - <rustc_errors[2689fc3b0a50564a]::json::JsonEmitter as rustc_errors[2689fc3b0a50564a]::emitter::Emitter>::emit_diagnostic
+  15:     0x7f072195d115 - <rustc_errors[2689fc3b0a50564a]::DiagCtxtInner>::emit_diagnostic::{closure#3}
+  16:     0x7f072195aada - rustc_interface[c7890541cfc6381a]::callbacks::track_diagnostic::<core[c2c3797b95dbd559]::option::Option<rustc_span[11d7ca880a9fa786]::ErrorGuaranteed>>
+  17:     0x7f0721959af6 - <rustc_errors[2689fc3b0a50564a]::DiagCtxtInner>::emit_diagnostic
+  18:     0x7f07219599bf - <rustc_errors[2689fc3b0a50564a]::DiagCtxtHandle>::emit_diagnostic
+  19:     0x7f071cca500e - <rustc_span[11d7ca880a9fa786]::ErrorGuaranteed as rustc_errors[2689fc3b0a50564a]::diagnostic::EmissionGuarantee>::emit_producing_guarantee
+  20:     0x7f071f652ce4 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::recover_closure_body
+  21:     0x7f0721607b5a - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_closure
+  22:     0x7f071c5915f0 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::collect_tokens_for_expr::<<rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_dot_or_call::{closure#0}>
+  23:     0x7f0720907c66 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_prefix
+  24:     0x7f0720904725 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_assoc_with
+  25:     0x7f07208e55bf - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_stmt_without_recovery
+  26:     0x7f07208dd674 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_block_common
+  27:     0x7f071c56764f - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::collect_tokens_for_expr::<<rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_dot_or_call::{closure#0}>
+  28:     0x7f0720907c66 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_prefix
+  29:     0x7f0720904725 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_assoc_with
+  30:     0x7f071c566bd2 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::collect_tokens_for_expr::<<rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_dot_or_call::{closure#0}>
+  31:     0x7f0720907c66 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_prefix
+  32:     0x7f0720904725 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_assoc_with
+  33:     0x7f071c55fff2 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::collect_tokens_for_expr::<<rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_dot_or_call::{closure#0}>
+  34:     0x7f0720907c66 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_prefix
+  35:     0x7f0720904725 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_assoc_with
+  36:     0x7f071c566bd2 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::collect_tokens_for_expr::<<rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_dot_or_call::{closure#0}>
+  37:     0x7f0720907c66 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_prefix
+  38:     0x7f0720904725 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_assoc_with
+  39:     0x7f071c55fff2 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::collect_tokens_for_expr::<<rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_dot_or_call::{closure#0}>
+  40:     0x7f0720907c66 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_prefix
+  41:     0x7f0720904725 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_assoc_with
+  42:     0x7f07208fcfd5 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_paren_seq
+  43:     0x7f072089e291 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_dot_or_call_with::{closure#0}
+  44:     0x7f072091eb01 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::collect_tokens::<rustc_ast[81180a110f273de2]::ast::Stmt, <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_stmt_without_recovery::{closure#4}>
+  45:     0x7f07208e51a0 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_stmt_without_recovery
+  46:     0x7f07208dd674 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_block_common
+  47:     0x7f071c56764f - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::collect_tokens_for_expr::<<rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_dot_or_call::{closure#0}>
+  48:     0x7f0720907c66 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_prefix
+  49:     0x7f0720904725 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_assoc_with
+  50:     0x7f07208e55bf - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_stmt_without_recovery
+  51:     0x7f07208dd674 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_block_common
+  52:     0x7f071c56764f - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::collect_tokens_for_expr::<<rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_dot_or_call::{closure#0}>
+  53:     0x7f0720907c66 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_prefix
+  54:     0x7f0720904725 - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_expr_assoc_with
+  55:     0x7f07208e55bf - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_stmt_without_recovery
+  56:     0x7f07208e314a - <rustc_parse[1478dc70fe772fb8]::parser::Parser>::parse_full_stmt
+  57:     0x7f07210e9160 - rustc_expand[21d481f6c18e9657]::expand::parse_ast_fragment
+  58:     0x7f07218eb856 - <rustc_expand[21d481f6c18e9657]::expand::MacroExpander>::fully_expand_fragment
+  59:     0x7f07218b1bbf - <rustc_expand[21d481f6c18e9657]::expand::MacroExpander>::expand_crate
+  60:     0x7f0720991c88 - rustc_interface[c7890541cfc6381a]::passes::configure_and_expand
+  61:     0x7f07216b0617 - rustc_interface[c7890541cfc6381a]::passes::resolver_for_lowering_raw
+  62:     0x7f07216b035b - rustc_query_impl[1d2a032d7facfae6]::plumbing::__rust_begin_short_backtrace::<rustc_query_impl[1d2a032d7facfae6]::query_impl::resolver_for_lowering_raw::dynamic_query::{closure#2}::{closure#0}, rustc_middle[67f164c72bed5e4b]::query::erase::Erased<[u8; 16usize]>>
+  63:     0x7f07216b0349 - <rustc_query_impl[1d2a032d7facfae6]::query_impl::resolver_for_lowering_raw::dynamic_query::{closure#2} as core[c2c3797b95dbd559]::ops::function::FnOnce<(rustc_middle[67f164c72bed5e4b]::ty::context::TyCtxt, ())>>::call_once
+  64:     0x7f07216b4ef7 - rustc_query_system[c9b8387c578cd4a]::query::plumbing::try_execute_query::<rustc_query_impl[1d2a032d7facfae6]::DynamicConfig<rustc_query_system[c9b8387c578cd4a]::query::caches::SingleCache<rustc_middle[67f164c72bed5e4b]::query::erase::Erased<[u8; 16usize]>>, false, false, false>, rustc_query_impl[1d2a032d7facfae6]::plumbing::QueryCtxt, true>
+  65:     0x7f07216b48cf - rustc_query_impl[1d2a032d7facfae6]::query_impl::resolver_for_lowering_raw::get_query_incr::__rust_end_short_backtrace
+  66:     0x7f07216576fa - rustc_interface[c7890541cfc6381a]::passes::create_and_enter_global_ctxt::<core[c2c3797b95dbd559]::option::Option<rustc_interface[c7890541cfc6381a]::queries::Linker>, rustc_driver_impl[7957692c824605fa]::run_compiler::{closure#0}::{closure#2}>::{closure#2}::{closure#0}
+  67:     0x7f072164957e - rustc_interface[c7890541cfc6381a]::interface::run_compiler::<(), rustc_driver_impl[7957692c824605fa]::run_compiler::{closure#0}>::{closure#1}
+  68:     0x7f0721583178 - std[77a1cc23a66842e]::sys::backtrace::__rust_begin_short_backtrace::<rustc_interface[c7890541cfc6381a]::util::run_in_thread_with_globals<rustc_interface[c7890541cfc6381a]::util::run_in_thread_pool_with_globals<rustc_interface[c7890541cfc6381a]::interface::run_compiler<(), rustc_driver_impl[7957692c824605fa]::run_compiler::{closure#0}>::{closure#1}, ()>::{closure#0}, ()>::{closure#0}::{closure#0}, ()>
+  69:     0x7f0721582e5c - <<std[77a1cc23a66842e]::thread::Builder>::spawn_unchecked_<rustc_interface[c7890541cfc6381a]::util::run_in_thread_with_globals<rustc_interface[c7890541cfc6381a]::util::run_in_thread_pool_with_globals<rustc_interface[c7890541cfc6381a]::interface::run_compiler<(), rustc_driver_impl[7957692c824605fa]::run_compiler::{closure#0}>::{closure#1}, ()>::{closure#0}, ()>::{closure#0}::{closure#0}, ()>::{closure#1} as core[c2c3797b95dbd559]::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  70:     0x7f0721588d8d - std::sys::thread::unix::Thread::new::thread_start::hbd3b04c5291ca212
+  71:     0x7f071ae969cb - <unknown>
+  72:     0x7f071af1aa0c - <unknown>
+  73:                0x0 - <unknown>
+
+
+rustc version: 1.92.0-nightly (9f32ccf35 2025-09-21)
+platform: x86_64-unknown-linux-gnu
+
+query stack during panic:
+#0 [resolver_for_lowering_raw] getting the resolver for lowering
+end of query stack

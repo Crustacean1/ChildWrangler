@@ -501,11 +501,26 @@ button.fast-transition {
   align-items: flex-start;
 }
 
+
 .rounded-decoration::before {
   content: "";
   width: 1em;
   height: 1em;
-  background-color: red;
+  background-color: var(--background-color);
   display: inline-block;
   border-radius: 5px;
+}
+
+.pretty-background {
+  backdrop-filter: blur(5px);
+  box-shadow: 0px 0px 5px white;
+}
+
+.anchor-start {
+  anchor-name: --tooltip-anchor;
+}
+
+.anchor-end {
+  position-anchor: --tooltip-anchor;
+  position: absolute;
 }
