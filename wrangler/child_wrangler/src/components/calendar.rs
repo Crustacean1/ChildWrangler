@@ -360,11 +360,11 @@ pub fn InnerCalendar(
                         </span>
                     </A>
                     <h3 class="h3" style:width="10em">
-                    {move || {
-                        NaiveDate::from_ymd_opt(year, month, 1)
-                            .map(|d| format!("{}", d.format("%Y %B")))
-                            .unwrap_or(String::new())
-                    }}
+                        {move || {
+                            NaiveDate::from_ymd_opt(year, month, 1)
+                                .map(|d| format!("{}", d.format("%Y %B")))
+                                .unwrap_or(String::new())
+                        }}
                     </h3>
                     <A href=change_month(next_month)>
                         <span class="icon-button interactive" title="Następny miesiąc">
