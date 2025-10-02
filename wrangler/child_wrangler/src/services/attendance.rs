@@ -354,18 +354,19 @@ pub async fn get_attendance_overview(
     use sqlx::postgres::PgPool;
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
-    let students = sqlx::query!("SELECT SUM(value::int) AS cnt,meal_id,  (attendance_override.id IS NOT NULL) AS is_override, (processing_id IS NOT NULL) AS is_cancellation  FROM total_attendance
+    let students = sqlx::query!("SELECT COUNT(*) AS cnt,meal_id,  (attendance_override.id IS NOT NULL) AS is_override, (processing_id IS NOT NULL) AS is_cancellation  FROM total_attendance
     LEFT JOIN attendance_override ON attendance_override.id = total_attendance.cause_id
     LEFT JOIN processing_trigger ON processing_trigger.processing_id = total_attendance.cause_id
     WHERE total_attendance.day = $1 
     GROUP BY meal_id, is_override, is_cancellation
 ",  date)
-    .fetch_optional(&pool)
+    .fetch_all(&pool)
     .await?;
 
     let mut attendance = HashMap::new();
 
     for student in students {
+        log!("Student: {:?}", student);
         if student.is_override.unwrap_or(false) {
             attendance
                 .entry(student.meal_id.unwrap())

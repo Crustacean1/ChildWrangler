@@ -276,37 +276,35 @@ pub fn InnerCalendar(
     };
 
     let dow1 = attendance.days_of_week.clone();
-    let on_drag_end = {
-        move |_| {
-            if let (Some(r_start), Some(r_end)) = (drag_start(), drag_end()) {
-                let start = min(r_start, r_end);
-                let end = max(r_start, r_end);
-                let mode = selection_mode();
+    let on_drag_end = move || {
+        if let (Some(r_start), Some(r_end)) = (drag_start(), drag_end()) {
+            let start = min(r_start, r_end);
+            let end = max(r_start, r_end);
+            let mode = selection_mode();
 
-                let days = iter::successors(NaiveDate::from_ymd_opt(year, month, 1), |day| {
-                    if day.month() == month {
-                        day.checked_add_days(Days::new(1))
-                    } else {
-                        None
-                    }
-                })
-                .filter(|d| {
-                    is_active(
-                        mode,
-                        start,
-                        end,
-                        *d,
-                        &dow1,
-                        &attendance.start,
-                        &attendance.end,
-                    )
-                });
-                let days: Vec<_> = days.collect();
-                set_meal_edit(Some(days));
-            }
-            set_drag_start(None);
-            set_drag_end(None);
+            let days = iter::successors(NaiveDate::from_ymd_opt(year, month, 1), |day| {
+                if day.month() == month {
+                    day.checked_add_days(Days::new(1))
+                } else {
+                    None
+                }
+            })
+            .filter(|d| {
+                is_active(
+                    mode,
+                    start,
+                    end,
+                    *d,
+                    &dow1,
+                    &attendance.start,
+                    &attendance.end,
+                )
+            });
+            let days: Vec<_> = days.collect();
+            set_meal_edit(Some(days));
         }
+        set_drag_start(None);
+        set_drag_end(None);
     };
 
     let daily_attendance = calendar_days.map(|day| {
@@ -348,9 +346,10 @@ pub fn InnerCalendar(
                 .unwrap_or(format!("/attendance/{}", target))
         }
     };
+    let meals2 = attendance.meals.clone();
 
     view! {
-        <div class="vertical gap flex-1 flex" on:mouseup=on_drag_end>
+        <div class="vertical gap flex-1 flex" on:mouseup=move |_| on_drag_end()>
             <div class="background-2 rounded padded gap horizontal center">
                 <div class="flex-1"></div>
                 <div class="flex-1 horizontal gap align-center space-between">
@@ -439,8 +438,9 @@ pub fn InnerCalendar(
                                         on_count_select=move |meal_id| {
                                             set_meal_count(Some((meal_id, target, date)))
                                         }
-                                        on_drag=|| {}
-                                        on_drop=|| {}
+                                        on_drag=move || {set_drag_start(Some(date))}
+                                        on_hover=move || {set_drag_end(Some(date))}
+                                        on_drop=on_drag_end.clone()
                                     />
                                 },
                             )
@@ -464,6 +464,9 @@ pub fn InnerCalendar(
                     .map(|(meal_id, target, date)| view! { <MealCountModal meal_id target date /> })
             }}
         </Modal>
+        <Modal is_open = move || meal_edit().is_some() on_close= move || set_meal_edit(None)>
+        {let meals = attendance.meals.clone();move || {meal_edit().map({let meals = meals.clone();move |days| view!{<MealEditModal target days meals on_close=move |_| set_meal_edit(None)/>}})}}
+        </Modal>
     }
 }
 
@@ -472,7 +475,8 @@ pub fn Day(
     date: NaiveDate,
     meals: Vec<(Uuid, String, u32, EffectiveAttendance)>,
     on_drag: impl Fn() + Send + Sync + Copy + 'static,
-    on_drop: impl Fn() + Send + Sync + Copy + 'static,
+    on_hover: impl Fn() + Send + Sync + Copy + 'static,
+    on_drop: impl Fn() + Send + Sync + Clone + 'static,
     on_meal_select: impl Fn(Uuid) + Send + Sync + Copy + 'static,
     on_count_select: impl Fn(Uuid) + Send + Sync + Copy + 'static,
 ) -> impl IntoView {
@@ -481,6 +485,7 @@ pub fn Day(
             class="vertical gap background-3 rounded padded no-select outline-1-hover fast-transition"
             on:mousedown=move |_| on_drag()
             on:mouseup=move |_| on_drop()
+            on:mouseover=move |_| on_hover()
         >
             <h3 class=" h3">{format!("{}", date.format("%e %B"))}</h3>
             {meals

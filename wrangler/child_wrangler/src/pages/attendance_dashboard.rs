@@ -88,7 +88,7 @@ pub fn Chart(padding: i32, series: Vec<(String, i32)>) -> impl IntoView {
                     dominant-baseline="middle"
                     font-size="2em"
                 >
-                    123
+                {format!("{}", total)}
                 </text>
             </svg>
             <div
