@@ -58,86 +58,83 @@ pub fn Chart(padding: i32, series: Vec<(AttendanceOverviewType, i32)>) -> impl I
     view! {
         <div class="horizontal gap align-center flex-1">
             <div class="relative">
-            <svg width="200" height="200" viewBox="-100 -100 200 200">
-                <defs>
-                    <filter id="gaussian-1">
-                        <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="gauss" />
-                        <feMerge>
-                            <feMergeNode in="gauss" />
-                            <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                    </filter>
-                </defs>
-                <g filter="url(#gaussian-1)" class="anchor-start">
-                    {[0.0]
-                        .iter()
-                        .chain(sizes.iter())
-                        .zip(sizes.iter())
-                        .enumerate()
-                        .map(|(i, (start, end))| {
-                            let start = start + i as f32 * scalar;
-                            let end = end + i as f32 * scalar;
-                            let path = format!(
-                                "M {} {} A {} {} 0 {} 1 {} {}",
-                                (start).cos() * radius,
-                                (start).sin() * radius,
-                                radius,
-                                radius,
-                                (end - start > PI) as i32,
-                                (end).cos() * radius,
-                                (end).sin() * radius,
-                            );
-                            view! {
-                                <path
-                                    d=path
-                                    stroke=colour(&series[i].0)
-                                    stroke-width="12"
-                                    fill="none"
-                                    stroke-linecap="round"
-                                    on:mousemove=move |e| {
-                                        if let Ok(e) = e.dyn_into::<MouseEvent>(){
-
-                                             set_position(
-                                                Some((i, e.layer_x(), e.layer_y())),
-                                            );
-                        }
-                                    }
-                                    on:mouseout=move |_| set_position(None)
-                                />
-                            }
-                        })
-                        .collect::<Vec<_>>()}
-                </g>
-                <text
-                    x="0"
-                    y="0"
-                    text-anchor="middle"
-                    fill="white"
-                    dominant-baseline="middle"
-                    font-size="2em"
+                <svg width="200" height="200" viewBox="-100 -100 200 200">
+                    <defs>
+                        <filter id="gaussian-1">
+                            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="gauss" />
+                            <feMerge>
+                                <feMergeNode in="gauss" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    <g filter="url(#gaussian-1)" class="anchor-start">
+                        {[0.0]
+                            .iter()
+                            .chain(sizes.iter())
+                            .zip(sizes.iter())
+                            .enumerate()
+                            .map(|(i, (start, end))| {
+                                let start = start + i as f32 * scalar;
+                                let end = end + i as f32 * scalar;
+                                let path = format!(
+                                    "M {} {} A {} {} 0 {} 1 {} {}",
+                                    (start).cos() * radius,
+                                    (start).sin() * radius,
+                                    radius,
+                                    radius,
+                                    (end - start > PI) as i32,
+                                    (end).cos() * radius,
+                                    (end).sin() * radius,
+                                );
+                                view! {
+                                    <path
+                                        d=path
+                                        stroke=colour(&series[i].0)
+                                        stroke-width="12"
+                                        fill="none"
+                                        stroke-linecap="round"
+                                        on:mousemove=move |e| {
+                                            if let Ok(e) = e.dyn_into::<MouseEvent>() {
+                                                set_position(Some((i, e.layer_x(), e.layer_y())));
+                                            }
+                                        }
+                                        on:mouseout=move |_| set_position(None)
+                                    />
+                                }
+                            })
+                            .collect::<Vec<_>>()}
+                    </g>
+                    <text
+                        x="0"
+                        y="0"
+                        text-anchor="middle"
+                        fill="white"
+                        dominant-baseline="middle"
+                        font-size="2em"
+                    >
+                        {format!("{}", attendance_sum)}
+                    </text>
+                </svg>
+                <div
+                    class="pretty-background rounded padded anchor-end"
+                    style:position="absolute"
+                    style:visibility=move || {
+                        position().map_or(String::from("hidden"), |_| String::new())
+                    }
+                    style:left=move || {
+                        position().map(|(_, x, _)| format!("{}px", x + radius as i32 + 32))
+                    }
+                    style:top=move || {
+                        position().map(|(_, _, y)| format!("{}px", y + radius as i32 - 16))
+                    }
                 >
-                {format!("{}", attendance_sum)}
-                </text>
-            </svg>
-            <div
-                class="pretty-background rounded padded anchor-end"
-                style:position="absolute"
-                style:visibility=move || {
-                    position().map_or(String::from("hidden"), |_| String::new())
-                }
-                style:left=move || {
-                    position().map(|(_, x, _)| format!("{}px", x + radius as i32 + 32))
-                }
-                style:top=move || {
-                    position().map(|(_, _, y)| format!("{}px", y + radius as i32 - 16))
-                }
-            >
-                {
-                    let series = series.clone();
-                    move || position().map(|(i, _, _)| title(&series[i].0))
-                }
+                    {
+                        let series = series.clone();
+                        move || position().map(|(i, _, _)| title(&series[i].0))
+                    }
+                </div>
             </div>
-    </div>
             <div class="grid-2 gap align-start justify-center">
                 {series
                     .iter()
@@ -180,20 +177,38 @@ pub fn AttendanceDashboard() -> impl IntoView {
     view! {
         <Loader>
 
-        {move || Suspend::new(async move {
-            let caterings =  caterings.await?;
-            let attendance =  overview.await?;
-        Ok::<_,ServerFnError>(view!{
-            <div class="horizontal padded rounded background-2 overflow-hidden" >
-            <Dropdown name="Cateringi" options=move || caterings.clone() key=|c| c.id filter=|a,b| true on_select item_view=|catering| view!{<div class="center align-center justify-center vertical">{catering.name}</div>}/>
-                <h2 class="h2 flex-1">{format!("{}", Utc::now().date_naive())}</h2>
-                <div class="flex-1"></div>
-            </div>
-            <div class="flex-1 column-grid-3">
-                    <AttendanceDashboardInner attendance/>
-            </div>
-        })
-        })}
+            {move || Suspend::new(async move {
+                let caterings = caterings.await?;
+                let attendance = overview.await?;
+                Ok::<
+                    _,
+                    ServerFnError,
+                >(
+                    view! {
+                        <div class="horizontal padded rounded ">
+                            <Dropdown
+                                name="Cateringi"
+                                options=move || caterings.clone()
+                                key=|c| c.id
+                                filter=|a, b| true
+                                on_select
+                                item_view=|catering| {
+                                    view! {
+                                        <div class="center align-center justify-center vertical">
+                                            {catering.name}
+                                        </div>
+                                    }
+                                }
+                            />
+                            <h2 class="h2 flex-1">{format!("{}", Utc::now().date_naive())}</h2>
+                            <div class="flex-1"></div>
+                        </div>
+                        <div class="flex-1 column-grid-3">
+                            <AttendanceDashboardInner attendance />
+                        </div>
+                    },
+                )
+            })}
 
         </Loader>
     }
@@ -209,42 +224,51 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
         )
     });
 
+    let attendance_map = |present: bool| view! {<span class:red={!present} class:green={present}>{if present {String::from("tak")} else{String::from("nie")}}</span>};
+
     meals
         .map(|(meal_name, student_list, att)| {
             view! {
-            <div class="padded vertical rounded background-2 gap overflow-hidden">
-                    <h2 class="h2">{format!("{}",meal_name)}</h2>
-                        <div class="horizontal gap flex-1" >
+                <div class="padded vertical rounded background-2 gap overflow-hidden">
+                    <h2 class="h2">{format!("{}", meal_name)}</h2>
+                    <div class="horizontal gap flex-1 overflow-hidden">
                         <Chart
                             padding=12
-                            series=
-                                {att.iter().map(|(status, count)|
-                        (status.clone(), *count as i32)).collect::<Vec<_>>()}
-
+                            series={att.iter()
+                                .map(|(status, count)| (status.clone(), *count as i32))
+                                .collect::<Vec<_>>()}
                         />
-                    <div class="table-wrapper flex-1 horizontal overflow-hidden">
-                        <table class="background-3 rounded flex-1 rounded">
-                            <thead>
-                                <tr>
-                                    <th>Imię</th>
-                                    <th>Nazwisko</th>
-                                    <th>Grupa</th>
-                                    <th>Obecny</th>
-                                </tr>
-                            </thead>
-                            <tbody class="background-1">
-                            {student_list.iter().map(|(id,name,surname,present)| view!{<tr>
-                                <td class="padded">{format!("{}", name)}</td>
-                                <td class="padded">{format!("{}", surname)}</td>
-                                <td class="padded">N/A</td>
-                                <td class="padded">{format!("{}", present)}</td>
-                                </tr>}).collect::<Vec<_>>()}
-                            </tbody>
-                        </table>
+
+                        <div class="table-wrapper flex-1 horizontal overflow-hidden">
+                            <table class="background-3 rounded flex-1 rounded">
+                                <thead>
+                                    <tr>
+                                        <th class="padded">Imię</th>
+                                        <th class="padded">Nazwisko</th>
+                                        <th class="padded">Grupa</th>
+                                        <th class="padded">Obecny</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="background-1">
+                                    {student_list
+                                        .iter()
+                                        .map(|(id, name, surname, present)| {
+                                            view! {
+                                                <tr>
+                                                    <td class="padded">{format!("{}", name)}</td>
+                                                    <td class="padded">{format!("{}", surname)}</td>
+                                                    <td class="padded">N/A</td>
+                                                    <td class="padded">{attendance_map(*present)}</td>
+                                                </tr>
+                                            }
+                                        })
+                                        .collect::<Vec<_>>()}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                            </div>
-            </div>
-                    }
+                </div>
+            }
         })
         .collect::<Vec<_>>()
 }

@@ -536,6 +536,13 @@ button.fast-transition {
 
 table {
   border-collapse: collapse;
+  text-align: left;
+}
+
+th {
+  position: sticky;
+  background-color: var(--black-800);
+  top: 0;
 }
 
 .table-wrapper {

@@ -361,6 +361,7 @@ pub async fn get_attendance_overview(
     INNER JOIN total_attendance ON total_attendance.student_id = students.id AND total_attendance.day = $2
     WHERE caterings.id = $1
     GROUP BY students.id, meal_id
+    ORDER BY students.surname
 ", catering_id, date).fetch_all(&pool).await?;
 
     let students = sqlx::query!("SELECT COUNT(*) AS cnt,meal_id,  (attendance_override.id IS NOT NULL) AS is_override, (processing_id IS NOT NULL) AS is_cancellation  FROM total_attendance

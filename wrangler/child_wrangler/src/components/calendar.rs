@@ -438,8 +438,8 @@ pub fn InnerCalendar(
                                         on_count_select=move |meal_id| {
                                             set_meal_count(Some((meal_id, target, date)))
                                         }
-                                        on_drag=move || {set_drag_start(Some(date))}
-                                        on_hover=move || {set_drag_end(Some(date))}
+                                        on_drag=move || { set_drag_start(Some(date)) }
+                                        on_hover=move || { set_drag_end(Some(date)) }
                                         on_drop=on_drag_end.clone()
                                     />
                                 },
@@ -464,8 +464,26 @@ pub fn InnerCalendar(
                     .map(|(meal_id, target, date)| view! { <MealCountModal meal_id target date /> })
             }}
         </Modal>
-        <Modal is_open = move || meal_edit().is_some() on_close= move || set_meal_edit(None)>
-        {let meals = attendance.meals.clone();move || {meal_edit().map({let meals = meals.clone();move |days| view!{<MealEditModal target days meals on_close=move |_| set_meal_edit(None)/>}})}}
+        <Modal is_open=move || meal_edit().is_some() on_close=move || set_meal_edit(None)>
+            {
+                let meals = attendance.meals.clone();
+                move || {
+                    meal_edit()
+                        .map({
+                            let meals = meals.clone();
+                            move |days| {
+                                view! {
+                                    <MealEditModal
+                                        target
+                                        days
+                                        meals
+                                        on_close=move |_| set_meal_edit(None)
+                                    />
+                                }
+                            }
+                        })
+                }
+            }
         </Modal>
     }
 }

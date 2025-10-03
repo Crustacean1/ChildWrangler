@@ -118,8 +118,8 @@ where
                         e.prevent_default();
                         e.stop_propagation();
                         set_active(false);
-                        if let Some(value) = on_select(Err(input_value())){
-                        set_input_value(String::new());
+                        if let Some(value) = on_select(Err(input_value())) {
+                            set_input_value(String::new());
                         }
                     }
                 }
@@ -157,7 +157,7 @@ where
                                     move |e| {
                                         e.prevent_default();
                                         e.stop_propagation();
-                                        if let Some(value) = on_select(Ok(item())){
+                                        if let Some(value) = on_select(Ok(item())) {
                                             set_input_value(value);
                                         }
                                         if let Some(doc) = window().document() {
@@ -172,7 +172,7 @@ where
                                         input_ref.get().map(|input| input.focus());
                                     }
                                     if e.key_code() == 13 {
-                                        if let Some(value) = on_select(Ok(item())){
+                                        if let Some(value) = on_select(Ok(item())) {
                                             set_input_value(value);
                                         }
                                         set_active(false);

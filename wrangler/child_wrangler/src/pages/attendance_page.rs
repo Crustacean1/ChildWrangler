@@ -22,7 +22,7 @@ pub fn AttendancePage() -> impl IntoView {
     let (catering_modal, set_catering_modal) = signal(false);
 
     view! {
-        <div class="horizontal flex-1 gap overflow-hidden" >
+        <div class="horizontal flex-1 gap overflow-hidden">
             <div class="background-2 rounded padded vertical gap" style:min-width="20em">
                 <InnerTree />
                 <button
