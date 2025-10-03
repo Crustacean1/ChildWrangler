@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*) AS cnt,meal_id,  (attendance_override.id IS NOT NULL) AS is_override, (processing_id IS NOT NULL) AS is_cancellation  FROM total_attendance\n    LEFT JOIN attendance_override ON attendance_override.id = total_attendance.cause_id\n    LEFT JOIN processing_trigger ON processing_trigger.processing_id = total_attendance.cause_id\n    WHERE total_attendance.day = $1 \n    GROUP BY meal_id, is_override, is_cancellation\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "cnt",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "meal_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "is_override",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 3,
+        "name": "is_cancellation",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": [
+      null,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "f4a499126671a62548b34bbbe222ab66df7cf84d5de740efd53f886fcd1b15c2"
+}

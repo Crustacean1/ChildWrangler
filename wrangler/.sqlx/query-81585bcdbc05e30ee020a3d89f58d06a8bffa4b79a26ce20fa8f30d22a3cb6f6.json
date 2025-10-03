@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT students.name, students.surname, students.id, SUM(value::int) AS present, meal_id FROM group_relations\n    INNER JOIN students ON students.id = group_relations.child\n    INNER JOIN caterings ON caterings.group_id = group_relations.parent\n    INNER JOIN total_attendance ON total_attendance.student_id = students.id AND total_attendance.day = $2\n    WHERE caterings.id = $1\n    GROUP BY students.id, meal_id\n    ORDER BY students.surname\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "surname",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "present",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "meal_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      true
+    ]
+  },
+  "hash": "81585bcdbc05e30ee020a3d89f58d06a8bffa4b79a26ce20fa8f30d22a3cb6f6"
+}
