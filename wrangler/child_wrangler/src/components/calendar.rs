@@ -12,10 +12,7 @@ use dto::attendance::{
 use leptos::wasm_bindgen::JsCast;
 use leptos::{either::Either, logging::log, prelude::*};
 
-use leptos_router::{
-    components::A,
-    hooks::{use_navigate, use_params},
-};
+use leptos_router::{components::A, hooks::use_params};
 use uuid::Uuid;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
@@ -45,7 +42,6 @@ use crate::{
 pub fn Calendar() -> impl IntoView {
     let GroupVersion(group_version, set_group_version) = use_context().unwrap();
 
-    let snackbar = use_snackbar();
     let params = use_params::<AttendanceParams>();
     let params = move || params.read();
 
@@ -405,11 +401,18 @@ pub fn InnerCalendar(
                     .collect::<Vec<_>>()}
                 {daily_attendance
                     .into_iter()
-                    .map(|day| match day {
+                    .map(|day|
+                    view!{
+                        <div class="vertical gap background-3 rounded padded no-select outline-1-hover fast-transition"
+            on:mousedown=move |_| set_drag_start(None)
+            on:mouseup=move |_| set_drag_end(None)
+            on:mouseover=move |_| set_drag_end(None)>
+                        {
+                    match day {
                         CalendarDay::OtherMonth => {
                             Either::Left(
                                 Either::Left(
-                                    view! { <div class="rounded background-2 outline-gray"></div> },
+                                    view! {},
                                 ),
                             )
                         }
@@ -417,11 +420,9 @@ pub fn InnerCalendar(
                             Either::Left(
                                 Either::Right(
                                     view! {
-                                        <div class="padded rounded background-2 outline-gray ">
                                             <h3 class="h3 gray">
                                                 {format!("{}", date.format("%d %B"))}
                                             </h3>
-                                        </div>
                                     },
                                 ),
                             )
@@ -438,13 +439,14 @@ pub fn InnerCalendar(
                                         on_count_select=move |meal_id| {
                                             set_meal_count(Some((meal_id, target, date)))
                                         }
-                                        on_drag=move || { set_drag_start(Some(date)) }
-                                        on_hover=move || { set_drag_end(Some(date)) }
-                                        on_drop=on_drag_end.clone()
                                     />
                                 },
                             )
                         }
+                        }
+                    }
+                        </div>
+
                     })
                     .collect::<Vec<_>>()}
             </div>
@@ -492,19 +494,10 @@ pub fn InnerCalendar(
 pub fn Day(
     date: NaiveDate,
     meals: Vec<(Uuid, String, u32, EffectiveAttendance)>,
-    on_drag: impl Fn() + Send + Sync + Copy + 'static,
-    on_hover: impl Fn() + Send + Sync + Copy + 'static,
-    on_drop: impl Fn() + Send + Sync + Clone + 'static,
     on_meal_select: impl Fn(Uuid) + Send + Sync + Copy + 'static,
     on_count_select: impl Fn(Uuid) + Send + Sync + Copy + 'static,
 ) -> impl IntoView {
     view! {
-        <div
-            class="vertical gap background-3 rounded padded no-select outline-1-hover fast-transition"
-            on:mousedown=move |_| on_drag()
-            on:mouseup=move |_| on_drop()
-            on:mouseover=move |_| on_hover()
-        >
             <h3 class=" h3">{format!("{}", date.format("%e %B"))}</h3>
             {meals
                 .into_iter()
@@ -538,6 +531,5 @@ pub fn Day(
                     }
                 })
                 .collect::<Vec<_>>()}
-        </div>
     }
 }

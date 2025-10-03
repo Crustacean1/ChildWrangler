@@ -194,7 +194,7 @@ pub fn AttendanceDashboard() -> impl IntoView {
                                 on_select
                                 item_view=|catering| {
                                     view! {
-                                        <div class="center align-center justify-center vertical">
+                                        <div class="horizontal padded align-center">
                                             {catering.name}
                                         </div>
                                     }
@@ -239,7 +239,7 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
                                 .collect::<Vec<_>>()}
                         />
 
-                        <div class="table-wrapper flex-1 horizontal overflow-hidden">
+                        <div class="table-wrapper flex-1 horizontal overflow-hidden rounded">
                             <table class="background-3 rounded flex-1 rounded">
                                 <thead>
                                     <tr>
