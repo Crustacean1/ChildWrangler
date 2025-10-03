@@ -3,7 +3,6 @@ use std::f32::consts::PI;
 use chrono::Utc;
 use dto::attendance::{AttendanceOverviewDto, AttendanceOverviewType};
 use dto::catering::CateringDto;
-use leptos::logging::log;
 use leptos::prelude::*;
 use uuid::Uuid;
 use web_sys::wasm_bindgen::JsCast;
@@ -11,7 +10,6 @@ use web_sys::MouseEvent;
 
 use crate::components::dropdown::Dropdown;
 use crate::components::loader::Loader;
-use crate::pages::attendance_page::AttendanceParams;
 use crate::services::attendance::get_attendance_overview;
 use crate::services::catering::get_caterings;
 
@@ -30,9 +28,32 @@ pub fn Chart(padding: i32, series: Vec<(AttendanceOverviewType, i32)>) -> impl I
         .collect::<Vec<_>>();
 
     let radius = 80.0;
-    let colors = vec!["#ff0000", "#00ff00", "yellow", "#ffff00"];
 
     let (position, set_position) = signal(None::<(usize, i32, i32)>);
+
+    let colour = |att_type: &AttendanceOverviewType| match att_type {
+        AttendanceOverviewType::Present => "green",
+        AttendanceOverviewType::Cancelled => "yellow",
+        AttendanceOverviewType::Disabled => "red",
+        AttendanceOverviewType::Allergic(items) => "blue",
+    };
+
+    let title = |att_type: &AttendanceOverviewType| match att_type {
+        AttendanceOverviewType::Present => "Obecni",
+        AttendanceOverviewType::Cancelled => "Odmówieni",
+        AttendanceOverviewType::Disabled => "Nadpisani",
+        AttendanceOverviewType::Allergic(items) => "Alergicy",
+    };
+
+    let attendance_sum = series
+        .iter()
+        .filter_map(|(kind, cnt)| match kind {
+            AttendanceOverviewType::Present => Some(cnt),
+            AttendanceOverviewType::Cancelled => None,
+            AttendanceOverviewType::Disabled => None,
+            AttendanceOverviewType::Allergic(items) => Some(cnt),
+        })
+        .sum::<i32>();
 
     view! {
         <div class="relative horizontal gap align-center">
@@ -68,15 +89,17 @@ pub fn Chart(padding: i32, series: Vec<(AttendanceOverviewType, i32)>) -> impl I
                             view! {
                                 <path
                                     d=path
-                                    stroke=colors[i]
+                                    stroke=colour(&series[i].0)
                                     stroke-width="12"
                                     fill="none"
                                     stroke-linecap="round"
                                     on:mousemove=move |e| {
-                                        e.dyn_into::<MouseEvent>()
-                                            .map(move |e| set_position(
+                                        if let Ok(e) = e.dyn_into::<MouseEvent>(){
+
+                                             set_position(
                                                 Some((i, e.layer_x(), e.layer_y())),
-                                            ));
+                                            );
+                        }
                                     }
                                     on:mouseout=move |_| set_position(None)
                                 />
@@ -92,7 +115,7 @@ pub fn Chart(padding: i32, series: Vec<(AttendanceOverviewType, i32)>) -> impl I
                     dominant-baseline="middle"
                     font-size="2em"
                 >
-                {format!("{}", total)}
+                {format!("{}", attendance_sum)}
                 </text>
             </svg>
             <div
@@ -110,7 +133,7 @@ pub fn Chart(padding: i32, series: Vec<(AttendanceOverviewType, i32)>) -> impl I
             >
                 {
                     let series = series.clone();
-                    move || position().map(|(i, _, _)| format!("{:?}", series[i].0))
+                    move || position().map(|(i, _, _)| title(&series[i].0))
                 }
             </div>
             <div class="grid-2 gap align-start justify-center">
@@ -119,7 +142,7 @@ pub fn Chart(padding: i32, series: Vec<(AttendanceOverviewType, i32)>) -> impl I
                     .enumerate()
                     .map(|(i, (name, value))| {
                         view! {
-                            <div class="rounded-decoration" style:--background-color={colors[i]}>{format!("{:?}", name)} </div><div>{format!("{}", value)}</div>
+                            <div class="rounded-decoration" style:--background-color={colour(name)}>{title(name)} </div><div>{format!("{}", value)}</div>
                         }
                     })
                     .collect::<Vec<_>>()}
@@ -160,7 +183,7 @@ pub fn AttendanceDashboard() -> impl IntoView {
             let attendance =  overview.await?;
         Ok::<_,ServerFnError>(view!{
             <div class="horizontal padded rounded background-2">
-            <Dropdown name="Cateringi" options=move || caterings.clone() key=|c| c.id filter=|a,b| true on_select item_view=|catering| view!{<div class="align-center justify-center vertical">{catering.name}</div>}/>
+            <Dropdown name="Cateringi" options=move || caterings.clone() key=|c| c.id filter=|a,b| true on_select item_view=|catering| view!{<div class="center align-center justify-center vertical">{catering.name}</div>}/>
                 <h2 class="h2 flex-1">{format!("{}", Utc::now().date_naive())}</h2>
                 <div class="flex-1"></div>
             </div>
@@ -186,6 +209,7 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
                     view! {
             <div class="padded vertical rounded background-2">
                 <h2 class="h2">{format!("{}",meal_name)}</h2>
+                        <div class="horizotnal gap">
                         <Chart
                             padding=12
                             series=
@@ -193,6 +217,18 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
                         (status.clone(), *count as i32)).collect::<Vec<_>>()}
 
                         />
+                        <table class="background-3 rounded">
+                            <thead>
+                                <tr>
+                                    <td>Imię</td>
+                                    <td>Nazwisko</td>
+                                    <td>Grupa</td>
+                                    <td>Obecny</td>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                            </div>
             </div>
                     }
                 }}
