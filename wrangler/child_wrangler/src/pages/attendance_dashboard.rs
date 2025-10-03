@@ -1,9 +1,15 @@
 use std::f32::consts::PI;
 
+use chrono::Utc;
+use dto::attendance::AttendanceOverviewDto;
 use leptos::logging::log;
 use leptos::prelude::*;
 use web_sys::wasm_bindgen::JsCast;
 use web_sys::MouseEvent;
+
+use crate::components::loader::Loader;
+use crate::pages::attendance_page::AttendanceParams;
+use crate::services::attendance::get_attendance_overview;
 
 #[component]
 pub fn Chart(padding: i32, series: Vec<(String, i32)>) -> impl IntoView {
@@ -120,22 +126,47 @@ pub fn Chart(padding: i32, series: Vec<(String, i32)>) -> impl IntoView {
 
 #[component]
 pub fn AttendanceDashboard() -> impl IntoView {
+    let overview = Resource::new(
+        || Utc::now(),
+        |date| async move { get_attendance_overview(date.date_naive()).await },
+    );
+
+    view! {
+        <Loader>
+        {move || Suspend::new(async move {
+
+            let attendance =  overview.await?;
+        Ok::<_,ServerFnError>(view!{
+
+            <AttendanceDashboardInner attendance/>
+        })
+        })}
+        </Loader>
+    }
+}
+
+#[component]
+pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoView {
     view! {
         <div>
             <div class="padded vertical rounded background-2">
-                <h2 class="h2">Obiad</h2>
+        {
+            attendance.attendance.into_iter().map(|(meal_id,att)| view!{
+                <h2 class="h2">{format!("{}",meal_id)}</h2>
                 {move || {
                     view! {
                         <Chart
                             padding=12
-                            series=vec![
-                                (String::from("Entity 1"), 15),
-                                (String::from("Entity2"), 25),
-                                (String::from("Entity3"), 35),
-                            ]
+                            series=
+                                {att.iter().map(|(status, count)| (
+                        format!("{:?}", status), *count as i32
+                    )).collect::<Vec<_>>()}
+
                         />
                     }
                 }}
+            }).collect::<Vec<_>>()
+        }
             </div>
         </div>
     }

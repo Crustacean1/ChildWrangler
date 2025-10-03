@@ -1,9 +1,10 @@
 use chrono::{Days, Months, NaiveDate};
 use dto::attendance::{
     AttendanceBreakdownDto, AttendanceHistoryDto, AttendanceHistoryItemDto, AttendanceItemDto,
-    CateringMealDto, EffectiveAttendance, EffectiveMonthAttendance, GetAttendanceBreakdownDto,
-    GetAttendanceHistoryDto, GetEffectiveMonthAttendance, GetMonthAttendanceDto, MealStatus,
-    MonthAttendanceDto, MonthlyStudentAttendanceDto, UpdateAttendanceDto,
+    AttendanceOverviewDto, AttendanceOverviewType, CateringMealDto, EffectiveAttendance,
+    EffectiveMonthAttendance, GetAttendanceBreakdownDto, GetAttendanceHistoryDto,
+    GetEffectiveMonthAttendance, GetMonthAttendanceDto, MealStatus, MonthAttendanceDto,
+    MonthlyStudentAttendanceDto, UpdateAttendanceDto,
 };
 use std::collections::{BTreeMap, HashMap};
 use uuid::Uuid;
@@ -344,4 +345,47 @@ pub async fn get_monthly_summary(
     wrtr.flush()?;
 
     Ok(String::from_utf8(wrtr.into_inner()?)?)
+}
+
+#[server]
+pub async fn get_attendance_overview(
+    date: NaiveDate,
+) -> Result<AttendanceOverviewDto, ServerFnError> {
+    use sqlx::postgres::PgPool;
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+
+    let students = sqlx::query!("SELECT SUM(value::int) AS cnt,meal_id,  (attendance_override.id IS NOT NULL) AS is_override, (processing_id IS NOT NULL) AS is_cancellation  FROM total_attendance
+    LEFT JOIN attendance_override ON attendance_override.id = total_attendance.cause_id
+    LEFT JOIN processing_trigger ON processing_trigger.processing_id = total_attendance.cause_id
+    WHERE total_attendance.day = $1 
+    GROUP BY meal_id, is_override, is_cancellation
+",  date)
+    .fetch_optional(&pool)
+    .await?;
+
+    let mut attendance = HashMap::new();
+
+    for student in students {
+        if student.is_override.unwrap_or(false) {
+            attendance
+                .entry(student.meal_id.unwrap())
+                .or_insert(HashMap::new())
+                .insert(AttendanceOverviewType::Disabled, student.cnt.unwrap_or(0));
+        } else if student.is_cancellation.unwrap_or(false) {
+            attendance
+                .entry(student.meal_id.unwrap())
+                .or_insert(HashMap::new())
+                .insert(AttendanceOverviewType::Cancelled, student.cnt.unwrap_or(0));
+        } else {
+            attendance
+                .entry(student.meal_id.unwrap())
+                .or_insert(HashMap::new())
+                .insert(AttendanceOverviewType::Present, student.cnt.unwrap_or(0));
+        }
+    }
+
+    Ok(AttendanceOverviewDto {
+        student_list: vec![],
+        attendance,
+    })
 }

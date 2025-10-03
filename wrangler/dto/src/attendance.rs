@@ -112,3 +112,17 @@ pub struct MonthlyStudentAttendanceDto {
     pub attendance: u32,
     pub group: String,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash, PartialEq)]
+pub enum AttendanceOverviewType {
+    Present,
+    Cancelled,
+    Disabled,
+    Allergic(Vec<(Uuid, String)>),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AttendanceOverviewDto {
+    pub student_list: Vec<(Uuid, String, String, bool)>,
+    pub attendance: HashMap<Uuid, HashMap<AttendanceOverviewType, i64>>,
+}
