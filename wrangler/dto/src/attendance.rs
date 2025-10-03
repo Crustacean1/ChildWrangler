@@ -123,7 +123,7 @@ pub enum AttendanceOverviewType {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AttendanceOverviewDto {
-    pub student_list: Vec<(Uuid, String, String, bool)>,
+    pub student_list: HashMap<Uuid, Vec<(Uuid, String, String, bool)>>,
     pub meal_list: Vec<(Uuid, String)>,
     pub attendance: HashMap<Uuid, HashMap<AttendanceOverviewType, i64>>,
 }

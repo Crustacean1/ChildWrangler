@@ -355,6 +355,14 @@ pub async fn get_attendance_overview(
     use sqlx::postgres::PgPool;
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
+    let student_attendance = sqlx::query!("SELECT students.name, students.surname, students.id, SUM(value::int) AS present, meal_id FROM group_relations
+    INNER JOIN students ON students.id = group_relations.child
+    INNER JOIN caterings ON caterings.group_id = group_relations.parent
+    INNER JOIN total_attendance ON total_attendance.student_id = students.id AND total_attendance.day = $2
+    WHERE caterings.id = $1
+    GROUP BY students.id, meal_id
+", catering_id, date).fetch_all(&pool).await?;
+
     let students = sqlx::query!("SELECT COUNT(*) AS cnt,meal_id,  (attendance_override.id IS NOT NULL) AS is_override, (processing_id IS NOT NULL) AS is_cancellation  FROM total_attendance
     LEFT JOIN attendance_override ON attendance_override.id = total_attendance.cause_id
     LEFT JOIN processing_trigger ON processing_trigger.processing_id = total_attendance.cause_id
@@ -387,8 +395,19 @@ pub async fn get_attendance_overview(
 
     let meal_list = sqlx::query!("SELECT * FROM meals INNER JOIN catering_meals ON catering_meals.meal_id = meals.id WHERE catering_meals.catering_id = $1 ORDER BY meal_order", catering_id).fetch_all(&pool).await?.into_iter().map(|row| (row.id, row.name)).collect::<Vec<_>>();
 
+    let mut student_list = HashMap::new();
+
+    for student in student_attendance {
+        student_list.entry(student.meal_id.unwrap_or(Uuid::nil())).or_insert(vec![]).push((
+            student.id,
+            student.name,
+            student.surname,
+            student.present.unwrap_or(0) != 0,
+        ));
+    }
+
     Ok(AttendanceOverviewDto {
-        student_list: vec![],
+        student_list,
         attendance,
         meal_list,
     })

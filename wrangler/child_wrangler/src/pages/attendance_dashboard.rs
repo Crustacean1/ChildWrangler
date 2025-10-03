@@ -56,7 +56,8 @@ pub fn Chart(padding: i32, series: Vec<(AttendanceOverviewType, i32)>) -> impl I
         .sum::<i32>();
 
     view! {
-        <div class="relative horizontal gap align-center">
+        <div class="horizontal gap align-center flex-1">
+            <div class="relative">
             <svg width="200" height="200" viewBox="-100 -100 200 200">
                 <defs>
                     <filter id="gaussian-1">
@@ -136,6 +137,7 @@ pub fn Chart(padding: i32, series: Vec<(AttendanceOverviewType, i32)>) -> impl I
                     move || position().map(|(i, _, _)| title(&series[i].0))
                 }
             </div>
+    </div>
             <div class="grid-2 gap align-start justify-center">
                 {series
                     .iter()
@@ -161,7 +163,7 @@ pub fn AttendanceDashboard() -> impl IntoView {
         } else {
             Ok(AttendanceOverviewDto {
                 meal_list: vec![],
-                student_list: vec![],
+                student_list: Default::default(),
                 attendance: Default::default(),
             })
         }
@@ -182,12 +184,14 @@ pub fn AttendanceDashboard() -> impl IntoView {
             let caterings =  caterings.await?;
             let attendance =  overview.await?;
         Ok::<_,ServerFnError>(view!{
-            <div class="horizontal padded rounded background-2">
+            <div class="horizontal padded rounded background-2 overflow-hidden" >
             <Dropdown name="Cateringi" options=move || caterings.clone() key=|c| c.id filter=|a,b| true on_select item_view=|catering| view!{<div class="center align-center justify-center vertical">{catering.name}</div>}/>
                 <h2 class="h2 flex-1">{format!("{}", Utc::now().date_naive())}</h2>
                 <div class="flex-1"></div>
             </div>
-            <AttendanceDashboardInner attendance/>
+            <div class="flex-1 column-grid-3">
+                    <AttendanceDashboardInner attendance/>
+            </div>
         })
         })}
 
@@ -197,19 +201,20 @@ pub fn AttendanceDashboard() -> impl IntoView {
 
 #[component]
 pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoView {
-    let meals = attendance
-        .meal_list
-        .into_iter()
-        .map(|(id, name)| (name, attendance.attendance[&id].clone()));
+    let meals = attendance.meal_list.into_iter().map(|(id, name)| {
+        (
+            name,
+            attendance.student_list[&id].clone(),
+            attendance.attendance[&id].clone(),
+        )
+    });
 
-    view! {
-        {
-            meals.map(|(meal_name,att)| view!{
-                {move || {
-                    view! {
-            <div class="padded vertical rounded background-2">
-                <h2 class="h2">{format!("{}",meal_name)}</h2>
-                        <div class="horizotnal gap">
+    meals
+        .map(|(meal_name, student_list, att)| {
+            view! {
+            <div class="padded vertical rounded background-2 gap overflow-hidden">
+                    <h2 class="h2">{format!("{}",meal_name)}</h2>
+                        <div class="horizontal gap flex-1" >
                         <Chart
                             padding=12
                             series=
@@ -217,22 +222,29 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
                         (status.clone(), *count as i32)).collect::<Vec<_>>()}
 
                         />
-                        <table class="background-3 rounded">
+                    <div class="table-wrapper flex-1 horizontal overflow-hidden">
+                        <table class="background-3 rounded flex-1 rounded">
                             <thead>
                                 <tr>
-                                    <td>Imię</td>
-                                    <td>Nazwisko</td>
-                                    <td>Grupa</td>
-                                    <td>Obecny</td>
+                                    <th>Imię</th>
+                                    <th>Nazwisko</th>
+                                    <th>Grupa</th>
+                                    <th>Obecny</th>
                                 </tr>
                             </thead>
-                            <tbody></tbody>
+                            <tbody class="background-1">
+                            {student_list.iter().map(|(id,name,surname,present)| view!{<tr>
+                                <td class="padded">{format!("{}", name)}</td>
+                                <td class="padded">{format!("{}", surname)}</td>
+                                <td class="padded">N/A</td>
+                                <td class="padded">{format!("{}", present)}</td>
+                                </tr>}).collect::<Vec<_>>()}
+                            </tbody>
                         </table>
+                    </div>
                             </div>
             </div>
                     }
-                }}
-            }).collect::<Vec<_>>()
-        }
-    }
+        })
+        .collect::<Vec<_>>()
 }

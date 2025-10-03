@@ -23,6 +23,7 @@
   --black-800: #2c2c2c;
   --black-900: #191919;
   --black-950: #0f0f0f;
+  --black-1000: #080808;
 
   --padding: "1em";
   --radius: "5px";
@@ -523,4 +524,30 @@ button.fast-transition {
 .anchor-end {
   position-anchor: --tooltip-anchor;
   position: absolute;
+}
+
+.column-grid-3 {
+  display: grid;
+  grid-template-rows: 1fr 1fr 1fr;
+  gap: 0.5em;
+  overflow: auto;
+}
+
+
+table {
+  border-collapse: collapse;
+}
+
+.table-wrapper {
+  overflow: auto;
+}
+
+.background-1 {
+  tr {
+    background-color: var(--black-950);
+  }
+
+  tr:nth-child(odd) {
+    background-color: var(--black-1000);
+  }
 }
