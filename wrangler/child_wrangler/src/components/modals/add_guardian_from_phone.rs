@@ -83,9 +83,12 @@ pub fn AddGuardianFromPhoneModalInner(
         }
     };
 
-    let on_select = move |s| match s {
-        Ok(s) => set_selected_students.write().push(s),
-        Err(_) => {}
+    let on_select = move |s| {
+        match s {
+            Ok(s) => set_selected_students.write().push(s),
+            Err(_) => {}
+        };
+        Some(String::new())
     };
 
     view! {

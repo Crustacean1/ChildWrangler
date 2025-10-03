@@ -350,6 +350,7 @@ pub async fn get_monthly_summary(
 #[server]
 pub async fn get_attendance_overview(
     date: NaiveDate,
+    catering_id: Uuid,
 ) -> Result<AttendanceOverviewDto, ServerFnError> {
     use sqlx::postgres::PgPool;
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
@@ -366,7 +367,6 @@ pub async fn get_attendance_overview(
     let mut attendance = HashMap::new();
 
     for student in students {
-        log!("Student: {:?}", student);
         if student.is_override.unwrap_or(false) {
             attendance
                 .entry(student.meal_id.unwrap())
@@ -385,8 +385,11 @@ pub async fn get_attendance_overview(
         }
     }
 
+    let meal_list = sqlx::query!("SELECT * FROM meals INNER JOIN catering_meals ON catering_meals.meal_id = meals.id WHERE catering_meals.catering_id = $1 ORDER BY meal_order", catering_id).fetch_all(&pool).await?.into_iter().map(|row| (row.id, row.name)).collect::<Vec<_>>();
+
     Ok(AttendanceOverviewDto {
         student_list: vec![],
         attendance,
+        meal_list,
     })
 }

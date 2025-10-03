@@ -1,8 +1,7 @@
-use dto::catering::CreateCateringDto;
+use dto::catering::{CateringDto, CreateCateringDto};
 use leptos::logging::log;
 use leptos::prelude::*;
 use uuid::Uuid;
-
 
 #[server]
 pub async fn create_catering(catering_dto: CreateCateringDto) -> Result<Uuid, ServerFnError> {
@@ -17,8 +16,6 @@ pub async fn create_catering(catering_dto: CreateCateringDto) -> Result<Uuid, Se
         .enumerate()
         .map(|(i, d)| (d as i16) * 2_i16.pow(i as u32))
         .sum();
-
-    log!("Days of week {}", dow);
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
@@ -90,4 +87,14 @@ pub async fn create_catering(catering_dto: CreateCateringDto) -> Result<Uuid, Se
     tr.commit().await?;
 
     Ok(catering_id)
+}
+
+#[server]
+pub async fn get_caterings() -> Result<Vec<CateringDto>, ServerFnError> {
+    use sqlx::postgres::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+
+    let caterings = sqlx::query!("SELECT caterings.id, groups.name FROM caterings INNER JOIN groups ON groups.id = caterings.group_id").fetch_all(&pool).await?.into_iter().map(|row| CateringDto{id: row.id, name: row.name}).collect();
+    Ok(caterings)
 }

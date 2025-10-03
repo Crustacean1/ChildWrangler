@@ -1,4 +1,8 @@
-use dto::{catering::{AllergyDto, GuardianDto}, details::StudentDetailsDto, student::CreateStudentDto};
+use dto::{
+    catering::{AllergyDto, GuardianDto},
+    details::StudentDetailsDto,
+    student::CreateStudentDto,
+};
 use leptos::{either::Either, logging::log, prelude::*};
 use uuid::Uuid;
 
@@ -98,22 +102,25 @@ fn InnerAddStudentModal(
             .collect::<Vec<_>>()
     };
 
-    let on_add_allergy = move |allergy| match allergy {
-        Ok(allergy) => set_selected_allergies.write().push(allergy),
-        Err(name) => set_selected_allergies.write().push(AllergyDto {
-            id: Uuid::new_v4(),
-            name,
-        }),
+    let on_add_allergy = move |allergy| {
+        match allergy {
+            Ok(allergy) => set_selected_allergies.write().push(allergy),
+            Err(name) => set_selected_allergies.write().push(AllergyDto {
+                id: Uuid::new_v4(),
+                name,
+            }),
+        };
+        Some(String::new())
     };
 
-    let on_add_guardian = move |guardian| {
-        match guardian {
-            Ok(guardian) => set_selected_guardians.write().push(guardian),
-            Err(fullname) => set_selected_guardians.write().push(GuardianDto {
-                id: Uuid::new_v4(),
-                fullname,
-            }),
-        }
+    let on_add_guardian = move |guardian| {match guardian {
+        Ok(guardian) => set_selected_guardians.write().push(guardian),
+        Err(fullname) => set_selected_guardians.write().push(GuardianDto {
+            id: Uuid::new_v4(),
+            fullname,
+        }),
+    };
+    Some(String::new())
     };
 
     let update_id = initial.as_ref().map(|i| i.id);

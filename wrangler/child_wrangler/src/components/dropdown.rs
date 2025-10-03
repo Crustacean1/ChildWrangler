@@ -9,7 +9,7 @@ pub fn Dropdown<T: Send + Sync + Clone + 'static, R>(
     options: impl Fn() -> Vec<T> + Send + Sync + 'static,
     key: impl Fn(&T) -> Uuid + Clone + Send + Sync + 'static,
     filter: impl Fn(&str, &T) -> bool + Send + Sync + Copy + 'static,
-    on_select: impl Fn(Result<T, String>) + Send + Sync + Copy + 'static,
+    on_select: impl Fn(Result<T, String>) -> Option<String> + Send + Sync + Copy + 'static,
     item_view: impl Fn(T) -> R + Send + Sync + Copy + 'static,
 ) -> impl IntoView
 where
@@ -32,7 +32,7 @@ where
 
     view! {
         <div
-            class="vertical relative flex-1 "
+            class="vertical relative flex-1"
             on:focusout=move |_| { set_active(false) }
             on:focusin=move |_| { set_active(true) }
             on:keydown=move |e| {
@@ -118,8 +118,9 @@ where
                         e.prevent_default();
                         e.stop_propagation();
                         set_active(false);
-                        on_select(Err(input_value()));
+                        if let Some(value) = on_select(Err(input_value())){
                         set_input_value(String::new());
+                        }
                     }
                 }
             />
@@ -156,8 +157,9 @@ where
                                     move |e| {
                                         e.prevent_default();
                                         e.stop_propagation();
-                                        on_select(Ok(item()));
-                                        set_input_value(String::new());
+                                        if let Some(value) = on_select(Ok(item())){
+                                            set_input_value(value);
+                                        }
                                         if let Some(doc) = window().document() {
                                             if let Some(e) = doc.active_element() {
                                                 e.dyn_ref::<HtmlLiElement>().map(|i| { i.blur().ok() });
@@ -170,9 +172,10 @@ where
                                         input_ref.get().map(|input| input.focus());
                                     }
                                     if e.key_code() == 13 {
-                                        on_select(Ok(item()));
+                                        if let Some(value) = on_select(Ok(item())){
+                                            set_input_value(value);
+                                        }
                                         set_active(false);
-                                        set_input_value(String::new());
                                     }
                                 }
                             >

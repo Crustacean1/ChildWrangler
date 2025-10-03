@@ -37,6 +37,7 @@ pub fn SearchbarInner(terms: Vec<SearchTerm>) -> impl IntoView {
             let navigate = use_navigate();
             navigate(&format!("/attendance/{}", item.id), Default::default());
         }
+        Some(String::new())
     };
 
     view! {

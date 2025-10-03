@@ -1,18 +1,22 @@
 use std::f32::consts::PI;
 
 use chrono::Utc;
-use dto::attendance::AttendanceOverviewDto;
+use dto::attendance::{AttendanceOverviewDto, AttendanceOverviewType};
+use dto::catering::CateringDto;
 use leptos::logging::log;
 use leptos::prelude::*;
+use uuid::Uuid;
 use web_sys::wasm_bindgen::JsCast;
 use web_sys::MouseEvent;
 
+use crate::components::dropdown::Dropdown;
 use crate::components::loader::Loader;
 use crate::pages::attendance_page::AttendanceParams;
 use crate::services::attendance::get_attendance_overview;
+use crate::services::catering::get_caterings;
 
 #[component]
-pub fn Chart(padding: i32, series: Vec<(String, i32)>) -> impl IntoView {
+pub fn Chart(padding: i32, series: Vec<(AttendanceOverviewType, i32)>) -> impl IntoView {
     let range = (360 - series.len() * padding as usize) as f32 / 360 as f32;
     let scalar = 2.0 * PI * (padding as f32 / 360 as f32);
     let total = series.iter().map(|(_, s)| s).sum::<i32>() as f32;
@@ -106,7 +110,7 @@ pub fn Chart(padding: i32, series: Vec<(String, i32)>) -> impl IntoView {
             >
                 {
                     let series = series.clone();
-                    move || position().map(|(i, _, _)| format!("{}", series[i].0))
+                    move || position().map(|(i, _, _)| format!("{:?}", series[i].0))
                 }
             </div>
             <div class="grid-2 gap align-start justify-center">
@@ -115,7 +119,7 @@ pub fn Chart(padding: i32, series: Vec<(String, i32)>) -> impl IntoView {
                     .enumerate()
                     .map(|(i, (name, value))| {
                         view! {
-                            <div class="rounded-decoration" style:--background-color={colors[i]}>{format!("{}", name)} </div><div>{format!("{}", value)}</div>
+                            <div class="rounded-decoration" style:--background-color={colors[i]}>{format!("{:?}", name)} </div><div>{format!("{}", value)}</div>
                         }
                     })
                     .collect::<Vec<_>>()}
@@ -126,48 +130,73 @@ pub fn Chart(padding: i32, series: Vec<(String, i32)>) -> impl IntoView {
 
 #[component]
 pub fn AttendanceDashboard() -> impl IntoView {
-    let overview = Resource::new(
-        || Utc::now(),
-        |date| async move { get_attendance_overview(date.date_naive()).await },
-    );
+    let (selected_catering, set_selected_catering) = signal(None::<Uuid>);
+    let caterings = Resource::new(|| (), |_| async move { get_caterings().await });
+    let overview = Resource::new(selected_catering, |catering| async move {
+        if let Some(catering) = catering {
+            get_attendance_overview(Utc::now().date_naive(), catering).await
+        } else {
+            Ok(AttendanceOverviewDto {
+                meal_list: vec![],
+                student_list: vec![],
+                attendance: Default::default(),
+            })
+        }
+    });
+
+    let on_select = move |item: Result<CateringDto, _>| match item {
+        Ok(item) => {
+            set_selected_catering(Some(item.id));
+            Some(item.name)
+        }
+        Err(s) => Some(s),
+    };
 
     view! {
         <Loader>
-        {move || Suspend::new(async move {
 
+        {move || Suspend::new(async move {
+            let caterings =  caterings.await?;
             let attendance =  overview.await?;
         Ok::<_,ServerFnError>(view!{
-
+            <div class="horizontal padded rounded background-2">
+            <Dropdown name="Cateringi" options=move || caterings.clone() key=|c| c.id filter=|a,b| true on_select item_view=|catering| view!{<div class="align-center justify-center vertical">{catering.name}</div>}/>
+                <h2 class="h2 flex-1">{format!("{}", Utc::now().date_naive())}</h2>
+                <div class="flex-1"></div>
+            </div>
             <AttendanceDashboardInner attendance/>
         })
         })}
+
         </Loader>
     }
 }
 
 #[component]
 pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoView {
+    let meals = attendance
+        .meal_list
+        .into_iter()
+        .map(|(id, name)| (name, attendance.attendance[&id].clone()));
+
     view! {
-        <div>
-            <div class="padded vertical rounded background-2">
         {
-            attendance.attendance.into_iter().map(|(meal_id,att)| view!{
-                <h2 class="h2">{format!("{}",meal_id)}</h2>
+            meals.map(|(meal_name,att)| view!{
                 {move || {
                     view! {
+            <div class="padded vertical rounded background-2">
+                <h2 class="h2">{format!("{}",meal_name)}</h2>
                         <Chart
                             padding=12
                             series=
-                                {att.iter().map(|(status, count)| (
-                        format!("{:?}", status), *count as i32
-                    )).collect::<Vec<_>>()}
+                                {att.iter().map(|(status, count)|
+                        (status.clone(), *count as i32)).collect::<Vec<_>>()}
 
                         />
+            </div>
                     }
                 }}
             }).collect::<Vec<_>>()
         }
-            </div>
-        </div>
     }
 }

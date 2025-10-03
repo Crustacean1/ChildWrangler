@@ -51,14 +51,17 @@ fn InnerCateringModal(
     let (end, set_end) = signal(String::new());
     let (grace, set_grace) = signal(String::new());
 
-    let on_meal_select = move |meal| match meal {
-        Ok(meal) => set_selected_meals.write().push(meal),
-        Err(name) => {
-            set_selected_meals.write().push(MealDto {
-                id: Uuid::new_v4(),
-                name,
-            });
-        }
+    let on_meal_select = move |meal| {
+        match meal {
+            Ok(meal) => set_selected_meals.write().push(meal),
+            Err(name) => {
+                set_selected_meals.write().push(MealDto {
+                    id: Uuid::new_v4(),
+                    name,
+                });
+            }
+        };
+        Some(String::new())
     };
 
     let (dow, set_dow) = signal(

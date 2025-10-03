@@ -36,3 +36,9 @@ pub struct GuardianDetailDto {
     pub fullname: String,
     pub phone: String,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CateringDto {
+    pub id: Uuid,
+    pub name: String,
+}
