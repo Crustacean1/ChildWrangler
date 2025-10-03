@@ -163,8 +163,8 @@ async fn save_to_file(summary: &str) {
 
 pub enum CalendarDay {
     OtherMonth,
-    OtherDow(NaiveDate),
-    Day(NaiveDate, Vec<(Uuid, String, u32, EffectiveAttendance)>),
+    OtherDow,
+    Day(Vec<(Uuid, String, u32, EffectiveAttendance)>),
 }
 
 #[component]
@@ -236,18 +236,52 @@ pub fn InnerCalendar(
         },
     );
 
-    let is_active = move |mode,
-                          r_start: NaiveDate,
-                          r_end: NaiveDate,
-                          day: NaiveDate,
-                          dow: &[bool],
-                          att_start: &NaiveDate,
-                          att_end: &NaiveDate| {
+    let mut dow: [bool; 7] = [false; 7];
+    for (i, present) in attendance.days_of_week.iter().enumerate() {
+        dow[i] = *present;
+    }
+
+    let is_selected = move |day: NaiveDate| {
+        let Some(r_start) = drag_start() else {
+            return false;
+        };
+        let Some(r_end) = drag_end() else {
+            return false;
+        };
         let start = if r_start < r_end { r_start } else { r_end };
         let end = if r_start < r_end { r_end } else { r_start };
+        let mode = selection_mode();
 
-        if *att_start <= day
-            && day <= *att_end
+        if mode {
+            let (start_week, end_week) = (start.iso_week().week(), end.iso_week().week());
+            let day_week = day.iso_week().week();
+            let (start_dow, end_dow) = (
+                start.weekday().num_days_from_monday(),
+                end.weekday().num_days_from_monday(),
+            );
+            let day_dow = day.weekday().num_days_from_monday();
+            (start_week <= day_week && day_week <= end_week)
+                && (start_dow <= day_dow && day_dow <= end_dow)
+        } else {
+            start <= day && day <= end
+        }
+    };
+
+    let is_active = move |day: NaiveDate| {
+        let Some(r_start) = drag_start() else {
+            return false;
+        };
+        let Some(r_end) = drag_end() else {
+            return false;
+        };
+        let att_start = attendance.start;
+        let att_end = attendance.end;
+        let start = if r_start < r_end { r_start } else { r_end };
+        let end = if r_start < r_end { r_end } else { r_start };
+        let mode = selection_mode();
+
+        if att_start <= day
+            && day <= att_end
             && dow
                 .get(day.weekday().num_days_from_monday() as usize)
                 .map(|b| *b)
@@ -285,17 +319,7 @@ pub fn InnerCalendar(
                     None
                 }
             })
-            .filter(|d| {
-                is_active(
-                    mode,
-                    start,
-                    end,
-                    *d,
-                    &dow1,
-                    &attendance.start,
-                    &attendance.end,
-                )
-            });
+            .filter(|d| is_active(*d));
             let days: Vec<_> = days.collect();
             set_meal_edit(Some(days));
         }
@@ -305,12 +329,12 @@ pub fn InnerCalendar(
 
     let daily_attendance = calendar_days.map(|day| {
         if day.month() != month {
-            CalendarDay::OtherMonth
+            (day, CalendarDay::OtherMonth)
         } else if !attendance.days_of_week[day.weekday().num_days_from_monday() as usize]
             || day < attendance.start
             || day > attendance.end
         {
-            CalendarDay::OtherDow(day)
+            (day, CalendarDay::OtherDow)
         } else {
             let meals = attendance
                 .meals
@@ -332,7 +356,7 @@ pub fn InnerCalendar(
                     )
                 })
                 .collect::<Vec<_>>();
-            CalendarDay::Day(day, meals)
+            (day, CalendarDay::Day(meals))
         }
     });
 
@@ -342,7 +366,6 @@ pub fn InnerCalendar(
                 .unwrap_or(format!("/attendance/{}", target))
         }
     };
-    let meals2 = attendance.meals.clone();
 
     view! {
         <div class="vertical gap flex-1 flex" on:mouseup=move |_| on_drag_end()>
@@ -401,52 +424,47 @@ pub fn InnerCalendar(
                     .collect::<Vec<_>>()}
                 {daily_attendance
                     .into_iter()
-                    .map(|day|
-                    view!{
-                        <div class="vertical gap background-3 rounded padded no-select outline-1-hover fast-transition"
-            on:mousedown=move |_| set_drag_start(None)
-            on:mouseup=move |_| set_drag_end(None)
-            on:mouseover=move |_| set_drag_end(None)>
-                        {
-                    match day {
-                        CalendarDay::OtherMonth => {
-                            Either::Left(
-                                Either::Left(
-                                    view! {},
-                                ),
-                            )
+                    .map(|(date, calendar_day)| {
+                        view! {
+                            <div
+                                class="vertical gap background-3 rounded padded no-select outline-1-hover"
+                                class:designated={move || is_selected(date)}
+                                on:mousedown=move |_| set_drag_start(Some(date))
+                                on:mouseup=move |_| on_drag_end()
+                                on:mouseover=move |_| set_drag_end(Some(date))
+                            >
+                                {match calendar_day {
+                                    CalendarDay::OtherMonth => Either::Left(Either::Left(view! {})),
+                                    CalendarDay::OtherDow => {
+                                        Either::Left(
+                                            Either::Right(
+                                                view! {
+                                                    <h3 class="h3 gray">
+                                                        {format!("{}", date.format("%d %B"))}
+                                                    </h3>
+                                                },
+                                            ),
+                                        )
+                                    }
+                                    CalendarDay::Day( meals) => {
+                                        Either::Right(
+                                            view! {
+                                                <Day
+                                                    date
+                                                    meals
+                                                    on_meal_select=move |meal_id| {
+                                                        set_meal_history(Some((meal_id, target, date)))
+                                                    }
+                                                    on_count_select=move |meal_id| {
+                                                        set_meal_count(Some((meal_id, target, date)))
+                                                    }
+                                                />
+                                            },
+                                        )
+                                    }
+                                }}
+                            </div>
                         }
-                        CalendarDay::OtherDow(date) => {
-                            Either::Left(
-                                Either::Right(
-                                    view! {
-                                            <h3 class="h3 gray">
-                                                {format!("{}", date.format("%d %B"))}
-                                            </h3>
-                                    },
-                                ),
-                            )
-                        }
-                        CalendarDay::Day(date, meals) => {
-                            Either::Right(
-                                view! {
-                                    <Day
-                                        date
-                                        meals
-                                        on_meal_select=move |meal_id| {
-                                            set_meal_history(Some((meal_id, target, date)))
-                                        }
-                                        on_count_select=move |meal_id| {
-                                            set_meal_count(Some((meal_id, target, date)))
-                                        }
-                                    />
-                                },
-                            )
-                        }
-                        }
-                    }
-                        </div>
-
                     })
                     .collect::<Vec<_>>()}
             </div>
@@ -498,38 +516,31 @@ pub fn Day(
     on_count_select: impl Fn(Uuid) + Send + Sync + Copy + 'static,
 ) -> impl IntoView {
     view! {
-            <h3 class=" h3">{format!("{}", date.format("%e %B"))}</h3>
-            {meals
-                .into_iter()
-                .map(|(meal_id, meal_name, attendance, status)| {
-                    view! {
-                        <div class="horizontal gap flex-1 horizontal align-center">
-                            <div
-                                class="flex-4 interactive padded rounded no-select text-left flex justify-center align-center"
-                                on:click=move |_| on_meal_select(meal_id)
-                                class:green=status == EffectiveAttendance::Present
-                                class:red=status == EffectiveAttendance::Absent
-                                class:yellow=status == EffectiveAttendance::Cancelled
-                                class:gray=status == EffectiveAttendance::Blocked
-                                on:mousedown=|e| {
-                                    e.stop_propagation();
-                                }
-                            >
-                                {meal_name.clone()}
-                            </div>
-
-                            <button
-                                class="flex-1 padded no-select interactive rounded"
-                                on:click=move |_| on_count_select(meal_id)
-                                on:mousedown=|e| {
-                                    e.stop_propagation();
-                                }
-                            >
-                                {format!("{}", attendance)}
-                            </button>
+        <h3 class=" h3">{format!("{}", date.format("%e %B"))}</h3>
+        {meals
+            .into_iter()
+            .map(|(meal_id, meal_name, attendance, status)| {
+                view! {
+                    <div class="horizontal gap flex-1 horizontal align-center">
+                        <div
+                            class="flex-4 padded rounded no-select text-left flex justify-center align-center"
+                            on:click=move |_| on_meal_select(meal_id)
+                            class:green=status == EffectiveAttendance::Present
+                            class:red=status == EffectiveAttendance::Absent
+                            class:yellow=status == EffectiveAttendance::Cancelled
+                            class:gray=status == EffectiveAttendance::Blocked
+                        >
+                            {meal_name.clone()}
                         </div>
-                    }
-                })
-                .collect::<Vec<_>>()}
+
+                        <div
+                            class="flex-1 padded no-select rounded"
+                            on:click=move |_| on_count_select(meal_id)>
+                            {format!("{}", attendance)}
+                        </div>
+                    </div>
+                }
+            })
+            .collect::<Vec<_>>()}
     }
 }

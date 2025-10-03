@@ -224,7 +224,11 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
         )
     });
 
-    let attendance_map = |present: bool| view! {<span class:red={!present} class:green={present}>{if present {String::from("tak")} else{String::from("nie")}}</span>};
+    let attendance_map = |present: bool| view! {
+        <span class:red=!present class:green=present>
+            {if present { String::from("tak") } else { String::from("nie") }}
+        </span>
+    };
 
     meals
         .map(|(meal_name, student_list, att)| {
@@ -234,7 +238,8 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
                     <div class="horizontal gap flex-1 overflow-hidden">
                         <Chart
                             padding=12
-                            series={att.iter()
+                            series={att
+                                .iter()
                                 .map(|(status, count)| (status.clone(), *count as i32))
                                 .collect::<Vec<_>>()}
                         />

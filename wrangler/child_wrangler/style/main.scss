@@ -338,7 +338,11 @@ button.fast-transition {
 }
 
 .outline-white {
-  outline: 2px solid gray;
+  outline: 2px solid white;
+}
+
+.designated {
+  outline: 1px solid white;
 }
 
 .interactive:disabled {
@@ -558,3 +562,5 @@ th {
     background-color: var(--black-1000);
   }
 }
+
+
