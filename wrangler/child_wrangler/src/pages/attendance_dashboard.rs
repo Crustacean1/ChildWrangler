@@ -219,15 +219,17 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
     let meals = attendance.meal_list.into_iter().map(|(id, name)| {
         (
             name,
-            attendance.student_list[&id].clone(),
-            attendance.attendance[&id].clone(),
+            attendance.student_list.get(&id).clone(),
+            attendance.attendance.get(&id).clone(),
         )
     });
 
-    let attendance_map = |present: bool| view! {
-        <span class:red=!present class:green=present>
-            {if present { String::from("tak") } else { String::from("nie") }}
-        </span>
+    let attendance_map = |present: bool| {
+        view! {
+            <span class:red=!present class:green=present>
+                {if present { String::from("tak") } else { String::from("nie") }}
+            </span>
+        }
     };
 
     meals
@@ -238,10 +240,11 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
                     <div class="horizontal gap flex-1 overflow-hidden">
                         <Chart
                             padding=12
-                            series={att
-                                .iter()
+                            series={att.map(|att| 
+                                att.iter()
                                 .map(|(status, count)| (status.clone(), *count as i32))
-                                .collect::<Vec<_>>()}
+                                .collect::<Vec<_>>()
+                        ).unwrap_or(vec![])}
                         />
 
                         <div class="table-wrapper flex-1 horizontal overflow-hidden rounded">
@@ -256,7 +259,7 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
                                 </thead>
                                 <tbody class="background-1">
                                     {student_list
-                                        .iter()
+                                        .map(|list| list.iter()
                                         .map(|(id, name, surname, present)| {
                                             view! {
                                                 <tr>
@@ -267,7 +270,7 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
                                                 </tr>
                                             }
                                         })
-                                        .collect::<Vec<_>>()}
+                                        .collect::<Vec<_>>()).unwrap_or(vec![])}
                                 </tbody>
                             </table>
                         </div>

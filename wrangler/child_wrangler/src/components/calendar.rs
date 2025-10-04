@@ -428,7 +428,7 @@ pub fn InnerCalendar(
                         view! {
                             <div
                                 class="vertical gap background-3 rounded padded no-select outline-1-hover"
-                                class:designated={move || is_selected(date)}
+                                class:outline-white=move || is_selected(date)
                                 on:mousedown=move |_| set_drag_start(Some(date))
                                 on:mouseup=move |_| on_drag_end()
                                 on:mouseover=move |_| set_drag_end(Some(date))
@@ -452,6 +452,8 @@ pub fn InnerCalendar(
                                                 <Day
                                                     date
                                                     meals
+                                                    meal_select={meal_history}
+                                                on_unselect={move || {set_meal_history(None);set_meal_count(None);}}
                                                     on_meal_select=move |meal_id| {
                                                         set_meal_history(Some((meal_id, target, date)))
                                                     }
@@ -470,14 +472,6 @@ pub fn InnerCalendar(
             </div>
         </div>
 
-        <Modal is_open=move || meal_history().is_some() on_close=move || set_meal_history(None)>
-            {move || {
-                meal_history()
-                    .map(|(meal_id, target, date)| {
-                        view! { <MealHistoryModal meal_id target date /> }
-                    })
-            }}
-        </Modal>
         <Modal is_open=move || meal_count().is_some() on_close=move || set_meal_count(None)>
             {move || {
                 meal_count()
@@ -505,6 +499,8 @@ pub fn InnerCalendar(
                 }
             }
         </Modal>
+
+        <div class="calendar-tooltip" class:invisible=move || meal_history().is_none()>I am some tooltip</div>
     }
 }
 
@@ -512,8 +508,10 @@ pub fn InnerCalendar(
 pub fn Day(
     date: NaiveDate,
     meals: Vec<(Uuid, String, u32, EffectiveAttendance)>,
+    meal_select: impl Fn() -> Option<(Uuid, Uuid, NaiveDate)> + Send + Sync + Copy + 'static,
     on_meal_select: impl Fn(Uuid) + Send + Sync + Copy + 'static,
     on_count_select: impl Fn(Uuid) + Send + Sync + Copy + 'static,
+    on_unselect: impl Fn() + Send + Sync + Copy + 'static,
 ) -> impl IntoView {
     view! {
         <h3 class=" h3">{format!("{}", date.format("%e %B"))}</h3>
@@ -524,7 +522,9 @@ pub fn Day(
                     <div class="horizontal gap flex-1 horizontal align-center">
                         <div
                             class="flex-4 padded rounded no-select text-left flex justify-center align-center"
-                            on:click=move |_| on_meal_select(meal_id)
+                            on:mouseover=move |_| on_meal_select(meal_id)
+                            on:mouseleave=move |_| on_unselect()
+                            class:calendar-anchor=move || { if let Some((selected_meal_id,_, selected_date)) = meal_select(){ return selected_meal_id == meal_id && selected_date == date} else {false}}
                             class:green=status == EffectiveAttendance::Present
                             class:red=status == EffectiveAttendance::Absent
                             class:yellow=status == EffectiveAttendance::Cancelled
