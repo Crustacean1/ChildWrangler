@@ -15,6 +15,9 @@ pub struct AttendanceParams {
 #[derive(Clone, Debug)]
 pub struct GroupVersion(pub ReadSignal<i32>, pub WriteSignal<i32>);
 
+#[derive(Clone, Debug)]
+pub struct AttendanceVersion(pub ReadSignal<i32>, pub WriteSignal<i32>);
+
 #[component]
 pub fn AttendancePage() -> impl IntoView {
     let GroupVersion(group_version, set_group_version) = use_context().unwrap();

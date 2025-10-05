@@ -36,6 +36,7 @@ pub enum EffectiveAttendance {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct EffectiveMonthAttendance {
+    pub is_student: bool,
     pub attendance: BTreeMap<NaiveDate, BTreeMap<Uuid, EffectiveAttendance>>,
 }
 

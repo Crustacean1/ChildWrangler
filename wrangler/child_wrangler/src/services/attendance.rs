@@ -104,14 +104,23 @@ pub async fn get_effective_attendance(
         return Err(ServerFnError::new("Failed to parse provided date"));
     };
 
+    let is_student = sqlx::query!(
+        "SELECT id FROM students WHERE students.id = $1 LIMIT 1",
+        dto.target
+    )
+    .fetch_optional(&pool)
+    .await?
+    .is_some();
+
     let attendance = sqlx::query!(
-        "SELECT DISTINCT ON (day,meal_id) day, meal_id, value, target, cause_id, attendance_override.id AS \"o_id: Option<Uuid>\" FROM effective_attendance 
-            INNER JOIN group_relations ON group_relations.parent = effective_attendance.target
-            LEFT JOIN attendance_override ON attendance_override.id = effective_attendance.cause_id
-            LEFT JOIN processing_trigger ON processing_trigger.processing_id = cause_id
-            WHERE group_relations.child=$1 AND (value = false OR level = 0) AND day >= $2 AND day < $3
-            ORDER BY day, meal_id, level DESC
-",
+        "SELECT DISTINCT ON (day,meal_id) day, meal_id, value, target, cause_id, 
+    (attendance_override.id IS NOT NULL) AS is_override,
+    (processing_trigger.processing_id IS NOT NULL) AS is_cancellation FROM effective_attendance 
+    INNER JOIN group_relations ON group_relations.parent = effective_attendance.target
+    LEFT JOIN attendance_override ON attendance_override.id = effective_attendance.cause_id
+    LEFT JOIN processing_trigger ON processing_trigger.processing_id = cause_id
+    WHERE group_relations.child=$1 AND day >= $2 AND day < $3
+    ORDER BY day, meal_id, value, level DESC",
         dto.target,
         start,
         end
@@ -125,24 +134,29 @@ pub async fn get_effective_attendance(
         if let Some(day) = entry.day {
             entries.entry(day).or_insert(BTreeMap::new()).insert(
                 entry.meal_id.unwrap_or(Default::default()),
-                if entry.o_id.is_some() {
-                    if entry.value.unwrap() {
-                        EffectiveAttendance::Present
-                    } else {
-                        if entry.target == Some(dto.target) {
-                            EffectiveAttendance::Absent
-                        } else {
-                            EffectiveAttendance::Blocked
-                        }
-                    }
-                } else {
+                if entry.value.unwrap_or(false) {
+
                     EffectiveAttendance::Present
-                },
+            }else{
+
+                if entry.is_override.unwrap_or(false) {
+                    if Some(dto.target) == entry.target {
+                        EffectiveAttendance::Absent
+                    } else {
+                        EffectiveAttendance::Blocked
+                    }
+                } else if entry.is_cancellation.unwrap_or(false) {
+                    EffectiveAttendance::Cancelled
+                } else {
+                        panic!("Wtf? Invalid attendance record, consult administrator")
+                    }
+            }
             );
         }
     }
 
     Ok(EffectiveMonthAttendance {
+        is_student,
         attendance: entries,
     })
 }

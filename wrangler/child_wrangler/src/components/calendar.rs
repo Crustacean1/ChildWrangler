@@ -1,46 +1,39 @@
-use std::{
-    cmp::{max, min},
-    collections::{BTreeMap, HashMap},
-    iter,
-};
+use std::iter;
 
-use chrono::{Datelike, Days, Month, Months, NaiveDate, Utc, Weekday};
+use chrono::{Datelike, Days, Months, NaiveDate, Utc, Weekday};
 use dto::attendance::{
-    CateringMealDto, EffectiveAttendance, EffectiveMonthAttendance, GetEffectiveMonthAttendance,
+    EffectiveAttendance, EffectiveMonthAttendance, GetEffectiveMonthAttendance,
     GetMonthAttendanceDto, MonthAttendanceDto,
 };
 use leptos::wasm_bindgen::JsCast;
-use leptos::{either::Either, logging::log, prelude::*};
+use leptos::{either::Either, prelude::*};
 
 use leptos_router::{components::A, hooks::use_params};
 use uuid::Uuid;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
-    js_sys::Array,
-    wasm_bindgen::{prelude::Closure, JsValue},
-    window, Blob, FileSystemFileHandle, FileSystemWritableFileStream,
+    js_sys::Array, wasm_bindgen::JsValue, Blob, FileSystemFileHandle, FileSystemWritableFileStream,
 };
+use leptos::logging::log;
 
 use crate::{
     components::{
         loader::Loader,
         modal::Modal,
-        modals::{
-            meal_count_modal::MealCountModal, meal_edit_modal::MealEditModal,
-            meal_history_modal::MealHistoryModal,
-        },
-        snackbar::{self, use_snackbar, SnackbarContext},
+        modals::{meal_count_modal::MealCountModal, meal_edit_modal::MealEditModal},
+        snackbar::{use_snackbar, SnackbarContext},
     },
     icons::{
         download::DownloadIcon, left_arrow::LeftArrow, right_arrow::RightArrow, select::SelectIcon,
     },
-    pages::attendance_page::{AttendanceParams, GroupVersion},
+    pages::attendance_page::{AttendanceParams, AttendanceVersion, GroupVersion},
     services::attendance::{get_effective_attendance, get_month_attendance, get_monthly_summary},
 };
 
 #[component]
 pub fn Calendar() -> impl IntoView {
-    let GroupVersion(group_version, set_group_version) = use_context().unwrap();
+    let GroupVersion(group_version, _) = use_context().unwrap();
+    let AttendanceVersion(attendance_version, _) = use_context().unwrap();
 
     let params = use_params::<AttendanceParams>();
     let params = move || params.read();
@@ -75,9 +68,10 @@ pub fn Calendar() -> impl IntoView {
                 month(),
                 target().unwrap_or_default(),
                 group_version(),
+                attendance_version(),
             )
         },
-        |(year, month, target, _)| async move {
+        |(year, month, target, _, _)| async move {
             get_month_attendance(GetMonthAttendanceDto {
                 target,
                 year,
@@ -94,9 +88,10 @@ pub fn Calendar() -> impl IntoView {
                 month(),
                 target().unwrap_or_default(),
                 group_version(),
+                attendance_version(),
             )
         },
-        |(year, month, target, _)| async move {
+        |(year, month, target, _, _)| async move {
             get_effective_attendance(GetEffectiveMonthAttendance {
                 year: year as i32,
                 month,
@@ -175,6 +170,8 @@ pub fn InnerCalendar(
     attendance: MonthAttendanceDto,
     local_attendance: EffectiveMonthAttendance,
 ) -> impl IntoView {
+    let AttendanceVersion(_, set_attendance_version) = use_context().unwrap();
+
     let snackbar = use_snackbar();
 
     let next_month =
@@ -184,18 +181,11 @@ pub fn InnerCalendar(
 
     let (meal_history, set_meal_history) = signal(None::<(Uuid, Uuid, NaiveDate)>);
     let (meal_count, set_meal_count) = signal(None::<(Uuid, Uuid, NaiveDate)>);
-    //let (meal_count, set_meal_count) = signal(false);
     let (meal_edit, set_meal_edit) = signal(None::<Vec<_>>);
     let (selection_mode, set_selection_mode) = signal(false);
 
-    let start = NaiveDate::from_ymd_opt(year, month, 1).unwrap();
-
     let (drag_start, set_drag_start) = signal(None::<NaiveDate>);
     let (drag_end, set_drag_end) = signal(None::<NaiveDate>);
-
-    let selection_filter = |mode: bool, start: NaiveDate, end: NaiveDate, day: NaiveDate| {
-        return false;
-    };
 
     let download_summary = {
         Action::new(move |_: &()| async move {
@@ -305,13 +295,8 @@ pub fn InnerCalendar(
         }
     };
 
-    let dow1 = attendance.days_of_week.clone();
     let on_drag_end = move || {
         if let (Some(r_start), Some(r_end)) = (drag_start(), drag_end()) {
-            let start = min(r_start, r_end);
-            let end = max(r_start, r_end);
-            let mode = selection_mode();
-
             let days = iter::successors(NaiveDate::from_ymd_opt(year, month, 1), |day| {
                 if day.month() == month {
                     day.checked_add_days(Days::new(1))
@@ -476,7 +461,9 @@ pub fn InnerCalendar(
             </div>
         </div>
 
-        <Modal is_open=move || meal_edit().is_some() on_close=move || set_meal_edit(None)>
+        <Modal is_open=move || meal_edit().is_some()
+                                        on_close=move || set_meal_edit(None)
+        >
             {
                 let meals = attendance.meals.clone();
                 move || {
@@ -489,7 +476,13 @@ pub fn InnerCalendar(
                                         target
                                         days
                                         meals
-                                        on_close=move |_| set_meal_edit(None)
+                                    on_close=move |changed| {
+                                        log!("Helloł: {:?}", changed);
+                                        if changed {
+                                        log!("Hello");
+                                        *set_attendance_version.write() += 1;
+                                    }
+                                        set_meal_edit(None)}
                                     />
                                 }
                             }

@@ -48,6 +48,7 @@ pub fn MealEditModal(
                 match update_attendance(dto).await {
                     Ok(()) => {
                         snackbar.success("Zaktualizowano obecność");
+                        log!("Done, and said");
                         on_close(true)
                     }
                     Err(e) => {
