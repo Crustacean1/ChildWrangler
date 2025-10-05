@@ -26,22 +26,65 @@ pub fn MessageDashboard() -> impl IntoView {
 }
 
 #[component]
+pub fn MessageView(message: GeneralMessageDto) -> impl IntoView {
+    match message.msg_type {
+        dto::messages::MessageState::Received => Either::Left(Either::Left(view! {
+
+        <div class="rounded background-3 self-start fit-content text-left vertical">
+            <div class="padded">
+                {format!("Od: {}", message.sender)}
+            </div>
+            <span class="spacer"></span>
+            <div class="background-4 padded">
+            {message.content}
+            </div>
+            <span class="spacer"></span>
+            <div class="grid-2 gap padded">
+            <small class="gray">Wysłano</small><small class="gray">{format!("{}", message.sent)}</small>
+            <small class="gray">Otrzymano</small><small class="gray">{format!("{}", message.received)}</small>
+            </div>
+        </div>
+        })),
+        dto::messages::MessageState::Outgoing => Either::Left(Either::Right(view! {
+        <div class="rounded background-3 padded self-end fit-content ">
+                    {message.content}
+                </div>
+                })),
+        dto::messages::MessageState::Sent => Either::Right(view! {
+        <div class="rounded background-3 padded self-end fit-content">
+                    {message.content}
+                </div>
+        }),
+    }
+}
+
+#[component]
 pub fn MessageDashbaordInner(
     phone: Option<PhoneStatusDto>,
-    messages: Vec<GeneralMessageDto>,
+    mut messages: Vec<GeneralMessageDto>,
 ) -> impl IntoView {
+    messages.sort_by_key(|m| m.sent);
+
     view! {
-        <div class="background-2 rounded padded">
+        <div class="background-2 rounded padded gap">
         <h2 class="h2"> Phone status</h2>
         {phone.map(|phone| {
-            let active =phone.last_updated.signed_duration_since(Utc::now().naive_utc()) < Duration::minutes(5);
+            let active = Utc::now().naive_utc().signed_duration_since(phone.last_updated) < Duration::minutes(5);
+            let signal_color_g = (255.0 * phone.signal as f32 / 100.0) as i32;
+            let signal_color_r = (255.0 - signal_color_g as f32) as i32;
+
             Either::Left(view!{
-            <span class:green={active} class:red={!active}>{format!("Ostatni kontakt: {}", phone.last_updated)}</span>
-            <span>{format!("Sygnał: {}/100", phone.signal)}</span>
+                <div class="horizontal gap">
+            <span >Ostatni kontakt</span>
+            <span class:green={active} class:red={!active}>{format!("{}", phone.last_updated)}</span>
+            <span>Sygnał</span>
+            <span style:color={format!("rgb({},{},0)", signal_color_r, signal_color_g)}>{format!("{}", phone.signal)}</span>
+            <span>/ </span><span>100</span>
+            </div>
         })}).unwrap_or(Either::Right(view!{<span>Nie wykryto modemu</span>}))}
         </div>
-        <div class="background-2 rounded padded flex-1">
-            
+        <div class="background-2 rounded padded flex-1 overflow-auto vertical gap">
+         {messages.into_iter().map(|message| view!{<MessageView message/>}).collect::<Vec<_>>()}
         </div>
     }
 }

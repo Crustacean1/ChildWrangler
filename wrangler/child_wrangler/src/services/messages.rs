@@ -249,20 +249,20 @@ pub async fn get_latest_messages() -> Result<(Vec<GeneralMessageDto>), ServerFnE
 
     let received =
         sqlx::query!(r#"SELECT "ID", "TextDecoded", "SenderNumber" ,"Processed","ReceivingDateTime", "UpdatedInDB"  FROM inbox
-    WHERE "ReceivingDateTime" > NOW() - INTERVAL '1 DAY'"#)
+    WHERE "ReceivingDateTime" > NOW() - INTERVAL '10 DAY'"#)
             .fetch_all(&pool)
             .await?.into_iter().map(|row| GeneralMessageDto{ message_id: row.ID, sent: row.ReceivingDateTime, received: row.UpdatedInDB, sender_id: None, sender: row.SenderNumber, content: row.TextDecoded, msg_type: MessageState::Received
         });
 
     let outgoing =
         sqlx::query!(r#"SELECT "ID", "TextDecoded", "DestinationNumber" ,"SendingDateTime", "InsertIntoDB"  FROM outbox
-    WHERE "SendingDateTime" > NOW() - INTERVAL '1 DAY'"#)
+    WHERE "SendingDateTime" > NOW() - INTERVAL '10 DAY'"#)
             .fetch_all(&pool)
             .await?.into_iter().map(|row| GeneralMessageDto{ message_id: row.ID, sent: row.InsertIntoDB, received: row.SendingDateTime, sender_id: None, sender: row.DestinationNumber, content: row.TextDecoded, msg_type: MessageState::Outgoing});
 
     let sent =
         sqlx::query!(r#"SELECT "ID", "TextDecoded", "DestinationNumber" ,"SendingDateTime", "InsertIntoDB"  FROM sentitems
-    WHERE "SendingDateTime" > NOW() - INTERVAL '1 DAY'"#)
+    WHERE "SendingDateTime" > NOW() - INTERVAL '10 DAY'"#)
             .fetch_all(&pool)
             .await?.into_iter().map(|row| GeneralMessageDto{ message_id: row.ID, sent: row.InsertIntoDB, received: row.SendingDateTime, sender_id: None, sender: row.DestinationNumber, content: row.TextDecoded, msg_type: MessageState::Sent});
 

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT \"ID\", \"TextDecoded\", \"SenderNumber\" ,\"Processed\",\"ReceivingDateTime\", \"UpdatedInDB\"  FROM inbox\n    WHERE \"ReceivingDateTime\" > NOW() - INTERVAL '1 DAY'",
+  "query": "SELECT \"ID\", \"TextDecoded\", \"SenderNumber\" ,\"Processed\",\"ReceivingDateTime\", \"UpdatedInDB\"  FROM inbox\n    WHERE \"ReceivingDateTime\" > NOW() - INTERVAL '10 DAY'",
   "describe": {
     "columns": [
       {
@@ -46,5 +46,5 @@
       false
     ]
   },
-  "hash": "b45fe2db475a12e1d0b19ba64405a330f2dcf9eb890322a446f1cca54d57958d"
+  "hash": "1c00fc2f782a71d25011e01f93adf42d0e38c2fdbacc4fadd9a904d549455192"
 }
