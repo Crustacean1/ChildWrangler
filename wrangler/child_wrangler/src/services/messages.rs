@@ -1,6 +1,12 @@
 use std::collections::HashMap;
 
-use dto::{catering::GuardianDetailDto, messages::{ContactDto, GuardianDetails, GuardianDto, GuardianStudent, Message, MessageProcessing, MessageType}};
+use dto::{
+    catering::GuardianDetailDto,
+    messages::{
+        ContactDto, GeneralMessageDto, GuardianDetails, GuardianDto, GuardianStudent, Message,
+        MessageProcessing, MessageState, MessageType, PhoneStatusDto,
+    },
+};
 use leptos::prelude::*;
 use uuid::Uuid;
 
@@ -214,4 +220,51 @@ pub async fn get_message_processing_info(
     }
 
     Ok(result)
+}
+
+#[server]
+pub async fn get_phone_status() -> Result<Option<PhoneStatusDto>, ServerFnError> {
+    use sqlx::postgres::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+
+    let phone =
+        sqlx::query!(r#"SELECT "UpdatedInDB", "Sent" ,"Received","Signal"  FROM phones LIMIT 1"#)
+            .fetch_optional(&pool)
+            .await?
+            .map(|phone| PhoneStatusDto {
+                last_updated: phone.UpdatedInDB,
+                total_sent: phone.Sent,
+                total_received: phone.Received,
+                signal: phone.Signal,
+            });
+    Ok(phone)
+}
+
+#[server]
+pub async fn get_latest_messages() -> Result<(Vec<GeneralMessageDto>), ServerFnError> {
+    use sqlx::postgres::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+
+    let received =
+        sqlx::query!(r#"SELECT "ID", "TextDecoded", "SenderNumber" ,"Processed","ReceivingDateTime", "UpdatedInDB"  FROM inbox
+    WHERE "ReceivingDateTime" > NOW() - INTERVAL '1 DAY'"#)
+            .fetch_all(&pool)
+            .await?.into_iter().map(|row| GeneralMessageDto{ message_id: row.ID, sent: row.ReceivingDateTime, received: row.UpdatedInDB, sender_id: None, sender: row.SenderNumber, content: row.TextDecoded, msg_type: MessageState::Received
+        });
+
+    let outgoing =
+        sqlx::query!(r#"SELECT "ID", "TextDecoded", "DestinationNumber" ,"SendingDateTime", "InsertIntoDB"  FROM outbox
+    WHERE "SendingDateTime" > NOW() - INTERVAL '1 DAY'"#)
+            .fetch_all(&pool)
+            .await?.into_iter().map(|row| GeneralMessageDto{ message_id: row.ID, sent: row.InsertIntoDB, received: row.SendingDateTime, sender_id: None, sender: row.DestinationNumber, content: row.TextDecoded, msg_type: MessageState::Outgoing});
+
+    let sent =
+        sqlx::query!(r#"SELECT "ID", "TextDecoded", "DestinationNumber" ,"SendingDateTime", "InsertIntoDB"  FROM sentitems
+    WHERE "SendingDateTime" > NOW() - INTERVAL '1 DAY'"#)
+            .fetch_all(&pool)
+            .await?.into_iter().map(|row| GeneralMessageDto{ message_id: row.ID, sent: row.InsertIntoDB, received: row.SendingDateTime, sender_id: None, sender: row.DestinationNumber, content: row.TextDecoded, msg_type: MessageState::Sent});
+
+    Ok(received.chain(outgoing).chain(sent).collect())
 }

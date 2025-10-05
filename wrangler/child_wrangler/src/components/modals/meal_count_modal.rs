@@ -40,19 +40,33 @@ pub fn MealCountModalInner(
     attendance: AttendanceBreakdownDto,
 ) -> impl IntoView {
     view! {
-        <div class="grid-2 gap">
+        <table>
+        <thead>
+        <tr>
+        <th></th>
+        <th></th>
+        <th></th>
+        </tr>
+        </thead>
+        <tbody class="padded-table">
             {attendance
                 .attendance
                 .into_iter()
-                .map(|(name, value)| {
+                .map(|(name, (id,attendance, total))| {
                     view! {
+                        <tr>
+                        <td>
                         <a class="rounded " href=format!("/attendance/{}", id)>
                             {format!("{}", name)}
                         </a>
-                        <span>{value}</span>
+                        </td>
+                        <td>{attendance}</td>
+                        <td>{total}</td>
+                        </tr>
                     }
                 })
                 .collect::<Vec<_>>()}
-        </div>
+        </tbody>
+        </table>
     }
 }

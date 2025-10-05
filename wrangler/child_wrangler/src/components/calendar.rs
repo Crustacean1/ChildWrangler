@@ -495,11 +495,11 @@ pub fn InnerCalendar(
             }
         </Modal>
 
-        {move || meal_history().map(|(target, meal_id,date)| view!{
+        {/*move || meal_history().map(|(target, meal_id,date)| view!{
             <div class="calendar-history-tooltip pretty-background" >
                 <MealHistoryModal meal_id target date/>
             </div>
-        })}
+        })*/}
         {move || meal_count().map(|(meal_id,target,date)| view!{
             <div class="calendar-meal-tooltip pretty-background" >
             <MealCountModal target meal_id date/>

@@ -126,3 +126,29 @@ pub enum MessageProcessing {
     StudentCancellation(Vec<StudentCancellation>),
     RequestError(RequestError),
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PhoneStatusDto {
+    pub last_updated: NaiveDateTime,
+    pub total_sent: i32,
+    pub total_received: i32,
+    pub signal: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum MessageState {
+    Received,
+    Outgoing,
+    Sent,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GeneralMessageDto {
+    pub msg_type: MessageState,
+    pub message_id: i32,
+    pub sent: NaiveDateTime,
+    pub received: NaiveDateTime,
+    pub sender_id: Option<Uuid>,
+    pub sender: String,
+    pub content: String,
+}

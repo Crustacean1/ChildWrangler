@@ -9,12 +9,7 @@ use leptos_router::{
 use crate::{
     components::{searchbar::Searchbar, snackbar::Snackbar},
     pages::{
-        attendance_dashboard::AttendanceDashboard,
-        attendance_page::{AttendancePage, GroupVersion},
-        detail_page::DetailPage,
-        guardian_contact_details::GuardianContactDetails,
-        message_page::MessagePage,
-        unknown_contact_details::UnknownContactDetails,
+        attendance_dashboard::AttendanceDashboard, attendance_page::{AttendancePage, GroupVersion}, detail_page::DetailPage, guardian_contact_details::GuardianContactDetails, message_dashboard::MessageDashboard, message_page::MessagePage, unknown_contact_details::UnknownContactDetails
     },
 };
 
@@ -83,12 +78,7 @@ pub fn App() -> impl IntoView {
                         <ParentRoute path=path!("messages") view=MessagePage>
                             <Route
                                 path=path!("/")
-                                view=|| {
-                                    view! {
-                                        <div class="group-not-selected">Nie wybrano kontaktu</div>
-                                    }
-                                }
-                            />
+                                view=MessageDashboard />
                             <Route
                                 path=path!("/guardian/:id")
                                 view=|| {

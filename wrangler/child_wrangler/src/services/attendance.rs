@@ -223,7 +223,6 @@ pub async fn get_attendance_history(
     .fetch_optional(&pool)
     .await?;
 
-    log!("Wtf: {:?}", events);
     Ok(AttendanceHistoryDto {
         events: history,
         status: if let Some(events) = events {
@@ -255,18 +254,43 @@ pub async fn get_attendance_breakdown(
         .await?
         .name;
 
-    let attendance = sqlx::query!("SELECT groups.id, groups.name, SUM(rooted_attendance.present::int) AS attendance FROM group_relations
+    let student_level = sqlx::query!(
+        "SELECT * FROM group_relations
+    INNER JOIN students ON students.id = group_relations.child
+    WHERE group_relations.parent = $1
+    ORDER BY level
+    LIMIT 1",
+        dto.target
+    )
+    .fetch_optional(&pool)
+    .await?
+    .map(|row| row.level);
+
+    let attendance = if student_level == Some(0) {
+        vec![]
+    } else if student_level == Some(1) {
+        sqlx::query!("SELECT students.id, students.name, students.surname, SUM(rooted_attendance.present::int) AS attendance , SUM((rooted_attendance.present IS NOT NULL)::int) AS total FROM group_relations
+    INNER JOIN students ON students.id = group_relations.child
+    LEFT JOIN rooted_attendance ON rooted_attendance.root = group_relations.child AND rooted_attendance.day = $2 AND rooted_attendance.meal_id = $3
+    WHERE group_relations.parent=$1 AND group_relations.level = 1
+    GROUP BY students.id
+    ORDER BY students.surname", dto.target, dto.date, dto.meal_id)
+        .fetch_all(&pool).await?
+        .into_iter()
+            .map(|row| (format!("{} {}", row.name, row.surname),(row.id,row.attendance.unwrap_or(0), row.total.unwrap_or(0))))
+        .collect::<Vec<_>>()
+    } else {
+        sqlx::query!("SELECT groups.id, groups.name, SUM(rooted_attendance.present::int) AS attendance, SUM((rooted_attendance.present IS NOT NULL)::int) AS total FROM group_relations
     INNER JOIN groups ON groups.id = group_relations.child
     LEFT JOIN rooted_attendance ON rooted_attendance.root = group_relations.child AND rooted_attendance.day = $2 AND rooted_attendance.meal_id = $3
     WHERE group_relations.parent=$1 AND group_relations.level = 1
     GROUP BY groups.id
     ORDER BY groups.name", dto.target, dto.date, dto.meal_id)
-        .fetch_all(&pool).await?;
-
-    let attendance = attendance
+        .fetch_all(&pool).await?
         .into_iter()
-        .filter_map(|row| Some((row.name, row.attendance.unwrap_or(0))))
-        .collect();
+            .map(|row| (row.name,(row.id,row.attendance.unwrap_or(0), row.total.unwrap_or(0))))
+        .collect::<Vec<_>>()
+    };
 
     Ok(AttendanceBreakdownDto { attendance, meal })
 }

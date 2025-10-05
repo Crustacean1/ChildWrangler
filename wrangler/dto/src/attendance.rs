@@ -101,7 +101,7 @@ pub struct GetAttendanceBreakdownDto {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AttendanceBreakdownDto {
     pub meal: String,
-    pub attendance: HashMap<String, i64>,
+    pub attendance: Vec<(String, (Uuid, i64,i64))>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

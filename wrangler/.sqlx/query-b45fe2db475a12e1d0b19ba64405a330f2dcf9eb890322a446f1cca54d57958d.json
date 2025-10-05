@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT \"ID\", \"TextDecoded\", \"SenderNumber\" ,\"Processed\",\"ReceivingDateTime\", \"UpdatedInDB\"  FROM inbox\n    WHERE \"ReceivingDateTime\" > NOW() - INTERVAL '1 DAY'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "ID",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "TextDecoded",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "SenderNumber",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "Processed",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "ReceivingDateTime",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 5,
+        "name": "UpdatedInDB",
+        "type_info": "Timestamp"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "b45fe2db475a12e1d0b19ba64405a330f2dcf9eb890322a446f1cca54d57958d"
+}

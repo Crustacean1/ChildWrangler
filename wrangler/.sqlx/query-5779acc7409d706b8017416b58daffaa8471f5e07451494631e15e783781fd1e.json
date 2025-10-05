@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT \"UpdatedInDB\", \"Sent\" ,\"Received\",\"Signal\"  FROM phones LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "UpdatedInDB",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 1,
+        "name": "Sent",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "Received",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "Signal",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "5779acc7409d706b8017416b58daffaa8471f5e07451494631e15e783781fd1e"
+}

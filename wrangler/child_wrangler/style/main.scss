@@ -573,7 +573,7 @@ th {
   position: absolute;
   position-anchor: --calendar-anchor-1;
   position-area: center start;
-  padding: 1em;
+  padding: 0.0em;
   z-index: 2;
 }
 
@@ -581,7 +581,7 @@ th {
   position: absolute;
   position-anchor: --calendar-anchor-1;
   position-area: center end;
-  padding: 1em;
+  padding: 0.0em;
   z-index: 2;
 }
 
@@ -593,4 +593,24 @@ th {
   .min-w-10 {
     display: none;
   }
+}
+
+.grid-4 {
+  display: grid;
+  text-align: left;
+  grid-template-columns: auto auto 0.5em auto;
+}
+
+.padded-table {
+  border-style: hidden;
+  border-collapse: collapse;
+
+}
+
+.padded-table td {
+  padding: 0.5em;
+}
+
+.padded-table th {
+  display: none;
 }
