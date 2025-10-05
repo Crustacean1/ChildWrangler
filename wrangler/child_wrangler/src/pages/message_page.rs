@@ -52,7 +52,7 @@ pub fn InnerMessagePage(contacts: Vec<ContactDto>) -> impl IntoView {
 
     view! {
         <div class="horizontal flex-1 gap overflow-hidden">
-            <div class="vertical background-2 gap padded w-20 rounded">
+            <div class="vertical background-2 gap padded w-20 rounded min-w-10">
                 <div class="overflow-auto">
                     <ul class="flex-1 vertical gap-2">
                         {move || {
