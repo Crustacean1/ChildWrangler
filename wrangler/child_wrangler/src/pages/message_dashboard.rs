@@ -42,8 +42,23 @@ pub fn MessageView(message: GeneralMessageDto) -> impl IntoView {
                 </div>
             </div>
         })),
-        dto::messages::MessageState::Outgoing => Either::Left(Either::Right(view! { <div class="rounded background-3 padded self-end fit-content ">{message.content}</div> })),
-        dto::messages::MessageState::Sent => Either::Right(view! { <div class="rounded background-3 padded self-end fit-content">{message.content}</div> }),
+        dto::messages::MessageState::Outgoing => Either::Left(Either::Right(
+            view! { <div class="rounded background-3 padded self-end fit-content ">{message.content}</div> },
+        )),
+        dto::messages::MessageState::Sent => Either::Right(view! {
+            <div class="rounded background-3 self-end fit-content text-right vertical">
+                <div class="padded">{format!("Do: {}", message.sender)}</div>
+                <span class="spacer"></span>
+                <div class="background-4 padded">{format!("{}", message.content)}</div>
+                <span class="spacer"></span>
+                <div class="grid-2 gap padded">
+                    <small class="gray">Zakolejkowano</small>
+                    <small class="gray">{format!("{}", message.sent)}</small>
+                    <small class="gray">Wysłano</small>
+                    <small class="gray">{format!("{}", message.received)}</small>
+                </div>
+            </div>
+        }),
     }
 }
 
@@ -52,7 +67,7 @@ pub fn MessageDashbaordInner(
     phone: Option<PhoneStatusDto>,
     mut messages: Vec<GeneralMessageDto>,
 ) -> impl IntoView {
-    messages.sort_by_key(|m| m.sent);
+    messages.sort_by_key(|m| m.received);
 
     view! {
         <div class="background-2 rounded padded gap">
@@ -85,9 +100,10 @@ pub fn MessageDashbaordInner(
                 })
                 .unwrap_or(Either::Right(view! { <span>Nie wykryto modemu</span> }))}
         </div>
-        <div class="background-2 rounded padded flex-1 overflow-auto vertical gap">
+        <div class="background-2 rounded padded flex-1 overflow-auto reverse-vertical gap">
             {messages
                 .into_iter()
+                .rev()
                 .map(|message| view! { <MessageView message /> })
                 .collect::<Vec<_>>()}
         </div>

@@ -272,7 +272,7 @@ pub async fn get_attendance_breakdown(
         sqlx::query!("SELECT students.id, students.name, students.surname, SUM(rooted_attendance.present::int) AS attendance , SUM((rooted_attendance.present IS NOT NULL)::int) AS total FROM group_relations
     INNER JOIN students ON students.id = group_relations.child
     LEFT JOIN rooted_attendance ON rooted_attendance.root = group_relations.child AND rooted_attendance.day = $2 AND rooted_attendance.meal_id = $3
-    WHERE group_relations.parent=$1 AND group_relations.level = 1
+    WHERE group_relations.parent=$1 AND group_relations.level = 1 AND NOT students.removed
     GROUP BY students.id
     ORDER BY students.surname", dto.target, dto.date, dto.meal_id)
         .fetch_all(&pool).await?
@@ -283,7 +283,7 @@ pub async fn get_attendance_breakdown(
         sqlx::query!("SELECT groups.id, groups.name, SUM(rooted_attendance.present::int) AS attendance, SUM((rooted_attendance.present IS NOT NULL)::int) AS total FROM group_relations
     INNER JOIN groups ON groups.id = group_relations.child
     LEFT JOIN rooted_attendance ON rooted_attendance.root = group_relations.child AND rooted_attendance.day = $2 AND rooted_attendance.meal_id = $3
-    WHERE group_relations.parent=$1 AND group_relations.level = 1
+    WHERE group_relations.parent=$1 AND group_relations.level = 1 AND NOT groups.removed
     GROUP BY groups.id
     ORDER BY groups.name", dto.target, dto.date, dto.meal_id)
         .fetch_all(&pool).await?

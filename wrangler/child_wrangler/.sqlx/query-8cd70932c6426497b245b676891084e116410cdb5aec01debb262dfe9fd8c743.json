@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT students.id, students.name, students.surname, SUM(rooted_attendance.present::int) AS attendance , SUM((rooted_attendance.present IS NOT NULL)::int) AS total FROM group_relations\n    INNER JOIN students ON students.id = group_relations.child\n    LEFT JOIN rooted_attendance ON rooted_attendance.root = group_relations.child AND rooted_attendance.day = $2 AND rooted_attendance.meal_id = $3\n    WHERE group_relations.parent=$1 AND group_relations.level = 1\n    GROUP BY students.id\n    ORDER BY students.surname",
+  "query": "SELECT students.id, students.name, students.surname, SUM(rooted_attendance.present::int) AS attendance , SUM((rooted_attendance.present IS NOT NULL)::int) AS total FROM group_relations\n    INNER JOIN students ON students.id = group_relations.child\n    LEFT JOIN rooted_attendance ON rooted_attendance.root = group_relations.child AND rooted_attendance.day = $2 AND rooted_attendance.meal_id = $3\n    WHERE group_relations.parent=$1 AND group_relations.level = 1 AND NOT students.removed\n    GROUP BY students.id\n    ORDER BY students.surname",
   "describe": {
     "columns": [
       {
@@ -44,5 +44,5 @@
       null
     ]
   },
-  "hash": "6d3e5068b26d4577789f99ed65e2bfa080ba7e3e5371dd8d5cdf9e19e66e3984"
+  "hash": "8cd70932c6426497b245b676891084e116410cdb5aec01debb262dfe9fd8c743"
 }
