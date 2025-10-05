@@ -3,7 +3,7 @@ use dto::attendance::{AttendanceBreakdownDto, GetAttendanceBreakdownDto};
 use leptos::prelude::*;
 use uuid::Uuid;
 
-use crate::services::attendance::get_attendance_breakdown;
+use crate::{components::loader::Loader, services::attendance::get_attendance_breakdown};
 
 #[component]
 pub fn MealCountModal(target: Uuid, meal_id: Uuid, date: NaiveDate) -> impl IntoView {
@@ -20,10 +20,7 @@ pub fn MealCountModal(target: Uuid, meal_id: Uuid, date: NaiveDate) -> impl Into
     );
 
     view! {
-        <Suspense>
-            <ErrorBoundary fallback=|_| {
-                view! { <div>Error</div> }
-            }>
+        <Loader>
                 {Suspend::new(async move {
                     let attendance = attendance.await?;
                     Ok::<
@@ -31,8 +28,7 @@ pub fn MealCountModal(target: Uuid, meal_id: Uuid, date: NaiveDate) -> impl Into
                         ServerFnError,
                     >(view! { <MealCountModalInner target meal_id date attendance /> })
                 })}
-            </ErrorBoundary>
-        </Suspense>
+        </Loader>
     }
 }
 
@@ -44,18 +40,16 @@ pub fn MealCountModalInner(
     attendance: AttendanceBreakdownDto,
 ) -> impl IntoView {
     view! {
-        <h2 class="h2">{format!("Obecność  {}", date)}</h2>
-        <h3 class="h2">{format!("Posiłek: {}", attendance.meal)}</h3>
         <div class="grid-2 gap">
             {attendance
                 .attendance
                 .into_iter()
-                .map(|(id, (name, value))| {
+                .map(|(name, value))| {
                     view! {
-                        <a class="interactive rounded padded" href=format!("/attendance/{}", id)>
+                        <a class="rounded " href=format!("/attendance/{}", id)>
                             {format!("{}", name)}
                         </a>
-                        <span class="padded">{value}</span>
+                        <span>{value}</span>
                     }
                 })
                 .collect::<Vec<_>>()}

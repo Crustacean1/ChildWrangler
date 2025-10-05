@@ -255,34 +255,17 @@ pub async fn get_attendance_breakdown(
         .await?
         .name;
 
-    let attendance = sqlx::query!("SELECT group_relations.child AS id, SUM(rooted_attendance.present::int) AS attendance FROM group_relations
-    INNER JOIN rooted_attendance ON rooted_attendance.root = group_relations.child AND rooted_attendance.day = $2 AND rooted_attendance.meal_id = $3
+    let attendance = sqlx::query!("SELECT groups.id, groups.name, SUM(rooted_attendance.present::int) AS attendance FROM group_relations
+    INNER JOIN groups ON groups.id = group_relations.child
+    LEFT JOIN rooted_attendance ON rooted_attendance.root = group_relations.child AND rooted_attendance.day = $2 AND rooted_attendance.meal_id = $3
     WHERE group_relations.parent=$1 AND group_relations.level = 1
-    GROUP BY group_relations.child", dto.target, dto.date, dto.meal_id)
+    GROUP BY groups.id
+    ORDER BY groups.name", dto.target, dto.date, dto.meal_id)
         .fetch_all(&pool).await?;
-
-    let names = sqlx::query!(
-        "SELECT COALESCE(groups.name, FORMAT('%s %s', students.name, students.surname)) AS name, COALESCE(groups.id,students.id) AS id FROM group_relations
-    LEFT JOIN students ON students.id = group_relations.child
-    LEFT JOIN groups ON groups.id = group_relations.child
-    WHERE group_relations.parent = $1",
-        dto.target
-    )
-    .fetch_all(&pool)
-    .await?.into_iter().filter_map(|row| {
-
-Some((row.id?,row.name?))
-        })
-        .collect::<HashMap<_,_>>();
 
     let attendance = attendance
         .into_iter()
-        .filter_map(|row| {
-            Some((
-                row.id,
-                (names.get(&row.id)?.clone(), row.attendance.unwrap_or(0)),
-            ))
-        })
+        .filter_map(|row| Some((row.name, row.attendance.unwrap_or(0))))
         .collect();
 
     Ok(AttendanceBreakdownDto { attendance, meal })
@@ -399,12 +382,15 @@ pub async fn get_attendance_overview(
     let mut student_list = HashMap::new();
 
     for student in student_attendance {
-        student_list.entry(student.meal_id.unwrap_or(Uuid::nil())).or_insert(vec![]).push((
-            student.id,
-            student.name,
-            student.surname,
-            student.present.unwrap_or(0) != 0,
-        ));
+        student_list
+            .entry(student.meal_id.unwrap_or(Uuid::nil()))
+            .or_insert(vec![])
+            .push((
+                student.id,
+                student.name,
+                student.surname,
+                student.present.unwrap_or(0) != 0,
+            ));
     }
 
     Ok(AttendanceOverviewDto {

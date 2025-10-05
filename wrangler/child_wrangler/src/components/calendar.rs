@@ -453,6 +453,7 @@ pub fn InnerCalendar(
                                                     date
                                                     meals
                                                     meal_select={meal_history}
+                                                    count_select={meal_count}
                                                 on_unselect={move || {set_meal_history(None);set_meal_count(None);}}
                                                     on_meal_select=move |meal_id| {
                                                         set_meal_history(Some((meal_id, target, date)))
@@ -472,12 +473,6 @@ pub fn InnerCalendar(
             </div>
         </div>
 
-        <Modal is_open=move || meal_count().is_some() on_close=move || set_meal_count(None)>
-            {move || {
-                meal_count()
-                    .map(|(meal_id, target, date)| view! { <MealCountModal meal_id target date /> })
-            }}
-        </Modal>
         <Modal is_open=move || meal_edit().is_some() on_close=move || set_meal_edit(None)>
             {
                 let meals = attendance.meals.clone();
@@ -500,7 +495,17 @@ pub fn InnerCalendar(
             }
         </Modal>
 
-        <div class="calendar-tooltip" class:invisible=move || meal_history().is_none()>I am some tooltip</div>
+        {move || meal_history().map(|(target, meal_id,date)| view!{
+            <div class="calendar-history-tooltip pretty-background" >
+                <MealHistoryModal meal_id target date/>
+            </div>
+        })}
+        {move || meal_count().map(|(meal_id,target,date)| view!{
+            <div class="calendar-meal-tooltip pretty-background" >
+            <MealCountModal target meal_id date/>
+            </div>
+        })}
+
     }
 }
 
@@ -509,6 +514,7 @@ pub fn Day(
     date: NaiveDate,
     meals: Vec<(Uuid, String, u32, EffectiveAttendance)>,
     meal_select: impl Fn() -> Option<(Uuid, Uuid, NaiveDate)> + Send + Sync + Copy + 'static,
+    count_select: impl Fn() -> Option<(Uuid, Uuid, NaiveDate)> + Send + Sync + Copy + 'static,
     on_meal_select: impl Fn(Uuid) + Send + Sync + Copy + 'static,
     on_count_select: impl Fn(Uuid) + Send + Sync + Copy + 'static,
     on_unselect: impl Fn() + Send + Sync + Copy + 'static,
@@ -535,7 +541,9 @@ pub fn Day(
 
                         <div
                             class="flex-1 padded no-select rounded"
-                            on:click=move |_| on_count_select(meal_id)>
+                            class:calendar-anchor=move || { if let Some((selected_meal_id,_, selected_date)) = count_select(){ return selected_meal_id == meal_id && selected_date == date} else {false}}
+                            on:mouseover=move |_| on_count_select(meal_id)
+                            on:mouseleave=move |_| on_unselect()>
                             {format!("{}", attendance)}
                         </div>
                     </div>
