@@ -242,8 +242,7 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
                             padding=12
                             series=att
                                 .map(|att| {
-                                    att
-                                        .iter()
+                                    att.iter()
                                         .map(|(status, count)| (status.clone(), *count as i32))
                                         .collect::<Vec<_>>()
                                 })
@@ -263,8 +262,7 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
                                 <tbody class="background-1">
                                     {student_list
                                         .map(|list| {
-                                            list
-                                                .iter()
+                                            list.iter()
                                                 .map(|(id, name, surname, present)| {
                                                     view! {
                                                         <tr>

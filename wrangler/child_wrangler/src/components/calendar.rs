@@ -463,9 +463,7 @@ pub fn InnerCalendar(
             </div>
         </div>
 
-        <Modal is_open=move || meal_edit().is_some()
-                                        on_close=move || set_meal_edit(None)
-        >
+        <Modal is_open=move || meal_edit().is_some() on_close=move || set_meal_edit(None)>
             {
                 let meals = attendance.meals.clone();
                 move || {
@@ -478,13 +476,14 @@ pub fn InnerCalendar(
                                         target
                                         days
                                         meals
-                                    on_close=move |changed| {
-                                        log!("Helloł: {:?}", changed);
-                                        if changed {
-                                        log!("Hello");
-                                        *set_attendance_version.write() += 1;
-                                    }
-                                        set_meal_edit(None)}
+                                        on_close=move |changed| {
+                                            log!("Helloł: {:?}", changed);
+                                            if changed {
+                                                log!("Hello");
+                                                *set_attendance_version.write() += 1;
+                                            }
+                                            set_meal_edit(None)
+                                        }
                                     />
                                 }
                             }
@@ -543,27 +542,28 @@ pub fn Day(
                         >
                             {meal_name.clone()}
                         </div>
-                        {
-                                        if !is_student{
-                                            Either::Left(view!{
-
-                        <div
-                            class="flex-1 padded no-select rounded"
-                            class:calendar-anchor=move || {
-                                if let Some((selected_meal_id, _, selected_date)) = count_select() {
-                                    return selected_meal_id == meal_id && selected_date == date
-                                } else {
-                                    false
-                                }
-                            }
-                            on:mouseover=move |_| on_count_select(meal_id)
-                            on:mouseleave=move |_| on_unselect()
-                        >
-                            {format!("{}", attendance)}
-                        </div>
-                                            })
-                                        }else {Either::Right(view!{})}
-                                    }
+                        {if !is_student {
+                            Either::Left(
+                                view! {
+                                    <div
+                                        class="flex-1 padded no-select rounded"
+                                        class:calendar-anchor=move || {
+                                            if let Some((selected_meal_id, _, selected_date)) = count_select() {
+                                                return selected_meal_id == meal_id && selected_date == date
+                                            } else {
+                                                false
+                                            }
+                                        }
+                                        on:mouseover=move |_| on_count_select(meal_id)
+                                        on:mouseleave=move |_| on_unselect()
+                                    >
+                                        {format!("{}", attendance)}
+                                    </div>
+                                },
+                            )
+                        } else {
+                            Either::Right(view! {})
+                        }}
                     </div>
                 }
             })
