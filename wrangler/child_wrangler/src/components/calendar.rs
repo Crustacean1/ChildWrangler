@@ -446,15 +446,18 @@ pub fn InnerCalendar(
                                             ),
                                         )
                                     }
-                                    CalendarDay::Day( meals) => {
+                                    CalendarDay::Day(meals) => {
                                         Either::Right(
                                             view! {
                                                 <Day
                                                     date
                                                     meals
-                                                    meal_select={meal_history}
-                                                    count_select={meal_count}
-                                                on_unselect={move || {set_meal_history(None);set_meal_count(None);}}
+                                                    meal_select=meal_history
+                                                    count_select=meal_count
+                                                    on_unselect=move || {
+                                                        set_meal_history(None);
+                                                        set_meal_count(None);
+                                                    }
                                                     on_meal_select=move |meal_id| {
                                                         set_meal_history(Some((meal_id, target, date)))
                                                     }
@@ -495,17 +498,17 @@ pub fn InnerCalendar(
             }
         </Modal>
 
-        {/*move || meal_history().map(|(target, meal_id,date)| view!{
-            <div class="calendar-history-tooltip pretty-background" >
-                <MealHistoryModal meal_id target date/>
-            </div>
-        })*/}
-        {move || meal_count().map(|(meal_id,target,date)| view!{
-            <div class="calendar-meal-tooltip pretty-background" >
-            <MealCountModal target meal_id date/>
-            </div>
-        })}
-
+        {}
+        {move || {
+            meal_count()
+                .map(|(meal_id, target, date)| {
+                    view! {
+                        <div class="calendar-meal-tooltip pretty-background">
+                            <MealCountModal target meal_id date />
+                        </div>
+                    }
+                })
+        }}
     }
 }
 
@@ -530,7 +533,13 @@ pub fn Day(
                             class="flex-4 padded rounded no-select text-left flex justify-center align-center"
                             on:mouseover=move |_| on_meal_select(meal_id)
                             on:mouseleave=move |_| on_unselect()
-                            class:calendar-anchor=move || { if let Some((selected_meal_id,_, selected_date)) = meal_select(){ return selected_meal_id == meal_id && selected_date == date} else {false}}
+                            class:calendar-anchor=move || {
+                                if let Some((selected_meal_id, _, selected_date)) = meal_select() {
+                                    return selected_meal_id == meal_id && selected_date == date
+                                } else {
+                                    false
+                                }
+                            }
                             class:green=status == EffectiveAttendance::Present
                             class:red=status == EffectiveAttendance::Absent
                             class:yellow=status == EffectiveAttendance::Cancelled
@@ -541,9 +550,16 @@ pub fn Day(
 
                         <div
                             class="flex-1 padded no-select rounded"
-                            class:calendar-anchor=move || { if let Some((selected_meal_id,_, selected_date)) = count_select(){ return selected_meal_id == meal_id && selected_date == date} else {false}}
+                            class:calendar-anchor=move || {
+                                if let Some((selected_meal_id, _, selected_date)) = count_select() {
+                                    return selected_meal_id == meal_id && selected_date == date
+                                } else {
+                                    false
+                                }
+                            }
                             on:mouseover=move |_| on_count_select(meal_id)
-                            on:mouseleave=move |_| on_unselect()>
+                            on:mouseleave=move |_| on_unselect()
+                        >
                             {format!("{}", attendance)}
                         </div>
                     </div>

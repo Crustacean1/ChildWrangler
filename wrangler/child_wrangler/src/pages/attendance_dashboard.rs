@@ -240,11 +240,14 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
                     <div class="horizontal gap flex-1 overflow-hidden">
                         <Chart
                             padding=12
-                            series={att.map(|att| 
-                                att.iter()
-                                .map(|(status, count)| (status.clone(), *count as i32))
-                                .collect::<Vec<_>>()
-                        ).unwrap_or(vec![])}
+                            series=att
+                                .map(|att| {
+                                    att
+                                        .iter()
+                                        .map(|(status, count)| (status.clone(), *count as i32))
+                                        .collect::<Vec<_>>()
+                                })
+                                .unwrap_or(vec![])
                         />
 
                         <div class="table-wrapper flex-1 horizontal overflow-hidden rounded">
@@ -259,18 +262,22 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
                                 </thead>
                                 <tbody class="background-1">
                                     {student_list
-                                        .map(|list| list.iter()
-                                        .map(|(id, name, surname, present)| {
-                                            view! {
-                                                <tr>
-                                                    <td class="padded">{format!("{}", name)}</td>
-                                                    <td class="padded">{format!("{}", surname)}</td>
-                                                    <td class="padded">N/A</td>
-                                                    <td class="padded">{attendance_map(*present)}</td>
-                                                </tr>
-                                            }
+                                        .map(|list| {
+                                            list
+                                                .iter()
+                                                .map(|(id, name, surname, present)| {
+                                                    view! {
+                                                        <tr>
+                                                            <td class="padded">{format!("{}", name)}</td>
+                                                            <td class="padded">{format!("{}", surname)}</td>
+                                                            <td class="padded">N/A</td>
+                                                            <td class="padded">{attendance_map(*present)}</td>
+                                                        </tr>
+                                                    }
+                                                })
+                                                .collect::<Vec<_>>()
                                         })
-                                        .collect::<Vec<_>>()).unwrap_or(vec![])}
+                                        .unwrap_or(vec![])}
                                 </tbody>
                             </table>
                         </div>

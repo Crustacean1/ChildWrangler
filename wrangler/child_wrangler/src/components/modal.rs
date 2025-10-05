@@ -19,7 +19,10 @@ pub fn Modal(
             style:background-color="rgba(0,0,0,0.25)"
             on:click=move |_| on_close()
         >
-            <div class="vertical pretty-background padded gap rounded" on:click=|e| e.stop_propagation()>
+            <div
+                class="vertical pretty-background padded gap rounded"
+                on:click=|e| e.stop_propagation()
+            >
                 <Show when=is_open>{children()}</Show>
             </div>
         </div>

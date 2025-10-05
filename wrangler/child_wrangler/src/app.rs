@@ -76,9 +76,7 @@ pub fn App() -> impl IntoView {
                         }
                     >
                         <ParentRoute path=path!("messages") view=MessagePage>
-                            <Route
-                                path=path!("/")
-                                view=MessageDashboard />
+                            <Route path=path!("/") view=MessageDashboard />
                             <Route
                                 path=path!("/guardian/:id")
                                 view=|| {
