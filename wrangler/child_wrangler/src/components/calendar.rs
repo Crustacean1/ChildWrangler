@@ -8,13 +8,13 @@ use dto::attendance::{
 use leptos::wasm_bindgen::JsCast;
 use leptos::{either::Either, prelude::*};
 
+use leptos::logging::log;
 use leptos_router::{components::A, hooks::use_params};
 use uuid::Uuid;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
     js_sys::Array, wasm_bindgen::JsValue, Blob, FileSystemFileHandle, FileSystemWritableFileStream,
 };
-use leptos::logging::log;
 
 use crate::{
     components::{
@@ -173,6 +173,7 @@ pub fn InnerCalendar(
     let AttendanceVersion(_, set_attendance_version) = use_context().unwrap();
 
     let snackbar = use_snackbar();
+    let is_student = local_attendance.is_student;
 
     let next_month =
         NaiveDate::from_ymd_opt(year, month, 1).and_then(|d| d.checked_add_months(Months::new(1)));
@@ -436,6 +437,7 @@ pub fn InnerCalendar(
                                             view! {
                                                 <Day
                                                     date
+                                                    is_student
                                                     meals
                                                     meal_select=meal_history
                                                     count_select=meal_count
@@ -508,6 +510,7 @@ pub fn InnerCalendar(
 #[component]
 pub fn Day(
     date: NaiveDate,
+    is_student: bool,
     meals: Vec<(Uuid, String, u32, EffectiveAttendance)>,
     meal_select: impl Fn() -> Option<(Uuid, Uuid, NaiveDate)> + Send + Sync + Copy + 'static,
     count_select: impl Fn() -> Option<(Uuid, Uuid, NaiveDate)> + Send + Sync + Copy + 'static,
@@ -540,6 +543,9 @@ pub fn Day(
                         >
                             {meal_name.clone()}
                         </div>
+                        {
+                                        if !is_student{
+                                            Either::Left(view!{
 
                         <div
                             class="flex-1 padded no-select rounded"
@@ -555,6 +561,9 @@ pub fn Day(
                         >
                             {format!("{}", attendance)}
                         </div>
+                                            })
+                                        }else {Either::Right(view!{})}
+                                    }
                     </div>
                 }
             })
