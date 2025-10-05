@@ -44,7 +44,7 @@ pub fn MealCountModalInner(
             {attendance
                 .attendance
                 .into_iter()
-                .map(|(name, value))| {
+                .map(|(name, value)| {
                     view! {
                         <a class="rounded " href=format!("/attendance/{}", id)>
                             {format!("{}", name)}
