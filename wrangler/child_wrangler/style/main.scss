@@ -112,6 +112,15 @@ input {
   flex-flow: row nowrap;
 }
 
+.horizontal-wrap{
+  display: flex;
+  flex-flow: row wrap;
+}
+
+.horizontal-wrap>*{
+  min-width: 25em;
+}
+
 .vertical {
   display: flex;
   flex-flow: column nowrap;

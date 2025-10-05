@@ -237,7 +237,7 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
             view! {
                 <div class="padded vertical rounded background-2 gap overflow-hidden">
                     <h2 class="h2">{format!("{}", meal_name)}</h2>
-                    <div class="horizontal gap flex-1 overflow-hidden">
+                    <div class="horizontal-wrap gap flex-1 overflow-hidden">
                         <Chart
                             padding=12
                             series=att

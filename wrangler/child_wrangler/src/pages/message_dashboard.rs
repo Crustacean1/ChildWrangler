@@ -46,7 +46,7 @@ pub fn MessageView(message: GeneralMessageDto) -> impl IntoView {
             view! { <div class="rounded background-3 padded self-end fit-content ">{message.content}</div> },
         )),
         dto::messages::MessageState::Sent => Either::Right(view! {
-            <div class="rounded background-3 self-end fit-content text-right vertical">
+            <div class="rounded background-3 self-end fit-content text-left vertical">
                 <div class="padded">{format!("Do: {}", message.sender)}</div>
                 <span class="spacer"></span>
                 <div class="background-4 padded">{format!("{}", message.content)}</div>
