@@ -86,9 +86,9 @@ pub fn InfoPage() -> impl IntoView {
 #[component]
 pub fn Breadcrumb(trail: Vec<GroupDto>) -> impl IntoView {
     view! {
-        <div class="horizontal trail">
+        <div class="horizontal trail align-stretch">
             <For each=move || trail.clone() key=|g| g.id let:item>
-                <div class="horizontal align-center">
+                <div class="horizontal align-stretch">
                     <button
                         class="interactive rounded padded"
                         on:click=move |_| {

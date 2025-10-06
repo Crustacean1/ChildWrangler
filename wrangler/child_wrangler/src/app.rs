@@ -2,7 +2,7 @@ use chrono::{Datelike, Utc};
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
-    components::{Outlet, ParentRoute, Redirect, Route, Router, Routes},
+    components::{A, Outlet, ParentRoute, Redirect, Route, Router, Routes},
     path,
 };
 
@@ -71,13 +71,17 @@ pub fn App() -> impl IntoView {
                                     <div class="flex flex-1">
                                         <Searchbar />
                                     </div>
-                                    <div class="horizontal flex-1 flex-end gap">
-                                        <a class="interactive rounded padded" href="/attendance">
-                                            Obecność
-                                        </a>
-                                        <a class="interactive rounded padded" href="/messages">
-                                            Wiadomosci
-                                        </a>
+                                    <div class="horizontal flex-1 flex-end gap align-stretch padded">
+                                        <A href="/attendance">
+                                            <span class="interactive rounded padded" >
+                                                Obecność
+                                            </span>
+                                        </A>
+                                        <A href="/messages">
+                                            <span class="interactive rounded padded" >
+                                                Wiadomości
+                                            </span>
+                                        </A>
                                     </div>
                                 </nav>
                                 <main>

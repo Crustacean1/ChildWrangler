@@ -14,10 +14,15 @@ use crate::services::attendance::get_attendance_overview;
 use crate::services::catering::get_caterings;
 
 #[component]
-pub fn Chart(padding: i32, series: Vec<(AttendanceOverviewType, i32)>) -> impl IntoView {
+pub fn Chart(mut padding: i32,name:String, series: Vec<(AttendanceOverviewType, i32)>) -> impl IntoView {
+    if series.len() == 1 {
+        padding = 1;
+    }
+
     let range = (360 - series.len() * padding as usize) as f32 / 360 as f32;
     let scalar = 2.0 * PI * (padding as f32 / 360 as f32);
     let total = series.iter().map(|(_, s)| s).sum::<i32>() as f32;
+
     let sizes = series
         .iter()
         .map(|(_, s)| (*s as f32) / total)
@@ -56,9 +61,9 @@ pub fn Chart(padding: i32, series: Vec<(AttendanceOverviewType, i32)>) -> impl I
         .sum::<i32>();
 
     view! {
-        <div class="horizontal gap align-center flex-1">
+        <div class="horizontal gap align-center flex-1 min-w-10">
             <div class="relative">
-                <svg width="200" height="200" viewBox="-100 -100 200 200">
+                <svg width="15em" height="15em" viewBox="-100 -100 200 200">
                     <defs>
                         <filter id="gaussian-1">
                             <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="gauss" />
@@ -107,7 +112,17 @@ pub fn Chart(padding: i32, series: Vec<(AttendanceOverviewType, i32)>) -> impl I
                     </g>
                     <text
                         x="0"
-                        y="0"
+                        y="0.75em"
+                        text-anchor="middle"
+                        fill="white"
+                        dominant-baseline="middle"
+                        font-size="1em"
+                    >
+                        {format!("{}", name)}
+                    </text>
+                    <text
+                        x="0"
+                        y="-0.5em"
                         text-anchor="middle"
                         fill="white"
                         dominant-baseline="middle"
@@ -135,7 +150,7 @@ pub fn Chart(padding: i32, series: Vec<(AttendanceOverviewType, i32)>) -> impl I
                     }
                 </div>
             </div>
-            <div class="grid-2 gap align-start justify-center">
+            <div class="grid-2 gap align-start justify-center ">
                 {series
                     .iter()
                     .enumerate()
@@ -236,9 +251,9 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
         .map(|(meal_name, student_list, att)| {
             view! {
                 <div class="padded vertical rounded background-2 gap overflow-hidden">
-                    <h2 class="h2">{format!("{}", meal_name)}</h2>
-                    <div class="horizontal-wrap gap flex-1 overflow-hidden">
+                    <div class="horizontal gap-0 flex-1 overflow-hidden">
                         <Chart
+                            name={meal_name}
                             padding=12
                             series=att
                                 .map(|att| {
@@ -249,7 +264,7 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
                                 .unwrap_or(vec![])
                         />
 
-                        <div class="table-wrapper flex-1 horizontal overflow-hidden rounded">
+                        <div class="table-wrapper flex-2 horizontal overflow-hidden rounded">
                             <table class="background-3 rounded flex-1 rounded">
                                 <thead>
                                     <tr>

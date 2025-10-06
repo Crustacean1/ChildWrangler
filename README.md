@@ -1,7 +1,7 @@
 # Child Wrangler - catering attendance solution
 TODO:
-- [ ] message dashboard
+- [x] message dashboard
 - [ ] group/student transfers
-- [ ] group/student calendar separation
-- [ ] history and attendance popups
+- [x] group/student calendar separation
+- [x] history and attendance popups
 - [ ] refactor???
