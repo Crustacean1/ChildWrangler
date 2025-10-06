@@ -14,7 +14,11 @@ use crate::services::attendance::get_attendance_overview;
 use crate::services::catering::get_caterings;
 
 #[component]
-pub fn Chart(mut padding: i32,name:String, series: Vec<(AttendanceOverviewType, i32)>) -> impl IntoView {
+pub fn Chart(
+    mut padding: i32,
+    name: String,
+    series: Vec<(AttendanceOverviewType, i32)>,
+) -> impl IntoView {
     if series.len() == 1 {
         padding = 1;
     }
@@ -61,9 +65,9 @@ pub fn Chart(mut padding: i32,name:String, series: Vec<(AttendanceOverviewType, 
         .sum::<i32>();
 
     view! {
-        <div class="horizontal gap align-center flex-1 min-w-10">
-            <div class="relative">
-                <svg width="15em" height="15em" viewBox="-100 -100 200 200">
+        <div class="horizontal gap align-center flex-1 min-w-10"  style:max-width="33%">
+            <div class="relative chart" style:height="100%" >
+                <svg viewBox="-100 -100 200 200" >
                     <defs>
                         <filter id="gaussian-1">
                             <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="gauss" />
@@ -112,45 +116,27 @@ pub fn Chart(mut padding: i32,name:String, series: Vec<(AttendanceOverviewType, 
                     </g>
                     <text
                         x="0"
-                        y="0.75em"
+                        y="1em"
                         text-anchor="middle"
-                        fill="white"
+                        fill="gray"
+                        font-size="100%"
                         dominant-baseline="middle"
-                        font-size="1em"
                     >
                         {format!("{}", name)}
                     </text>
                     <text
                         x="0"
-                        y="-0.5em"
-                        text-anchor="middle"
                         fill="white"
+                        y="-0.25em"
+                        text-anchor="middle"
+                        font-size="200%"
                         dominant-baseline="middle"
-                        font-size="2em"
                     >
                         {format!("{}", attendance_sum)}
                     </text>
                 </svg>
-                <div
-                    class="pretty-background rounded padded anchor-end"
-                    style:position="absolute"
-                    style:visibility=move || {
-                        position().map_or(String::from("hidden"), |_| String::new())
-                    }
-                    style:left=move || {
-                        position().map(|(_, x, _)| format!("{}px", x + radius as i32 + 32))
-                    }
-                    style:top=move || {
-                        position().map(|(_, _, y)| format!("{}px", y + radius as i32 - 16))
-                    }
-                >
-                    {
-                        let series = series.clone();
-                        move || position().map(|(i, _, _)| title(&series[i].0))
-                    }
-                </div>
             </div>
-            <div class="grid-2 gap align-start justify-center ">
+            <div class="grid-2 gap align-start justify-center">
                 {series
                     .iter()
                     .enumerate()
