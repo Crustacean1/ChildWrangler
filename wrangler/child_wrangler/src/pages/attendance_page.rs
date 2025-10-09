@@ -35,7 +35,7 @@ pub fn AttendancePage() -> impl IntoView {
                     Dodaj catering
                 </button>
             </div>
-            <div class="vertical flex-1 gap">
+            <div class="vertical flex-1 gap overflow-hidden">
                 <Outlet />
             </div>
         </div>

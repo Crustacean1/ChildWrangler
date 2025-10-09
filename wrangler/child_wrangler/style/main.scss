@@ -86,7 +86,7 @@ input {
 }
 
 .rounded {
-  border-radius: 0.25em;
+  border-radius: 10px;
 }
 
 .interactive {
@@ -117,10 +117,6 @@ input {
 .horizontal-wrap {
   display: flex;
   flex-flow: row wrap;
-}
-
-.horizontal-wrap>* {
-  min-width: 25em;
 }
 
 .vertical {
@@ -431,9 +427,10 @@ button.fast-transition {
 
 .trail {
   >*:not(:first-child)::before {
+    margin-top: auto;
+    margin-bottom: auto;
     display: inline-block;
     content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="white"><path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z"/></svg>');
-    height: 24px;
   }
 }
 
@@ -561,7 +558,7 @@ table {
 
 th {
   position: sticky;
-  background-color: var(--black-800);
+  background-color: var(--black-700);
   top: 0;
 }
 
@@ -575,7 +572,7 @@ th {
   }
 
   tr:nth-child(odd) {
-    background-color: var(--black-1000);
+    background-color: var(--black-800);
   }
 }
 
@@ -606,7 +603,7 @@ th {
 
 @media only screen and (max-width: 1000px) {
   :root {
-    font-size: clamp(0.5rem, 1vw, 1rem);
+    font-size: clamp(0.75rem, 1vw, 1.5rem);
   }
 
   .min-w-10 {
@@ -648,6 +645,8 @@ th {
   align-items: stretch;
 }
 
-.chart{
+.chart {}
 
+.fit-content-width {
+  width: fit-content;
 }

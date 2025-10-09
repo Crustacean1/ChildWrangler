@@ -65,9 +65,8 @@ pub fn Chart(
         .sum::<i32>();
 
     view! {
-        <div class="horizontal gap align-center flex-1 min-w-10"  style:max-width="33%">
-            <div class="relative chart" style:height="100%" >
-                <svg viewBox="-100 -100 200 200" >
+        <div class="horizontal-wrap relative rounded background-2 gap align-center padded flex-1 align-center justify-center flex-1 overflow-hidden">
+                <svg viewBox="-100 -100 200 200" style:height="100%" style:aspect-ratio="1">
                     <defs>
                         <filter id="gaussian-1">
                             <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="gauss" />
@@ -119,7 +118,7 @@ pub fn Chart(
                         y="1em"
                         text-anchor="middle"
                         fill="gray"
-                        font-size="100%"
+                        font-size="1em"
                         dominant-baseline="middle"
                     >
                         {format!("{}", name)}
@@ -129,13 +128,12 @@ pub fn Chart(
                         fill="white"
                         y="-0.25em"
                         text-anchor="middle"
-                        font-size="200%"
+                        font-size="3em"
                         dominant-baseline="middle"
                     >
                         {format!("{}", attendance_sum)}
                     </text>
                 </svg>
-            </div>
             <div class="grid-2 gap align-start justify-center">
                 {series
                     .iter()
@@ -155,6 +153,13 @@ pub fn Chart(
 pub fn AttendanceDashboard() -> impl IntoView {
     let (selected_catering, set_selected_catering) = signal(None::<Uuid>);
     let caterings = Resource::new(|| (), |_| async move { get_caterings().await });
+
+    Effect::new(move |_| {
+        caterings
+            .get()
+            .map(|c| c.map(|c| set_selected_catering(Some(c[0].id))))
+    });
+
     let overview = Resource::new(selected_catering, |catering| async move {
         if let Some(catering) = catering {
             get_attendance_overview(Utc::now().date_naive(), catering).await
@@ -236,8 +241,7 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
     meals
         .map(|(meal_name, student_list, att)| {
             view! {
-                <div class="padded vertical rounded background-2 gap overflow-hidden">
-                    <div class="horizontal gap-0 flex-1 overflow-hidden">
+                <div class="vertical rounded gap overflow-hidden gap">
                         <Chart
                             name={meal_name}
                             padding=12
@@ -250,7 +254,7 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
                                 .unwrap_or(vec![])
                         />
 
-                        <div class="table-wrapper flex-2 horizontal overflow-hidden rounded">
+                        <div class="table-wrapper flex-2 horizontal overflow-hidden rounded background-2">
                             <table class="background-3 rounded flex-1 rounded">
                                 <thead>
                                     <tr>
@@ -280,7 +284,6 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
                                 </tbody>
                             </table>
                         </div>
-                    </div>
                 </div>
             }
         })

@@ -354,8 +354,8 @@ pub fn InnerCalendar(
     };
 
     view! {
-        <div class="vertical gap flex-1 flex" on:mouseup=move |_| on_drag_end()>
-            <div class="background-2 rounded padded gap horizontal center">
+        <div class="vertical gap flex-1 flex overflow-hidden" on:mouseup=move |_| on_drag_end()>
+            <div class="background-2 rounded padded gap horizontal center overflow-auto">
                 <div class="flex-1"></div>
                 <div class="flex-1 horizontal gap align-center space-between">
                     <A href=change_month(prev_month)>
@@ -395,7 +395,7 @@ pub fn InnerCalendar(
                 </div>
             </div>
 
-            <div class="background-2 flex-1 rounded padded grid-7">
+            <div class="background-2 flex-1 rounded padded grid-7 overflow-auto">
                 {iter::successors(
                         Some(Weekday::Mon),
                         |w| { if *w == Weekday::Sun { None } else { Some(w.succ()) } },

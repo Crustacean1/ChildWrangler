@@ -90,7 +90,7 @@ pub fn Breadcrumb(trail: Vec<GroupDto>) -> impl IntoView {
             <For each=move || trail.clone() key=|g| g.id let:item>
                 <div class="horizontal align-stretch">
                     <button
-                        class="interactive rounded padded"
+                        class="interactive rounded padded align-center"
                         on:click=move |_| {
                             use_navigate()(&format!("/attendance/{}", item.id), Default::default())
                         }

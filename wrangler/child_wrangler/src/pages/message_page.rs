@@ -52,7 +52,8 @@ pub fn InnerMessagePage(contacts: Vec<ContactDto>) -> impl IntoView {
 
     view! {
         <div class="horizontal flex-1 gap overflow-hidden">
-            <div class="vertical background-2 gap padded w-20 rounded min-w-10">
+            <div class="vertical gap w-20 rounded min-w-10">
+            <div class="vertical padded background-2 flex-1 rounded min-w-10">
                 <div class="overflow-auto">
                     <ul class="flex-1 vertical gap-2">
                         {move || {
@@ -95,13 +96,14 @@ pub fn InnerMessagePage(contacts: Vec<ContactDto>) -> impl IntoView {
                         }}
                     </ul>
                 </div>
+            </div>
                 <input
                     autocomplete="off"
                     class="rounded padded"
                     bind:value=(search, set_search)
                     placeholder="Szukaj"
                 />
-            </div>
+        </div>
             <Outlet />
         </div>
     }
