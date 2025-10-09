@@ -75,10 +75,12 @@ input {
 
 .background-2 {
   background-color: var(--black-900);
+  box-shadow: 2px 2px 5px black;
 }
 
 .background-3 {
   background-color: var(--black-800);
+  box-shadow: 2px 2px 5px black;
 }
 
 .padded {
@@ -436,6 +438,7 @@ button.fast-transition {
 
 .overflow-auto {
   overflow: auto;
+  scrollbar-width: none;
 }
 
 .max-h-20 {
@@ -621,6 +624,10 @@ th {
   border-style: hidden;
   border-collapse: collapse;
 
+}
+
+.padded-2 {
+  padding: 0.75em;
 }
 
 .padded-table td {

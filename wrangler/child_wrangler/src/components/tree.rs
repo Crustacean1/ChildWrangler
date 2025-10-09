@@ -7,6 +7,7 @@ use leptos::{html, prelude::*};
 use leptos_router::hooks::{use_navigate, use_params};
 use uuid::Uuid;
 
+use crate::components::loader::Loader;
 use crate::icons::arrow_down::ArrowDown;
 use crate::pages::attendance_page::{AttendanceParams, GroupVersion};
 use crate::services::group::get_groups;
@@ -48,10 +49,7 @@ pub fn InnerTree() -> impl IntoView {
     };
 
     view! {
-        <Transition>
-            <ErrorBoundary fallback=|_| {
-                view! { <div>Error</div> }
-            }>
+        <Loader>
                 {move || Suspend::new(async move {
                     let groups = groups.await?;
                     let students = students.await?;
@@ -60,8 +58,7 @@ pub fn InnerTree() -> impl IntoView {
                         ServerFnError,
                     >(view! { <Test groups students target expanded set_expanded /> })
                 })}
-            </ErrorBoundary>
-        </Transition>
+        </Loader>
     }
 }
 
@@ -107,7 +104,7 @@ fn Test(
     };
 
     view! {
-        <div class="scrollable">
+        <div class="overflow-auto background-2 flex-1 rounded">
             <ul class="vertical fast-transition tree">
                 {entities
                     .iter()
@@ -173,7 +170,7 @@ fn TreeNode(
                 on:dragend=move |_| { on_drag_end(None) }
             >
                 <span
-                    class="flex-1 interactive padded center left-align"
+                    class="flex-1 interactive padded-2 center left-align"
                     on:click=move |_| {
                         navigate(&format!("/attendance/{}", root.id), Default::default())
                     }

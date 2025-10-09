@@ -40,7 +40,7 @@ pub fn MealCountModalInner(
     attendance: AttendanceBreakdownDto,
 ) -> impl IntoView {
     view! {
-        <table>
+        <table class="padded-table">
             <thead>
                 <tr>
                     <th></th>
@@ -48,7 +48,7 @@ pub fn MealCountModalInner(
                     <th></th>
                 </tr>
             </thead>
-            <tbody class="padded-table">
+            <tbody >
                 {attendance
                     .attendance
                     .into_iter()

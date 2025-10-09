@@ -26,7 +26,7 @@ pub fn AttendancePage() -> impl IntoView {
 
     view! {
         <div class="horizontal flex-1 gap overflow-hidden ">
-            <div class="background-2 rounded padded vertical gap min-w-10" style:min-width="20em">
+            <div class="rounded vertical gap min-w-10" style:min-width="20em">
                 <InnerTree />
                 <button
                     class="interactive rounded padded"

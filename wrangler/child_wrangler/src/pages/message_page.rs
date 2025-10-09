@@ -53,7 +53,7 @@ pub fn InnerMessagePage(contacts: Vec<ContactDto>) -> impl IntoView {
     view! {
         <div class="horizontal flex-1 gap overflow-hidden">
             <div class="vertical gap w-20 rounded min-w-10">
-            <div class="vertical padded background-2 flex-1 rounded min-w-10">
+            <div class="vertical padded background-2 flex-1 rounded min-w-10 overflow-hidden">
                 <div class="overflow-auto">
                     <ul class="flex-1 vertical gap-2">
                         {move || {
@@ -66,7 +66,7 @@ pub fn InnerMessagePage(contacts: Vec<ContactDto>) -> impl IntoView {
                                                 view! {
                                                     <li class="rounded vertical text-left">
                                                         <a
-                                                            class="interactive horizontal padded flex-1 rounded space-between"
+                                                            class="interactive horizontal padded-2 flex-1 rounded space-between"
                                                             href=format!("/messages/unknown/{}", u)
                                                         >
                                                             <span>Nieznany</span>
@@ -81,7 +81,7 @@ pub fn InnerMessagePage(contacts: Vec<ContactDto>) -> impl IntoView {
                                                 view! {
                                                     <li class="rounded vertical">
                                                         <a
-                                                            class="interactive horizontal padded flex-1 rounded flex-start"
+                                                            class="interactive horizontal padded-2 flex-1 rounded flex-start"
                                                             href=format!("/messages/guardian/{}", guardian.id)
                                                         >
                                                             {format!("{}", guardian.fullname)}

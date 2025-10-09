@@ -191,7 +191,7 @@ pub fn AttendanceDashboard() -> impl IntoView {
                     ServerFnError,
                 >(
                     view! {
-                        <div class="horizontal padded rounded ">
+                        <div class="horizontal padded rounded background-2">
                             <Dropdown
                                 name="Cateringi"
                                 options=move || caterings.clone()
