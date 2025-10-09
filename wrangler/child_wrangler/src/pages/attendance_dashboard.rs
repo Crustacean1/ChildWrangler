@@ -66,74 +66,74 @@ pub fn Chart(
 
     view! {
         <div class="horizontal-wrap relative rounded background-2 gap align-center padded flex-1 align-center justify-center flex-1 overflow-hidden">
-                <svg viewBox="-100 -100 200 200" style:height="100%" style:aspect-ratio="1">
-                    <defs>
-                        <filter id="gaussian-1">
-                            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="gauss" />
-                            <feMerge>
-                                <feMergeNode in="gauss" />
-                                <feMergeNode in="SourceGraphic" />
-                            </feMerge>
-                        </filter>
-                    </defs>
-                    <g filter="url(#gaussian-1)" class="anchor-start">
-                        {[0.0]
-                            .iter()
-                            .chain(sizes.iter())
-                            .zip(sizes.iter())
-                            .enumerate()
-                            .map(|(i, (start, end))| {
-                                let start = start + i as f32 * scalar;
-                                let end = end + i as f32 * scalar;
-                                let path = format!(
-                                    "M {} {} A {} {} 0 {} 1 {} {}",
-                                    (start).cos() * radius,
-                                    (start).sin() * radius,
-                                    radius,
-                                    radius,
-                                    (end - start > PI) as i32,
-                                    (end).cos() * radius,
-                                    (end).sin() * radius,
-                                );
-                                view! {
-                                    <path
-                                        d=path
-                                        stroke=colour(&series[i].0)
-                                        stroke-width="12"
-                                        fill="none"
-                                        stroke-linecap="round"
-                                        on:mousemove=move |e| {
-                                            if let Ok(e) = e.dyn_into::<MouseEvent>() {
-                                                set_position(Some((i, e.layer_x(), e.layer_y())));
-                                            }
+            <svg viewBox="-100 -100 200 200" style:height="100%" style:aspect-ratio="1">
+                <defs>
+                    <filter id="gaussian-1">
+                        <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="gauss" />
+                        <feMerge>
+                            <feMergeNode in="gauss" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+                <g filter="url(#gaussian-1)" class="anchor-start">
+                    {[0.0]
+                        .iter()
+                        .chain(sizes.iter())
+                        .zip(sizes.iter())
+                        .enumerate()
+                        .map(|(i, (start, end))| {
+                            let start = start + i as f32 * scalar;
+                            let end = end + i as f32 * scalar;
+                            let path = format!(
+                                "M {} {} A {} {} 0 {} 1 {} {}",
+                                (start).cos() * radius,
+                                (start).sin() * radius,
+                                radius,
+                                radius,
+                                (end - start > PI) as i32,
+                                (end).cos() * radius,
+                                (end).sin() * radius,
+                            );
+                            view! {
+                                <path
+                                    d=path
+                                    stroke=colour(&series[i].0)
+                                    stroke-width="12"
+                                    fill="none"
+                                    stroke-linecap="round"
+                                    on:mousemove=move |e| {
+                                        if let Ok(e) = e.dyn_into::<MouseEvent>() {
+                                            set_position(Some((i, e.layer_x(), e.layer_y())));
                                         }
-                                        on:mouseout=move |_| set_position(None)
-                                    />
-                                }
-                            })
-                            .collect::<Vec<_>>()}
-                    </g>
-                    <text
-                        x="0"
-                        y="1em"
-                        text-anchor="middle"
-                        fill="gray"
-                        font-size="1em"
-                        dominant-baseline="middle"
-                    >
-                        {format!("{}", name)}
-                    </text>
-                    <text
-                        x="0"
-                        fill="white"
-                        y="-0.25em"
-                        text-anchor="middle"
-                        font-size="3em"
-                        dominant-baseline="middle"
-                    >
-                        {format!("{}", attendance_sum)}
-                    </text>
-                </svg>
+                                    }
+                                    on:mouseout=move |_| set_position(None)
+                                />
+                            }
+                        })
+                        .collect::<Vec<_>>()}
+                </g>
+                <text
+                    x="0"
+                    y="1em"
+                    text-anchor="middle"
+                    fill="gray"
+                    font-size="1em"
+                    dominant-baseline="middle"
+                >
+                    {format!("{}", name)}
+                </text>
+                <text
+                    x="0"
+                    fill="white"
+                    y="-0.25em"
+                    text-anchor="middle"
+                    font-size="3em"
+                    dominant-baseline="middle"
+                >
+                    {format!("{}", attendance_sum)}
+                </text>
+            </svg>
             <div class="grid-2 gap align-start justify-center">
                 {series
                     .iter()
@@ -242,48 +242,48 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
         .map(|(meal_name, student_list, att)| {
             view! {
                 <div class="vertical rounded gap overflow-hidden gap">
-                        <Chart
-                            name={meal_name}
-                            padding=12
-                            series=att
-                                .map(|att| {
-                                    att.iter()
-                                        .map(|(status, count)| (status.clone(), *count as i32))
-                                        .collect::<Vec<_>>()
-                                })
-                                .unwrap_or(vec![])
-                        />
+                    <Chart
+                        name=meal_name
+                        padding=12
+                        series=att
+                            .map(|att| {
+                                att.iter()
+                                    .map(|(status, count)| (status.clone(), *count as i32))
+                                    .collect::<Vec<_>>()
+                            })
+                            .unwrap_or(vec![])
+                    />
 
-                        <div class="table-wrapper flex-2 horizontal overflow-hidden rounded background-2">
-                            <table class="background-3 rounded flex-1 rounded">
-                                <thead>
-                                    <tr>
-                                        <th class="padded">Imię</th>
-                                        <th class="padded">Nazwisko</th>
-                                        <th class="padded">Grupa</th>
-                                        <th class="padded">Obecny</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="background-1">
-                                    {student_list
-                                        .map(|list| {
-                                            list.iter()
-                                                .map(|(id, name, surname, present)| {
-                                                    view! {
-                                                        <tr>
-                                                            <td class="padded">{format!("{}", name)}</td>
-                                                            <td class="padded">{format!("{}", surname)}</td>
-                                                            <td class="padded">N/A</td>
-                                                            <td class="padded">{attendance_map(*present)}</td>
-                                                        </tr>
-                                                    }
-                                                })
-                                                .collect::<Vec<_>>()
-                                        })
-                                        .unwrap_or(vec![])}
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="table-wrapper flex-2 horizontal overflow-hidden rounded background-2">
+                        <table class="background-3 rounded flex-1 rounded">
+                            <thead>
+                                <tr>
+                                    <th class="padded">Imię</th>
+                                    <th class="padded">Nazwisko</th>
+                                    <th class="padded">Grupa</th>
+                                    <th class="padded">Obecny</th>
+                                </tr>
+                            </thead>
+                            <tbody class="background-1">
+                                {student_list
+                                    .map(|list| {
+                                        list.iter()
+                                            .map(|(id, name, surname, present)| {
+                                                view! {
+                                                    <tr>
+                                                        <td class="padded">{format!("{}", name)}</td>
+                                                        <td class="padded">{format!("{}", surname)}</td>
+                                                        <td class="padded">N/A</td>
+                                                        <td class="padded">{attendance_map(*present)}</td>
+                                                    </tr>
+                                                }
+                                            })
+                                            .collect::<Vec<_>>()
+                                    })
+                                    .unwrap_or(vec![])}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             }
         })

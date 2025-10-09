@@ -67,17 +67,13 @@ pub fn App() -> impl IntoView {
                         view=|| {
                             view! {
                                 <nav class="rounded background-2 padded horizontal">
-                                        <Searchbar />
+                                    <Searchbar />
                                     <div class="horizontal flex-1 flex-end gap align-stretch padded">
                                         <A href="/attendance">
-                                            <span class="interactive rounded padded" >
-                                                Obecność
-                                            </span>
+                                            <span class="interactive rounded padded">Obecność</span>
                                         </A>
                                         <A href="/messages">
-                                            <span class="interactive rounded padded" >
-                                                Wiadomości
-                                            </span>
+                                            <span class="interactive rounded padded">Wiadomości</span>
                                         </A>
                                     </div>
                                 </nav>

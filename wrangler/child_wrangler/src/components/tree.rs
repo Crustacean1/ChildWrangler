@@ -50,14 +50,14 @@ pub fn InnerTree() -> impl IntoView {
 
     view! {
         <Loader>
-                {move || Suspend::new(async move {
-                    let groups = groups.await?;
-                    let students = students.await?;
-                    Ok::<
-                        _,
-                        ServerFnError,
-                    >(view! { <Test groups students target expanded set_expanded /> })
-                })}
+            {move || Suspend::new(async move {
+                let groups = groups.await?;
+                let students = students.await?;
+                Ok::<
+                    _,
+                    ServerFnError,
+                >(view! { <Test groups students target expanded set_expanded /> })
+            })}
         </Loader>
     }
 }

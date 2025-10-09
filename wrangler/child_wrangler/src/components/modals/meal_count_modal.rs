@@ -48,7 +48,7 @@ pub fn MealCountModalInner(
                     <th></th>
                 </tr>
             </thead>
-            <tbody >
+            <tbody>
                 {attendance
                     .attendance
                     .into_iter()
