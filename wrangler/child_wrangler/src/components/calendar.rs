@@ -101,7 +101,45 @@ pub fn Calendar() -> impl IntoView {
         },
     );
 
+    let change_month = |_: &()| {};
+
     view! {
+            <div class="bg-gray-900 rounded-xl outline outline-white/15 flex flex-row gap-2 p-2">
+                <div class="flex-1"></div>
+                <div class="flex-1 flex flex-row gap items-center place-content-between">
+                    <A href="">
+                        <span class="hover:bg-gray-700 cursor-pointer p-1 rounded-md" title="Poprzedni miesiąc">
+                            <LeftArrow />
+                        </span>
+                    </A>
+                    <h3 class="min-w-10 text-center">
+                        {move || {
+                            NaiveDate::from_ymd_opt(year() as i32, month(), 1)
+                                .map(|d| format!("{}", d.format("%Y %B")))
+                                .unwrap_or(String::new())
+                        }}
+                    </h3>
+                    <A href="">
+                        <span class="hover:bg-gray-700 cursor-pointer p-1 rounded-md" title="Następny miesiąc">
+                            <RightArrow />
+                        </span>
+                    </A>
+                </div>
+                <div class="flex-1 justify-end flex flex-row gap-2">
+                    <button
+                        class="hover:bg-gray-700 cursor-pointer p-1 rounded-md"
+                        title="Pobierz obecność"
+                    >
+                        <DownloadIcon />
+                    </button>
+                    <button
+                        class="hover:bg-gray-700 cursor-pointer p-1 rounded-md"
+                        title="Przełącz tryb zaznaczania"
+                    >
+                        <SelectIcon />
+                    </button>
+                </div>
+        </div>
         <Loader>
             {move || Suspend::new(async move {
                 let attendance = attendance.await?;
@@ -111,6 +149,7 @@ pub fn Calendar() -> impl IntoView {
                     ServerFnError,
                 >(
                     view! {
+
                         <InnerCalendar
                             target=target().unwrap_or_default()
                             year=year() as i32
@@ -198,9 +237,9 @@ pub fn InnerCalendar(
         })
     };
 
-    let on_download = move |_| {
+    /*let on_download = move |_| {
         download_summary.dispatch(());
-    };
+    };*/
 
     let end_date = NaiveDate::from_ymd_opt(year, month, 1)
         .and_then(|d| d.checked_add_months(Months::new(1)))
@@ -354,55 +393,14 @@ pub fn InnerCalendar(
     };
 
     view! {
-        <div class="vertical gap flex-1 flex overflow-hidden" on:mouseup=move |_| on_drag_end()>
-            <div class="background-2 rounded padded gap horizontal center overflow-auto">
-                <div class="flex-1"></div>
-                <div class="flex-1 horizontal gap align-center space-between">
-                    <A href=change_month(prev_month)>
-                        <span class="icon-button interactive" title="Poprzedni miesiąc">
-                            <LeftArrow />
-                        </span>
-                    </A>
-                    <h3 class="h3" style:width="10em">
-                        {move || {
-                            NaiveDate::from_ymd_opt(year, month, 1)
-                                .map(|d| format!("{}", d.format("%Y %B")))
-                                .unwrap_or(String::new())
-                        }}
-                    </h3>
-                    <A href=change_month(next_month)>
-                        <span class="icon-button interactive" title="Następny miesiąc">
-                            <RightArrow />
-                        </span>
-                    </A>
-                </div>
-                <div class="flex-1 flex-end horizontal gap">
-                    <button
-                        class="icon-button interactive"
-                        title="Pobierz obecność"
-                        on:click=on_download
-                    >
-                        <DownloadIcon />
-                    </button>
-                    <button
-                        class="icon-button interactive"
-                        class:outline-white=selection_mode
-                        title="Przełącz tryb zaznaczania"
-                        on:click=move |_| set_selection_mode(!selection_mode())
-                    >
-                        <SelectIcon />
-                    </button>
-                </div>
-            </div>
-
-            <div class="background-2 flex-1 rounded padded grid-7 overflow-auto">
+            <div class="flex-1 grid gap-2 grid-cols-7 overflow-auto p-0.5">
                 {iter::successors(
                         Some(Weekday::Mon),
                         |w| { if *w == Weekday::Sun { None } else { Some(w.succ()) } },
                     )
                     .map(|w| {
                         view! {
-                            <div class="background-3 rounded padded no-select center">
+                            <div class="p-2 text-center items-center justify-center">
                                 {format!("{}", w)}
                             </div>
                         }
@@ -413,7 +411,7 @@ pub fn InnerCalendar(
                     .map(|(date, calendar_day)| {
                         view! {
                             <div
-                                class="vertical gap background-3 rounded padded no-select outline-1-hover"
+                                class="flex flex-col overflow-hidden gap-1 align-center bg-gray-900 rounded-lg p-2 outline outline-white/15"
                                 class:outline-white=move || is_selected(date)
                                 on:mousedown=move |_| set_drag_start(Some(date))
                                 on:mouseup=move |_| on_drag_end()
@@ -461,7 +459,6 @@ pub fn InnerCalendar(
                     })
                     .collect::<Vec<_>>()}
             </div>
-        </div>
 
         <Modal is_open=move || meal_edit().is_some() on_close=move || set_meal_edit(None)>
             {

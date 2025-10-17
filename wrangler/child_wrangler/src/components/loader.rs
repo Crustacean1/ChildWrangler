@@ -3,7 +3,9 @@ use leptos::prelude::*;
 #[component]
 pub fn Loader(children: ChildrenFn) -> impl IntoView {
     view! {
-        <Suspense fallback=|| view! { <div class="loading"></div> }>
+        <Suspense fallback=|| view! { <div class="max-w-sm animate-pulse">
+                <div class="h-5 bg-gray-200 rounded-full dark:bg-gray-700 mb-4"></div>
+            </div> }>
             <ErrorBoundary fallback=|errors| {
                 view! {
                     <div class="error rounded-3 flex-1 flex justify-center align-center padded">

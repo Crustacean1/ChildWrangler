@@ -200,10 +200,10 @@ fn into_err_msg(err: &RequestError, message: &Message) -> OutMsg {
     let content = match err {
         RequestError::InvalidTimeRange => format!("Podano nieprawidłowy zakres dat"),
         RequestError::TooManyDates => format!(
-            "Podano zbyt wiele dat - należy podać pojedyńczą date nieobecności, lub okres pomiędzy 2 datami"
+            "Podano zbyt wiele dat - należy podać pojedyńczą date nieobecności, lub okres pomiędzy 2 datami odseparowane spacją"
         ),
         RequestError::NoDateSpecified => format!(
-            "Nie podano żadnej daty - należy podać pojedyńczą date nieobecności, lub okres pomiędzy 2 datami"
+            "Nie podano żadnej daty - należy podać pojedyńczą date nieobecności, lub okres pomiędzy 2 datami odseparowane spacją"
         ),
         RequestError::UnknownTerm => {
             format!("Termin '' nie jest prawidłowym określeniem na posiłek / ucznia")

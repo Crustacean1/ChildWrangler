@@ -138,7 +138,7 @@ pub fn Chart(
                 {series
                     .iter()
                     .enumerate()
-                    .map(|(i, (name, value))| {
+                    .map(|(_, (name, value))| {
                         view! {
                             <div class="rounded-decoration" style:--background-color={colour(name)}>{title(name)} </div><div>{format!("{}", value)}</div>
                         }
@@ -157,7 +157,7 @@ pub fn AttendanceDashboard() -> impl IntoView {
     Effect::new(move |_| {
         caterings
             .get()
-            .map(|c| c.map(|c| set_selected_catering(Some(c[0].id))))
+            .map(|c| c.map(|c| c.first().map(|c| set_selected_catering(Some(c.id)))))
     });
 
     let overview = Resource::new(selected_catering, |catering| async move {
@@ -191,7 +191,7 @@ pub fn AttendanceDashboard() -> impl IntoView {
                     ServerFnError,
                 >(
                     view! {
-                        <div class="horizontal padded rounded background-2">
+                        <div class="flex flex-row rounded-xl bg-gray-900 outline outline-white/15 p-2">
                             <Dropdown
                                 name="Cateringi"
                                 options=move || caterings.clone()
@@ -209,7 +209,7 @@ pub fn AttendanceDashboard() -> impl IntoView {
                             <h2 class="h2 flex-1">{format!("{}", Utc::now().date_naive())}</h2>
                             <div class="flex-1"></div>
                         </div>
-                        <div class="flex-1 column-grid-3">
+                        <div class="flex-1 rounded-xl bg-gray-900 outline outline-white/15">
                             <AttendanceDashboardInner attendance />
                         </div>
                     },

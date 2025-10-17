@@ -30,6 +30,10 @@ pub async fn create_catering(catering_dto: CreateCateringDto) -> Result<Uuid, Se
     let name = catering_dto.name.to_lowercase();
     let cat_name = name.trim();
 
+    if cat_name.is_empty() {
+        return Err(ServerFnError::new("Catering must have a name"));
+    }
+
     let meals = catering_dto
         .meals
         .into_iter()

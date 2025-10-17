@@ -25,17 +25,17 @@ pub fn AttendancePage() -> impl IntoView {
     let (catering_modal, set_catering_modal) = signal(false);
 
     view! {
-        <div class="horizontal flex-1 gap overflow-hidden ">
-            <div class="rounded vertical gap min-w-10" style:min-width="20em">
+        <div class="flex flex-row flex-1 gap-2">
+            <div class="flex flex-col min-w-xs rounded-xl bg-gray-900 outline outline-white/15 p-2 m-0.5">
                 <InnerTree />
                 <button
-                    class="interactive rounded padded"
+                    class="rounded-sm p-1 bg-gray-800 hover:bg-gray-700 hover:pointer"
                     on:click=move |_| set_catering_modal(true)
                 >
                     Dodaj catering
                 </button>
             </div>
-            <div class="vertical flex-1 gap overflow-hidden">
+            <div class="flex flex-col flex-1 gap-2">
                 <Outlet />
             </div>
         </div>

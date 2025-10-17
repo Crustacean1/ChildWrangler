@@ -108,7 +108,7 @@ where
         >
             <input
                 id=name
-                class="rounded padded"
+                class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-1 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:shadow-xs-light"
                 node_ref=input_ref
                 bind:value=(input_value, set_input_value)
                 autocomplete="off"

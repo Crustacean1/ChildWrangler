@@ -8,10 +8,13 @@ use uuid::Uuid;
 
 use crate::{
     components::{
-        calendar::Calendar, loader::Loader, modal::Modal, modals::{
+        calendar::Calendar,
+        loader::Loader,
+        modal::Modal,
+        modals::{
             add_group::AddGroupModal, add_student::AddStudentModal, delete_group::DeleteGroupModal,
             delete_student::DeleteStudentModal, modify_group::ModifyGroupModal,
-        }
+        },
     },
     icons::{add_group::AddGroupIcon, add_user::AddUserIcon, delete::DeleteIcon, edit::EditIcon},
     pages::attendance_page::{AttendanceParams, GroupVersion},
@@ -21,8 +24,8 @@ use crate::{
 #[component]
 pub fn DetailPage() -> impl IntoView {
     view! {
-        <div class="vertical gap flex-1">
-            <div class="background-2 rounded padded">
+        <div class="flex flex-col gap-2 flex-1">
+            <div class="bg-gray-900 outline outline-white/15 rounded-xl p-2">
                 <InfoPage />
             </div>
             <Calendar />
@@ -86,21 +89,23 @@ pub fn InfoPage() -> impl IntoView {
 #[component]
 pub fn Breadcrumb(trail: Vec<GroupDto>) -> impl IntoView {
     view! {
-        <div class="horizontal trail align-stretch">
-            <For each=move || trail.clone() key=|g| g.id let:item>
-                <div class="horizontal align-stretch">
-                    <button
-                        class="interactive rounded padded align-center"
-                        on:click=move |_| {
-                            use_navigate()(&format!("/attendance/{}", item.id), Default::default())
-                        }
-                    >
-                        {item.name}
-                    </button>
-                </div>
-            </For>
-        </div>
-    }
+
+
+    <nav class="flex" aria-label="Breadcrumb">
+      <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+                <For each=move || trail.clone() key=|g| g.id let:item>
+                    <li>
+          <div class="flex items-center">
+            <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+            </svg>
+            <a class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400" href="">{item.name}</a>
+          </div>
+                    </li>
+                </For>
+      </ol>
+    </nav>
+        }
 }
 
 #[component]
@@ -110,7 +115,7 @@ pub fn Catering(catering: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoVie
     let GroupVersion(group_version, set_group_version) = use_context().unwrap();
 
     view! {
-        <div class="horizontal gap space-between">
+        <div class="flex flex-row gap space-between">
             <Breadcrumb trail />
 
             <div class="horizontal gap">
@@ -158,7 +163,7 @@ pub fn EmptyGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoView
     let (delete_group, set_delete_group) = signal(false);
 
     view! {
-        <div class="horizontal space-between">
+        <div class="flex flex-row space-between">
             <Breadcrumb trail />
             <div class="horizontal gap">
                 <button class="interactive icon-button" on:click=move |_| set_add_student(true)>
@@ -232,7 +237,7 @@ pub fn NonemptyGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoV
     let (delete_group, set_delete_group) = signal(false);
 
     view! {
-        <div class="horizontal space-between">
+        <div class="flex flex-row space-between">
             <Breadcrumb trail />
             <div class="horizontal gap">
                 <button class="interactive icon-button" on:click=move |_| { set_add_group(true) }>
@@ -291,7 +296,7 @@ pub fn StudentGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoVi
     let (delete_group, set_delete_group) = signal(false);
 
     view! {
-        <div class="horizontal space-between">
+        <div class="flex flex-row space-between">
             <Breadcrumb trail />
             <div class="horizontal gap">
                 <button class="interactive icon-button" on:click=move |_| { set_add_student(true) }>
@@ -357,7 +362,7 @@ pub fn Student(student: StudentDetailsDto, trail: Vec<GroupDto>) -> impl IntoVie
     };
 
     view! {
-        <div class="horizontal space-between">
+        <div class="flex flex-row space-between">
             <Breadcrumb trail />
             <div class="horizontal gap">
                 <button class="interactive icon-button" on:click=move |_| set_edit_student(true)>

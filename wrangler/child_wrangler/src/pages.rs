@@ -6,4 +6,5 @@ pub mod attendance_page;
 pub mod detail_page;
 pub mod attendance_dashboard;
 pub mod message_dashboard;
+pub mod test_page;
 

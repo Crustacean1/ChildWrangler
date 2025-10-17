@@ -104,8 +104,8 @@ fn Test(
     };
 
     view! {
-        <div class="overflow-auto background-2 flex-1 rounded">
-            <ul class="vertical fast-transition tree">
+        <div class="">
+            <ul class="flex flex-col gap-0.5">
                 {entities
                     .iter()
                     .filter(|item| item.parent.is_none())
@@ -152,13 +152,12 @@ fn TreeNode(
 
     view! {
         <li
-            class="flex vertical fast-transition"
+            class="flex-row overflow-hidden"
             node_ref=dropzone_ref
-            style:padding-top="0.125em"
             class:expanded=move || !expanded().contains(&root.id)
         >
             <span
-                class="rounded flex-1 flex hide-overflow"
+                class="flex-1 flex overflow-hidden rounded-lg"
                 draggable="true"
                 on:dragstart=move |e| {
                     e.stop_propagation();
@@ -170,7 +169,7 @@ fn TreeNode(
                 on:dragend=move |_| { on_drag_end(None) }
             >
                 <span
-                    class="flex-1 interactive padded-2 center left-align"
+                    class="flex-1 interactive p-2 center left-align hover:bg-gray-700 md:cursor-pointer"
                     on:click=move |_| {
                         navigate(&format!("/attendance/{}", root.id), Default::default())
                     }
@@ -184,7 +183,7 @@ fn TreeNode(
                         Either::Left(
                             view! {
                                 <button
-                                    class="interactive center fast-transition"
+                                    class="p-2 hover:bg-gray-700 md:cursor-pointer"
                                     on:click=on_toggle_expand
                                 >
                                     <ArrowDown />
@@ -226,7 +225,7 @@ fn TreeNode(
                     }
                 ></span>
             </span>
-            <ul class="vertical fast-transition" style:padding-left="1em">
+            <ul class="flex flex-col" style:padding-left="1em">
                 // <li class="dropzone"></li>
                 {groups
                     .iter()

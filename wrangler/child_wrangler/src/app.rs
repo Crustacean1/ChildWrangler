@@ -2,27 +2,21 @@ use chrono::{Datelike, Utc};
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
-    components::{A, Outlet, ParentRoute, Redirect, Route, Router, Routes},
+    components::{Outlet, ParentRoute, Redirect, Route, Router, Routes, A},
     path,
 };
 
 use crate::{
     components::{searchbar::Searchbar, snackbar::Snackbar},
     pages::{
-        attendance_dashboard::AttendanceDashboard,
-        attendance_page::{AttendancePage, AttendanceVersion, GroupVersion},
-        detail_page::DetailPage,
-        guardian_contact_details::GuardianContactDetails,
-        message_dashboard::MessageDashboard,
-        message_page::MessagePage,
-        unknown_contact_details::UnknownContactDetails,
+        attendance_dashboard::AttendanceDashboard, attendance_page::{AttendancePage, AttendanceVersion, GroupVersion}, detail_page::DetailPage, guardian_contact_details::GuardianContactDetails, message_dashboard::MessageDashboard, message_page::MessagePage, test_page::TestPage, unknown_contact_details::UnknownContactDetails
     },
 };
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
         <!DOCTYPE html>
-        <html lang="en">
+        <html lang="en" class="h-full">
             <head>
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -30,7 +24,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                 <HydrationScripts options />
                 <MetaTags />
             </head>
-            <body>
+            <body class="bg-gray-950 flex flex-col h-full text-white p-2 gap-2">
                 <App />
             </body>
         </html>
@@ -66,23 +60,24 @@ pub fn App() -> impl IntoView {
                         path=path!("/")
                         view=|| {
                             view! {
-                                <nav class="rounded background-2 padded horizontal">
+                                <nav class="flex flex-row rounded-xl bg-gray-900 outline outline-white/15 p-2 gap-2">
                                     <Searchbar />
-                                    <div class="horizontal flex-1 flex-end gap align-stretch padded">
+                                    <div class="flex flex-row flex-1 items-center justify-end gap-2">
                                         <A href="/attendance">
-                                            <span class="interactive rounded padded">Obecność</span>
+                                            <span class="hover:bg-gray-700 md:cursor-pointer rounded-md p-1">Obecność</span>
                                         </A>
                                         <A href="/messages">
-                                            <span class="interactive rounded padded">Wiadomości</span>
+                                            <span class="hover:bg-gray-700 md:cursor-pointer rounded-md p-1">Wiadomości</span>
                                         </A>
                                     </div>
                                 </nav>
-                                <main>
+                                <main class="flex flex-1 flex-row overflow-hidden">
                                     <Outlet />
                                 </main>
                             }
                         }
                     >
+                        <Route path=path!("test") view=TestPage/>
                         <ParentRoute path=path!("messages") view=MessagePage>
                             <Route path=path!("/") view=MessageDashboard />
                             <Route
