@@ -25,7 +25,7 @@ use crate::{
 pub fn DetailPage() -> impl IntoView {
     view! {
         <div class="flex flex-col gap-2 flex-1">
-            <div class="bg-gray-900 outline outline-white/15 rounded-xl p-2">
+            <div class="bg-gray-900 outline outline-white/15 rounded-xl p-2 m-0.5">
                 <InfoPage />
             </div>
             <Calendar />
@@ -91,7 +91,7 @@ pub fn Breadcrumb(trail: Vec<GroupDto>) -> impl IntoView {
     view! {
 
 
-    <nav class="flex" aria-label="Breadcrumb">
+    <nav class="flex flex-1" aria-label="Breadcrumb">
       <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                 <For each=move || trail.clone() key=|g| g.id let:item>
                     <li>
@@ -99,7 +99,9 @@ pub fn Breadcrumb(trail: Vec<GroupDto>) -> impl IntoView {
             <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
               <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
             </svg>
-            <a class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400" href="">{item.name}</a>
+            <a class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400 md:hover:text-gray-200" href="">
+                {item.name}
+            </a>
           </div>
                     </li>
                 </For>

@@ -8,19 +8,12 @@ pub fn Modal(
 ) -> impl IntoView {
     view! {
         <div
-            class="absolute-position"
-            style:top="0"
-            style:display=move || if is_open() { "flex" } else { "none" }
-            style:left="0"
-            style:width="100vw"
-            style:height="100vh"
-            style:justify-content="center"
-            style:align-items="center"
-            style:background-color="rgba(0,0,0,0.25)"
+            class="flex absolute top-0 left-0 w-full h-full justify-center items-center backdrop-blur-xs "
+            class:hidden=move || !is_open()
             on:click=move |_| on_close()
         >
             <div
-                class="vertical pretty-background padded gap rounded"
+                class="flex flex-col bg-gray-800 p-2 rounded-xl outline outline-white/15"
                 on:click=|e| e.stop_propagation()
             >
                 <Show when=is_open>{children()}</Show>

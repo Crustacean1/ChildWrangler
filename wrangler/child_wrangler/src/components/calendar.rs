@@ -101,14 +101,37 @@ pub fn Calendar() -> impl IntoView {
         },
     );
 
-    let change_month = |_: &()| {};
+    let next_month = move || {
+        NaiveDate::from_ymd_opt(year() as i32, month(), 1)
+            .and_then(|d| d.checked_add_months(Months::new(1)))
+    };
+    let prev_month = move || {
+        NaiveDate::from_ymd_opt(year() as i32, month(), 1)
+            .and_then(|d| d.checked_sub_months(Months::new(1)))
+    };
+
+    let prev_month_href = move || {
+        if let (Some(id), Some(prev)) = (target(), prev_month()) {
+            format!("/attendance/{}/{}/{}", id, prev.year(), prev.month())
+        } else {
+            String::new()
+        }
+    };
+
+    let next_month_href = move || {
+        if let (Some(id), Some(next)) = (target(), next_month()) {
+            format!("/attendance/{}/{}/{}", id, next.year(), next.month())
+        } else {
+            String::new()
+        }
+    };
 
     view! {
-            <div class="bg-gray-900 rounded-xl outline outline-white/15 flex flex-row gap-2 p-2">
+            <div class="bg-gray-900 rounded-xl outline outline-white/15 flex flex-row gap-2 p-2 select-none">
                 <div class="flex-1"></div>
                 <div class="flex-1 flex flex-row gap items-center place-content-between">
-                    <A href="">
-                        <span class="hover:bg-gray-700 cursor-pointer p-1 rounded-md" title="Poprzedni miesiąc">
+                    <A href=prev_month_href>
+                        <span class="hover:bg-gray-700 cursor-pointer rounded-md" title="Poprzedni miesiąc">
                             <LeftArrow />
                         </span>
                     </A>
@@ -119,8 +142,8 @@ pub fn Calendar() -> impl IntoView {
                                 .unwrap_or(String::new())
                         }}
                     </h3>
-                    <A href="">
-                        <span class="hover:bg-gray-700 cursor-pointer p-1 rounded-md" title="Następny miesiąc">
+                    <A href=next_month_href>
+                        <span class="hover:bg-gray-700 cursor-pointer rounded-md" title="Następny miesiąc">
                             <RightArrow />
                         </span>
                     </A>
@@ -213,11 +236,6 @@ pub fn InnerCalendar(
 
     let snackbar = use_snackbar();
     let is_student = local_attendance.is_student;
-
-    let next_month =
-        NaiveDate::from_ymd_opt(year, month, 1).and_then(|d| d.checked_add_months(Months::new(1)));
-    let prev_month =
-        NaiveDate::from_ymd_opt(year, month, 1).and_then(|d| d.checked_sub_months(Months::new(1)));
 
     let (meal_history, set_meal_history) = signal(None::<(Uuid, Uuid, NaiveDate)>);
     let (meal_count, set_meal_count) = signal(None::<(Uuid, Uuid, NaiveDate)>);
@@ -385,34 +403,30 @@ pub fn InnerCalendar(
         }
     });
 
-    let change_month = |date: Option<NaiveDate>| {
-        move || {
-            date.map(|next| format!("/attendance/{}/{}/{}", target, next.year(), next.month()))
-                .unwrap_or(format!("/attendance/{}", target))
-        }
-    };
-
     view! {
-            <div class="flex-1 grid gap-2 grid-cols-7 overflow-auto p-0.5">
+            <div class="grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none">
                 {iter::successors(
                         Some(Weekday::Mon),
                         |w| { if *w == Weekday::Sun { None } else { Some(w.succ()) } },
                     )
                     .map(|w| {
                         view! {
-                            <div class="p-2 text-center items-center justify-center">
+                            <div class="p-2 text-center items-center justify-center row-span-auto">
                                 {format!("{}", w)}
                             </div>
                         }
                     })
                     .collect::<Vec<_>>()}
+         </div>
+            <div class="flex-1 grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none">
                 {daily_attendance
                     .into_iter()
                     .map(|(date, calendar_day)| {
                         view! {
                             <div
-                                class="flex flex-col overflow-hidden gap-1 align-center bg-gray-900 rounded-lg p-2 outline outline-white/15"
-                                class:outline-white=move || is_selected(date)
+                                class="flex flex-col overflow-hidden gap-1 align-center rounded-lg p-2 outline outline-white/15 hover:bg-gray-800 active:bg-gray-700"
+                                class:bg-gray-800=move || is_selected(date)
+                                class:bg-gray-900=move || !is_selected(date)
                                 on:mousedown=move |_| set_drag_start(Some(date))
                                 on:mouseup=move |_| on_drag_end()
                                 on:mouseover=move |_| set_drag_end(Some(date))
@@ -423,7 +437,7 @@ pub fn InnerCalendar(
                                         Either::Left(
                                             Either::Right(
                                                 view! {
-                                                    <h3 class="h3 gray">
+                                                    <h3 class="text-center text-gray-600">
                                                         {format!("{}", date.format("%d %B"))}
                                                     </h3>
                                                 },
@@ -447,7 +461,6 @@ pub fn InnerCalendar(
                                                         set_meal_history(Some((meal_id, target, date)))
                                                     }
                                                     on_count_select=move |meal_id| {
-                                                        set_meal_count(Some((meal_id, target, date)))
                                                     }
                                                 />
                                             },
@@ -515,14 +528,14 @@ pub fn Day(
     on_unselect: impl Fn() + Send + Sync + Copy + 'static,
 ) -> impl IntoView {
     view! {
-        <h3 class=" h3">{format!("{}", date.format("%e %B"))}</h3>
+        <h3 class="text-center flex-1 justify-start">{format!("{}", date.format("%e %B"))}</h3>
         {meals
             .into_iter()
             .map(|(meal_id, meal_name, attendance, status)| {
                 view! {
-                    <div class="horizontal gap flex-1 horizontal align-center">
+                    <div class="flex-1 flex flex-row align-center">
                         <div
-                            class="flex-4 padded rounded no-select text-left flex justify-center align-center"
+                            class="flex-4 padded no-select text-left flex justify-left align-center"
                             on:mouseover=move |_| on_meal_select(meal_id)
                             on:mouseleave=move |_| on_unselect()
                             class:calendar-anchor=move || {

@@ -64,8 +64,8 @@ pub fn MealEditModal(
     };
 
     view! {
-        <div class="vertical gap-0">
-            <h2 class="h2">{format!("Edytujesz {} dni", days.len())}</h2>
+        <div class="flex flex-col gap-2">
+            <h2 class="text-center text-xl">{format!("Edytujesz {} dni", days.len())}</h2>
 
             {move || {
                 meals()
@@ -73,9 +73,10 @@ pub fn MealEditModal(
                     .map(move |meal| {
                         view! {
                             <button
-                                class="interactive padded rounded"
-                                class:outline-green=meal.1 == 2
-                                class:outline-red=meal.1 == 1
+                                class="rounded-md p-1 bg-gray-700 md:cursor-pointer md:hover:bg-gray-600"
+                                class:outline-2=meal.1 != 0
+                                class:outline-green-900=meal.1 == 2
+                                class:outline-red-900=meal.1 == 1
                                 on:click=move |_| {
                                     let mut meals = meals().clone();
                                     meals
@@ -94,20 +95,20 @@ pub fn MealEditModal(
                     .collect::<Vec<_>>()
             }}
 
-            <div class="vertical">
+            <div class="flex flex-col">
                 <label>Notka</label>
-                <input class="padded rounded" bind:value=(note, set_note) type="textfield" />
+                <input class="p-1 rounded-md bg-gray-600" bind:value=(note, set_note) type="textfield" />
             </div>
-            <div class="horizontal gap flex-end">
+            <div class="flex flex-row gap-2 justify-end">
                 <button
-                    class="interactive padded rounded red"
+                    class="p-2 text-red-900 outline outline-red-900 rounded-md md:hover:bg-gray-700 cursor-pointer"
                     on:click=move |_| on_close(false)
                     disabled=edit_meal.pending()
                 >
                     Anuluj
                 </button>
                 <button
-                    class="interactive padded rounded green"
+                    class="p-2 text-green-900 outline outline-green-900 rounded-md md:hover:bg-gray-700 cursor-pointer"
                     on:click=on_save
                     disabled=move || edit_meal.pending()() || !changed()
                 >

@@ -104,7 +104,7 @@ fn Test(
     };
 
     view! {
-        <div class="">
+        <div class="overflow-auto">
             <ul class="flex flex-col gap-0.5">
                 {entities
                     .iter()
