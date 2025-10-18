@@ -64,10 +64,14 @@ pub fn App() -> impl IntoView {
                                     <Searchbar />
                                     <div class="flex flex-row flex-1 items-center justify-end gap-2">
                                         <A href="/attendance">
-                                            <span class="hover:bg-gray-700 md:cursor-pointer rounded-md p-1">Obecność</span>
+                                            <span class="hover:bg-gray-700 md:cursor-pointer rounded-md p-1">
+                                                Obecność
+                                            </span>
                                         </A>
                                         <A href="/messages">
-                                            <span class="hover:bg-gray-700 md:cursor-pointer rounded-md p-1">Wiadomości</span>
+                                            <span class="hover:bg-gray-700 md:cursor-pointer rounded-md p-1">
+                                                Wiadomości
+                                            </span>
                                         </A>
                                     </div>
                                 </nav>
@@ -77,7 +81,7 @@ pub fn App() -> impl IntoView {
                             }
                         }
                     >
-                        <Route path=path!("test") view=TestPage/>
+                        <Route path=path!("test") view=TestPage />
                         <ParentRoute path=path!("messages") view=MessagePage>
                             <Route path=path!("/") view=MessageDashboard />
                             <Route

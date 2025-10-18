@@ -127,41 +127,47 @@ pub fn Calendar() -> impl IntoView {
     };
 
     view! {
-            <div class="bg-gray-900 rounded-xl outline outline-white/15 flex flex-row gap-2 p-2 select-none">
-                <div class="flex-1"></div>
-                <div class="flex-1 flex flex-row gap items-center place-content-between">
-                    <A href=prev_month_href>
-                        <span class="hover:bg-gray-700 cursor-pointer rounded-md" title="Poprzedni miesiąc">
-                            <LeftArrow />
-                        </span>
-                    </A>
-                    <h3 class="min-w-10 text-center">
-                        {move || {
-                            NaiveDate::from_ymd_opt(year() as i32, month(), 1)
-                                .map(|d| format!("{}", d.format("%Y %B")))
-                                .unwrap_or(String::new())
-                        }}
-                    </h3>
-                    <A href=next_month_href>
-                        <span class="hover:bg-gray-700 cursor-pointer rounded-md" title="Następny miesiąc">
-                            <RightArrow />
-                        </span>
-                    </A>
-                </div>
-                <div class="flex-1 justify-end flex flex-row gap-2">
-                    <button
-                        class="hover:bg-gray-700 cursor-pointer p-1 rounded-md"
-                        title="Pobierz obecność"
+        <div class="bg-gray-900 rounded-xl outline outline-white/15 flex flex-row gap-2 p-2 select-none">
+            <div class="flex-1"></div>
+            <div class="flex-1 flex flex-row gap items-center place-content-between">
+                <A href=prev_month_href>
+                    <span
+                        class="hover:bg-gray-700 cursor-pointer rounded-md"
+                        title="Poprzedni miesiąc"
                     >
-                        <DownloadIcon />
-                    </button>
-                    <button
-                        class="hover:bg-gray-700 cursor-pointer p-1 rounded-md"
-                        title="Przełącz tryb zaznaczania"
+                        <LeftArrow />
+                    </span>
+                </A>
+                <h3 class="min-w-10 text-center">
+                    {move || {
+                        NaiveDate::from_ymd_opt(year() as i32, month(), 1)
+                            .map(|d| format!("{}", d.format("%Y %B")))
+                            .unwrap_or(String::new())
+                    }}
+                </h3>
+                <A href=next_month_href>
+                    <span
+                        class="hover:bg-gray-700 cursor-pointer rounded-md"
+                        title="Następny miesiąc"
                     >
-                        <SelectIcon />
-                    </button>
-                </div>
+                        <RightArrow />
+                    </span>
+                </A>
+            </div>
+            <div class="flex-1 justify-end flex flex-row gap-2">
+                <button
+                    class="hover:bg-gray-700 cursor-pointer p-1 rounded-md"
+                    title="Pobierz obecność"
+                >
+                    <DownloadIcon />
+                </button>
+                <button
+                    class="hover:bg-gray-700 cursor-pointer p-1 rounded-md"
+                    title="Przełącz tryb zaznaczania"
+                >
+                    <SelectIcon />
+                </button>
+            </div>
         </div>
         <Loader>
             {move || Suspend::new(async move {
@@ -172,7 +178,6 @@ pub fn Calendar() -> impl IntoView {
                     ServerFnError,
                 >(
                     view! {
-
                         <InnerCalendar
                             target=target().unwrap_or_default()
                             year=year() as i32
@@ -404,74 +409,73 @@ pub fn InnerCalendar(
     });
 
     view! {
-            <div class="grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none">
-                {iter::successors(
-                        Some(Weekday::Mon),
-                        |w| { if *w == Weekday::Sun { None } else { Some(w.succ()) } },
-                    )
-                    .map(|w| {
-                        view! {
-                            <div class="p-2 text-center items-center justify-center row-span-auto">
-                                {format!("{}", w)}
-                            </div>
-                        }
-                    })
-                    .collect::<Vec<_>>()}
-         </div>
-            <div class="flex-1 grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none">
-                {daily_attendance
-                    .into_iter()
-                    .map(|(date, calendar_day)| {
-                        view! {
-                            <div
-                                class="flex flex-col overflow-hidden gap-1 align-center rounded-lg p-2 outline outline-white/15 hover:bg-gray-800 active:bg-gray-700"
-                                class:bg-gray-800=move || is_selected(date)
-                                class:bg-gray-900=move || !is_selected(date)
-                                on:mousedown=move |_| set_drag_start(Some(date))
-                                on:mouseup=move |_| on_drag_end()
-                                on:mouseover=move |_| set_drag_end(Some(date))
-                            >
-                                {match calendar_day {
-                                    CalendarDay::OtherMonth => Either::Left(Either::Left(view! {})),
-                                    CalendarDay::OtherDow => {
-                                        Either::Left(
-                                            Either::Right(
-                                                view! {
-                                                    <h3 class="text-center text-gray-600">
-                                                        {format!("{}", date.format("%d %B"))}
-                                                    </h3>
-                                                },
-                                            ),
-                                        )
-                                    }
-                                    CalendarDay::Day(meals) => {
+        <div class="grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none">
+            {iter::successors(
+                    Some(Weekday::Mon),
+                    |w| { if *w == Weekday::Sun { None } else { Some(w.succ()) } },
+                )
+                .map(|w| {
+                    view! {
+                        <div class="p-2 text-center items-center justify-center row-span-auto">
+                            {format!("{}", w)}
+                        </div>
+                    }
+                })
+                .collect::<Vec<_>>()}
+        </div>
+        <div class="flex-1 grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none">
+            {daily_attendance
+                .into_iter()
+                .map(|(date, calendar_day)| {
+                    view! {
+                        <div
+                            class="flex flex-col overflow-hidden gap-1 align-center rounded-lg p-2 outline outline-white/15 hover:bg-gray-800 active:bg-gray-700"
+                            class:bg-gray-800=move || is_selected(date)
+                            class:bg-gray-900=move || !is_selected(date)
+                            on:mousedown=move |_| set_drag_start(Some(date))
+                            on:mouseup=move |_| on_drag_end()
+                            on:mouseover=move |_| set_drag_end(Some(date))
+                        >
+                            {match calendar_day {
+                                CalendarDay::OtherMonth => Either::Left(Either::Left(view! {})),
+                                CalendarDay::OtherDow => {
+                                    Either::Left(
                                         Either::Right(
                                             view! {
-                                                <Day
-                                                    date
-                                                    is_student
-                                                    meals
-                                                    meal_select=meal_history
-                                                    count_select=meal_count
-                                                    on_unselect=move || {
-                                                        set_meal_history(None);
-                                                        set_meal_count(None);
-                                                    }
-                                                    on_meal_select=move |meal_id| {
-                                                        set_meal_history(Some((meal_id, target, date)))
-                                                    }
-                                                    on_count_select=move |meal_id| {
-                                                    }
-                                                />
+                                                <h3 class="text-center text-gray-600">
+                                                    {format!("{}", date.format("%d %B"))}
+                                                </h3>
                                             },
-                                        )
-                                    }
-                                }}
-                            </div>
-                        }
-                    })
-                    .collect::<Vec<_>>()}
-            </div>
+                                        ),
+                                    )
+                                }
+                                CalendarDay::Day(meals) => {
+                                    Either::Right(
+                                        view! {
+                                            <Day
+                                                date
+                                                is_student
+                                                meals
+                                                meal_select=meal_history
+                                                count_select=meal_count
+                                                on_unselect=move || {
+                                                    set_meal_history(None);
+                                                    set_meal_count(None);
+                                                }
+                                                on_meal_select=move |meal_id| {
+                                                    set_meal_history(Some((meal_id, target, date)))
+                                                }
+                                                on_count_select=move |meal_id| {}
+                                            />
+                                        },
+                                    )
+                                }
+                            }}
+                        </div>
+                    }
+                })
+                .collect::<Vec<_>>()}
+        </div>
 
         <Modal is_open=move || meal_edit().is_some() on_close=move || set_meal_edit(None)>
             {

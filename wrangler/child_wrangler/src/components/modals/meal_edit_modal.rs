@@ -97,7 +97,11 @@ pub fn MealEditModal(
 
             <div class="flex flex-col">
                 <label>Notka</label>
-                <input class="p-1 rounded-md bg-gray-600" bind:value=(note, set_note) type="textfield" />
+                <input
+                    class="p-1 rounded-md bg-gray-600"
+                    bind:value=(note, set_note)
+                    type="textfield"
+                />
             </div>
             <div class="flex flex-row gap-2 justify-end">
                 <button
