@@ -63,16 +63,19 @@ pub async fn get_groups() -> Result<Vec<GroupDto>, ServerFnError> {
     use sqlx::postgres::PgPool;
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
-    let result = sqlx::query!("SELECT * FROM groups LEFT JOIN group_relations ON group_relations.child = groups.id AND group_relations.level = 1 WHERE NOT groups.removed")
-        .fetch_all(&pool)
-        .await?
-        .into_iter()
-        .map(|row| GroupDto {
-            id: row.id,
-            name: row.name,
-            parent: row.parent,
-        })
-        .collect();
+    let result = sqlx::query!(
+        "SELECT groups.id, groups.name, group_relations.parent FROM groups 
+        LEFT JOIN group_relations ON group_relations.child = groups.id AND group_relations.level = 1 
+        WHERE NOT groups.removed")
+    .fetch_all(&pool)
+    .await?
+    .into_iter()
+    .map(|row| GroupDto {
+        id: row.id,
+        name: row.name,
+        parent: row.parent,
+    })
+    .collect();
     Ok(result)
 }
 

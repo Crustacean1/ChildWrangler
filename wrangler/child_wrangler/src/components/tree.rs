@@ -225,8 +225,13 @@ fn TreeNode(
                     }
                 ></span>
             </span>
+            {
+    move || {
+
+    if expanded().contains(&id) {
+    Either::Left(view!{
+
             <ul class="flex flex-col" style:padding-left="1em">
-                // <li class="dropzone"></li>
                 {groups
                     .iter()
                     .filter(|g| g.parent == Some(root.id))
@@ -237,6 +242,12 @@ fn TreeNode(
                     })
                     .collect::<Vec<_>>()}
             </ul>
+    })
+    }else{
+    Either::Right(view!{})
+}
+}
+}
         </li>
     }
     .into_any()

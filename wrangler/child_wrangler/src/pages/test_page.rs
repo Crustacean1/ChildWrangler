@@ -20,37 +20,37 @@ pub fn TestPage() -> impl IntoView {
     });
 
     view! {
-        <div class="vertical gap">
+        <div class="flex flex-col gap">
             <label>Catering count</label>
             <input
                 bind:value=(catering_count, set_catering_count)
-                class="padded rounded"
+                class="bg-gray-600 rounded-md p-1"
                 type="number"
                 name="catering count"
             />
             <label>Group count</label>
             <input
                 bind:value=(group_count, set_group_count)
-                class="padded rounded"
+                class="bg-gray-600 rounded-md p-1"
                 type="number"
                 name="group count"
             />
             <label>Student count</label>
             <input
                 bind:value=(student_count, set_student_count)
-                class="padded rounded"
+                class="bg-gray-600 rounded-md p-1"
                 type="number"
                 name="student count"
             />
             <label>Guardian count</label>
             <input
                 bind:value=(guardian_count, set_guardian_count)
-                class="padded rounded"
+                class="bg-gray-600 rounded-md p-1"
                 type="number"
                 name="guardian count"
             />
             <button
-                class="padded rounded interactive"
+                class="md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1"
                 on:click=move |_| {
                     on_click_action.dispatch(());
                 }

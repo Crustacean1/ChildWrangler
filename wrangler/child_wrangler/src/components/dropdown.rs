@@ -1,3 +1,4 @@
+use leptos::either::Either;
 use leptos::wasm_bindgen::JsCast;
 use leptos::web_sys::HtmlLiElement;
 use leptos::{prelude::*, tachys::renderer::dom::Node};
@@ -7,7 +8,7 @@ use uuid::Uuid;
 pub fn Dropdown<T: Send + Sync + Clone + 'static, R>(
     name: &'static str,
     options: impl Fn() -> Vec<T> + Send + Sync + 'static,
-    key: impl Fn(&T) -> Uuid + Clone + Send + Sync + 'static,
+    key: impl Fn(&T) -> Uuid + Clone + Copy + Send + Sync + 'static,
     filter: impl Fn(&str, &T) -> bool + Send + Sync + Copy + 'static,
     on_select: impl Fn(Result<T, String>) -> Option<String> + Send + Sync + Copy + 'static,
     item_view: impl Fn(T) -> R + Send + Sync + Copy + 'static,
@@ -124,28 +125,24 @@ where
                     }
                 }
             />
+                    {move || {
+                            if filtered_options().len() < 100 {
+                                Either::Left(view!{
             <ul
-                class="background-3 vertical max-h-20 flex-1 rounded shadow"
-                style:gap="1px"
-                style:position="absolute"
-                style:top="100%"
-                style:width="100%"
+                class="bg-gray-700 flex-col max-h-48 rounded-md overflow-auto"
                 style:display=move || if active() { "flex" } else { "none" }
                 role="listbox"
-                class:active=active
                 node_ref=list_ref
             >
                 <For
                     each=filtered_options
-                    key
-                    children=move |item| {
+                    key                    children=move |item| {
                         let item = Signal::derive(move || item.clone());
                         view! {
                             <li
                                 tabindex="-1"
                                 role="option"
-                                class="interactive"
-                                class:active=move || filter(&input_value(), &item())
+                                class="md:hover:bg-gray-600 md:active:bg-gray-700"
                                 on:mouseover=move |e| {
                                     e.current_target()
                                         .and_then(|e| {
@@ -185,6 +182,11 @@ where
                     }
                 />
             </ul>
+                                })
+                            }else{
+                                Either::Right(view!{})
+                            }
+                        }}
         </div>
     }
 }
