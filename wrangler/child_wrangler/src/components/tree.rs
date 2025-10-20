@@ -225,29 +225,33 @@ fn TreeNode(
                     }
                 ></span>
             </span>
-            {
-    move || {
+            {move || {
+                if expanded().contains(&id) {
+                    Either::Left(
 
-    if expanded().contains(&id) {
-    Either::Left(view!{
-
-            <ul class="flex flex-col" style:padding-left="1em">
-                {groups
-                    .iter()
-                    .filter(|g| g.parent == Some(root.id))
-                    .map(|g| {
                         view! {
-                            <TreeNode groups=groups.clone() root=g.clone() expanded set_expanded />
-                        }
-                    })
-                    .collect::<Vec<_>>()}
-            </ul>
-    })
-    }else{
-    Either::Right(view!{})
-}
-}
-}
+                            <ul class="flex flex-col" style:padding-left="1em">
+                                {groups
+                                    .iter()
+                                    .filter(|g| g.parent == Some(root.id))
+                                    .map(|g| {
+                                        view! {
+                                            <TreeNode
+                                                groups=groups.clone()
+                                                root=g.clone()
+                                                expanded
+                                                set_expanded
+                                            />
+                                        }
+                                    })
+                                    .collect::<Vec<_>>()}
+                            </ul>
+                        },
+                    )
+                } else {
+                    Either::Right(view! {})
+                }
+            }}
         </li>
     }
     .into_any()

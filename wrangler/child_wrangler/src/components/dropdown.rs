@@ -125,68 +125,71 @@ where
                     }
                 }
             />
-                    {move || {
-                            if filtered_options().len() < 100 {
-                                Either::Left(view!{
-            <ul
-                class="bg-gray-700 flex-col max-h-48 rounded-md overflow-auto"
-                style:display=move || if active() { "flex" } else { "none" }
-                role="listbox"
-                node_ref=list_ref
-            >
-                <For
-                    each=filtered_options
-                    key                    children=move |item| {
-                        let item = Signal::derive(move || item.clone());
+            {move || {
+                if filtered_options().len() < 100 {
+                    Either::Left(
                         view! {
-                            <li
-                                tabindex="-1"
-                                role="option"
-                                class="md:hover:bg-gray-600 md:active:bg-gray-700"
-                                on:mouseover=move |e| {
-                                    e.current_target()
-                                        .and_then(|e| {
-                                            e.dyn_ref::<HtmlLiElement>().map(|i| { i.focus() })
-                                        });
-                                }
-                                on:mousedown={
-                                    let on_select = on_select.clone();
-                                    move |e| {
-                                        e.prevent_default();
-                                        e.stop_propagation();
-                                        if let Some(value) = on_select(Ok(item())) {
-                                            set_input_value(value);
-                                        }
-                                        if let Some(doc) = window().document() {
-                                            if let Some(e) = doc.active_element() {
-                                                e.dyn_ref::<HtmlLiElement>().map(|i| { i.blur().ok() });
-                                            }
-                                        }
-                                    }
-                                }
-                                on:keydown=move |e| {
-                                    if e.key_code() != 40 && e.key_code() != 38 {
-                                        input_ref.get().map(|input| input.focus());
-                                    }
-                                    if e.key_code() == 13 {
-                                        if let Some(value) = on_select(Ok(item())) {
-                                            set_input_value(value);
-                                        }
-                                        set_active(false);
-                                    }
-                                }
+                            <ul
+                                class="bg-gray-700 flex-col max-h-48 rounded-md overflow-auto"
+                                style:display=move || if active() { "flex" } else { "none" }
+                                role="listbox"
+                                node_ref=list_ref
                             >
-                                {move || item_view(item())}
-                            </li>
-                        }
-                    }
-                />
-            </ul>
-                                })
-                            }else{
-                                Either::Right(view!{})
-                            }
-                        }}
+                                <For
+                                    each=filtered_options
+                                    key
+                                    children=move |item| {
+                                        let item = Signal::derive(move || item.clone());
+                                        view! {
+                                            <li
+                                                tabindex="-1"
+                                                role="option"
+                                                class="md:hover:bg-gray-600 md:active:bg-gray-700"
+                                                on:mouseover=move |e| {
+                                                    e.current_target()
+                                                        .and_then(|e| {
+                                                            e.dyn_ref::<HtmlLiElement>().map(|i| { i.focus() })
+                                                        });
+                                                }
+                                                on:mousedown={
+                                                    let on_select = on_select.clone();
+                                                    move |e| {
+                                                        e.prevent_default();
+                                                        e.stop_propagation();
+                                                        if let Some(value) = on_select(Ok(item())) {
+                                                            set_input_value(value);
+                                                        }
+                                                        if let Some(doc) = window().document() {
+                                                            if let Some(e) = doc.active_element() {
+                                                                e.dyn_ref::<HtmlLiElement>().map(|i| { i.blur().ok() });
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                on:keydown=move |e| {
+                                                    if e.key_code() != 40 && e.key_code() != 38 {
+                                                        input_ref.get().map(|input| input.focus());
+                                                    }
+                                                    if e.key_code() == 13 {
+                                                        if let Some(value) = on_select(Ok(item())) {
+                                                            set_input_value(value);
+                                                        }
+                                                        set_active(false);
+                                                    }
+                                                }
+                                            >
+                                                {move || item_view(item())}
+                                            </li>
+                                        }
+                                    }
+                                />
+                            </ul>
+                        },
+                    )
+                } else {
+                    Either::Right(view! {})
+                }
+            }}
         </div>
     }
 }

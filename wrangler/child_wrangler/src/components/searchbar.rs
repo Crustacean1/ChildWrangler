@@ -50,7 +50,9 @@ pub fn SearchbarInner(terms: Vec<SearchTerm>) -> impl IntoView {
             item_view=|item| {
                 view! {
                     <div class="flex flex-row justify-center">
-                        {item.parent_name.map(|name| view! { <div class="p-1">{format!("{}", name)}</div> })}
+                        {item
+                            .parent_name
+                            .map(|name| view! { <div class="p-1">{format!("{}", name)}</div> })}
                         <div class="p-1">{format!("{}", item.name)}</div>
                     </div>
                 }
