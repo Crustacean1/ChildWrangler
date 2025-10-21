@@ -20,7 +20,7 @@ COPY ./wrangler /wrangler
 WORKDIR /wrangler
 
 
-FROM --platform=linux/arm gcr.io/distroless/cc-debian12 AS child_wrangler
+FROM --platform=$TARGETPLATFORM gcr.io/distroless/cc-debian12 AS child_wrangler
 
 WORKDIR /wrangler
 
@@ -29,8 +29,7 @@ COPY --from=builder /wrangler/target/site  /wrangler/target/site
 
 ENTRYPOINT ["/wrangler/child_wrangler"]
 
-FROM --platform=linux/arm docker.io/debian:trixie AS message_daemon
-FROM --platform=linux/arm gcr.io/distroless/cc-debian12
+FROM --platform=$TARGETPLATFORM gcr.io/distroless/cc-debian12 AS message_daemon
 
 COPY --from=builder /wrangler/target/armv7-unknown-linux-gnueabihf/release/message_daemon /wrangler/
 

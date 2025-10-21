@@ -6,8 +6,13 @@ echo "Target: ${TARGETPLATFORM}"
 case $TARGETPLATFORM in
 	linux/amd64)
 		echo "Building for x86 linux"
+		cargo leptos build --release	
+		cargo leptos build --bin message_daemon	
 	;;
 	linux/aarch64)
+		rustup target add aarch64-unknown-linux-gnu
+		LEPTOS_BIN_TARGET_TRIPLE="aarch64-unknown-linux-gnu" cargo leptos build --release	
+		LEPTOS_BIN_TARGET_TRIPLE="aarch64-unknown-linux-gnu" cargo leptos build --bin message_daemon	
 		echo "Building for  aarch linux"
 	;;
 	linux/armv7)
