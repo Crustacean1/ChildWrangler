@@ -7,12 +7,10 @@ COPY ./setup.sh ./
 
 RUN apt-get update && apt-get install -y curl build-essential
 
-RUN ./setup.sh
-
 ENV PATH="$PATH:/root/.cargo/bin" 
 
+RUN ./setup.sh
 RUN cargo test
-
 RUN ./build.sh
 
 

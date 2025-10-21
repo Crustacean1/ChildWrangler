@@ -15,7 +15,7 @@ jobs:
           --platform linux/amd64,linux/arm64,linux/arm/v7
           -t gitea.lan/crustacean/child-wrangler:latest 
           -f Containerfile
-          --load
+          --push
           --target child_wrangler
           .
       - run: docker push -a gitea.lan/crustacean/child-wrangler
@@ -23,7 +23,7 @@ jobs:
           --platform linux/amd64,linux/arm64,linux/arm/v7
           -t gitea.lan/crustacean/message-daemon:latest 
           -f Containerfile
-          --load
+          --push
           --target message_daemon
           .
       - run: docker push -a gitea.lan/crustacean/message-daemon
