@@ -2,21 +2,20 @@ FROM --platform=$BUILDPLATFORM ubuntu:noble AS builder
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 
-COPY ./build.sh ./
-COPY ./setup.sh ./
-
 RUN apt-get update && apt-get install -y curl build-essential
 
 ENV PATH="$PATH:/root/.cargo/bin" 
 
+WORKDIR /wrangler
+
+COPY ./wrangler ./
+COPY ./build.sh ./
+COPY ./setup.sh ./
+
+
 RUN ./setup.sh
 RUN cargo test
 RUN ./build.sh
-
-
-COPY ./wrangler /wrangler
-WORKDIR /wrangler
-
 
 FROM --platform=$TARGETPLATFORM gcr.io/distroless/cc-debian12 AS child_wrangler
 
