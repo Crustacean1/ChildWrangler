@@ -14,14 +14,14 @@ jobs:
       - run: docker login --username crustacean --password ${{ secrets.REGISTRY_PASSWORD }} gitea.lan
       - run: docker build -t gitea.lan/crustacean/child-wrangler:$(git rev-parse --short HEAD) 
           -t gitea.lan/crustacean/child-wrangler:latest 
-          -f Containerfile.armv7
+          -f Containerfile
           --load
           --target child_wrangler
           .
       - run: docker push -a gitea.lan/crustacean/child-wrangler
       - run: docker build -t gitea.lan/crustacean/message-daemon:$(git rev-parse --short HEAD) 
           -t gitea.lan/crustacean/message-daemon:latest 
-          -f Containerfile.armv7
+          -f Containerfile
           --load
           --target message_daemon
           .

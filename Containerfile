@@ -1,28 +1,24 @@
-FROM ubuntu:noble AS builder
+FROM --platform=$BUILDPLATFORM ubuntu:noble AS builder
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
+COPY ./build.sh ./
+COPY ./setup.sh ./
 
 RUN apt-get update && apt-get install -y curl build-essential
-RUN curl https://sh.rustup.rs -sSf -o ./rustinstall 
-RUN chmod +x ./rustinstall
-RUN ./rustinstall -y 
 
-RUN apt-get install -yqq gcc-arm-linux-gnueabihf
+RUN ./setup.sh
 
 ENV PATH="$PATH:/root/.cargo/bin" 
 
-RUN cargo install cargo-leptos
+RUN cargo test
+
+RUN ./build.sh
+
 
 COPY ./wrangler /wrangler
 WORKDIR /wrangler
 
-RUN echo "[target.armv7-unknown-linux-gnueabihf]\n\
-linker = \"arm-linux-gnueabihf-gcc\"" >> ~/.cargo/config.toml
-
-RUN rustup target add armv7-unknown-linux-gnueabihf 
-RUN rustup target add wasm32-unknown-unknown
-RUN cargo test
-ENV RUST_BACKTRACE=1
-RUN LEPTOS_BIN_TARGET_TRIPLE="armv7-unknown-linux-gnueabihf" cargo leptos build --release
-RUN cargo build --release --target armv7-unknown-linux-gnueabihf --bin message_daemon
 
 FROM --platform=linux/arm gcr.io/distroless/cc-debian12 AS child_wrangler
 
