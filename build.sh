@@ -9,13 +9,13 @@ case $TARGETPLATFORM in
 		cargo leptos build --release	
 		cargo leptos build --bin message_daemon	
 	;;
-	linux/aarch64)
+	linux/arm64)
 		rustup target add aarch64-unknown-linux-gnu
 		LEPTOS_BIN_TARGET_TRIPLE="aarch64-unknown-linux-gnu" cargo leptos build --release	
 		LEPTOS_BIN_TARGET_TRIPLE="aarch64-unknown-linux-gnu" cargo leptos build --bin message_daemon	
 		echo "Building for  aarch linux"
 	;;
-	linux/armv7)
+	linux/arm/v7)
 		echo "Builidng for ARMv7 linux"
 
 		apt-get install -yqq gcc-arm-linux-gnueabihf

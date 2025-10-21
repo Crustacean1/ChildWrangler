@@ -15,14 +15,15 @@ COPY ./setup.sh ./
 
 RUN ./setup.sh
 RUN cargo test
+ENV CARGO_TARGET_DIR=/output
 RUN ./build.sh
 
 FROM --platform=$TARGETPLATFORM gcr.io/distroless/cc-debian12 AS child_wrangler
 
 WORKDIR /wrangler
 
-COPY --from=builder /wrangler/target/armv7-unknown-linux-gnueabihf/release/child_wrangler /wrangler/
-COPY --from=builder /wrangler/target/site  /wrangler/target/site
+COPY --from=builder /output/release/child_wrangler /wrangler/
+COPY --from=builder /output  /wrangler/target/site
 
 ENTRYPOINT ["/wrangler/child_wrangler"]
 
