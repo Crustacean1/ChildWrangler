@@ -2,7 +2,7 @@ FROM --platform=$BUILDPLATFORM ubuntu:noble AS builder
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 
-RUN apt-get update && apt-get install -y curl build-essential gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu libc6-dev:arm64
+RUN apt-get update && apt-get install -y curl build-essential gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
 
 ENV PATH="$PATH:/root/.cargo/bin" 
 
