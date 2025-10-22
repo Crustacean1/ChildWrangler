@@ -110,7 +110,7 @@ pub fn Breadcrumb(trail: Vec<GroupDto>) -> impl IntoView {
                                 />
                             </svg>
                             <a
-                                class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400 md:hover:text-gray-200"
+                                class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400 md:hover:text-gray-200 align-self-center"
                                 href=""
                             >
                                 {item.name}

@@ -70,7 +70,7 @@ pub fn Snackbar(children: ChildrenFn) -> impl IntoView {
 
     view! {
         {children()}
-        <div class="absolute z-2" style:bottom="0" style:left="50%">
+        <div class="snackbar-root absolute z-2 w-0" style:bottom="0" style:left="50%">
             <div node_ref=div_ref class="relative gap reverse-vertical align-center">
                 <ForEnumerate
                     each=move || {
@@ -83,13 +83,9 @@ pub fn Snackbar(children: ChildrenFn) -> impl IntoView {
                     child)
                 >
                     <div
-                        class:error=child.msg_type == MsgType::Error
-                        class:success=child.msg_type == MsgType::Success
-                        class="rounded padded"
-                        style:box-sizing="border-box"
-                        style:user-focus="none"
-                        style:cursor="unset"
-                        style:width="fit-content"
+                        class="snackbar-msg rounded-md p-2 outline-2 select-none"
+                        class:bg-red-600=child.msg_type == MsgType::Error
+                        class:bg-green-600=child.msg_type == MsgType::Success
                         on:click=move |_| set_messages.write().retain(|msg| msg.id != child.id)
                     >
                         {child.content}

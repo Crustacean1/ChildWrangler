@@ -192,7 +192,7 @@ fn InnerCateringModal(
             </div>
 
             <Dropdown
-                name="Posiłki"
+                name="meals"
                 options=available_meals
                 key=|i| i.id
                 on_select=on_meal_select
@@ -220,6 +220,7 @@ fn InnerCateringModal(
                         .map(|(i, (w, enabled))| {
                             view! {
                                 <button
+                                    id={format!("{}", w)}
                                     class:outline-2=*enabled
                                     class="p-1 rounded-md outline-green-900 md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600 flex-1"
                                     on:click=move |_| set_dow.write()[i].1 = !dow()[i].1

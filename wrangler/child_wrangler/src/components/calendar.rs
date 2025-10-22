@@ -344,18 +344,16 @@ pub fn InnerCalendar(
     };
 
     let on_drag_end = move || {
-        if let (Some(r_start), Some(r_end)) = (drag_start(), drag_end()) {
-            let days = iter::successors(NaiveDate::from_ymd_opt(year, month, 1), |day| {
-                if day.month() == month {
-                    day.checked_add_days(Days::new(1))
-                } else {
-                    None
-                }
-            })
-            .filter(|d| is_active(*d));
-            let days: Vec<_> = days.collect();
-            set_meal_edit(Some(days));
-        }
+        let days = iter::successors(NaiveDate::from_ymd_opt(year, month, 1), |day| {
+            if day.month() == month {
+                day.checked_add_days(Days::new(1))
+            } else {
+                None
+            }
+        })
+        .filter(|d| is_active(*d));
+        let days: Vec<_> = days.collect();
+        set_meal_edit(Some(days));
         set_drag_start(None);
         set_drag_end(None);
     };
@@ -525,7 +523,7 @@ pub fn Day(
             .into_iter()
             .map(|(meal_id, meal_name, attendance, status)| {
                 view! {
-                    <div class="flex-1 flex flex-row align-center">
+                    <div class="flex-1 flex flex-row align-center" id={format!("day-{}", date.format("%Y-%m-%d"))}>
                         <div
                             class="flex-4 padded no-select"
                             class:text-left=!is_student
