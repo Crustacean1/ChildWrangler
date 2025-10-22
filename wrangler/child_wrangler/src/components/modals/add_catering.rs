@@ -159,48 +159,46 @@ fn InnerCateringModal(
                 </div>
                 <div class="flex flex-col flex-1">
                     <label for="end">Koniec</label>
-                    <input bind:value=(end, set_end) id="end" class="p-1 rounded-md bg-gray-600" type="date" />
+                    <input
+                        bind:value=(end, set_end)
+                        id="end"
+                        class="p-1 rounded-md bg-gray-600"
+                        type="date"
+                    />
                 </div>
             </div>
 
-                <label for="meals">Posiłki</label>
-                                <div class="p-1 rounded-md outline outline-dashed outline-gray">
-            <div class="flex flex-col gap-2">
-                {move || {
-                    if selected_meals().is_empty() {
-                        Either::Left(
-                            view! {
-                                    "Nie wybrano posiłków"
-                            },
-                        )
-                    } else {
-                        Either::Right(view! {})
-                    }
-                }}
-                <For each=selected_meals key=|meal: &MealDto| meal.id let:meal>
-                    <div class="rounded-md outline outline-stone-300 flex-1 flex align-center p-1">
-        <span class="p-1 flex-1 align-self-center">
-                        {meal.name}
-        </span>
-                        <button
-                            class="p-1 md:hover:bg-gray-700 md:active:bg-gray-600 md:cursor-pointer red rounded-md"
-                            on:click=move |_| on_remove(meal.id)
-                        >
-                            <CloseIcon />
-                        </button>
-                    </div>
-                </For>
-                                </div>
+            <label for="meals">Posiłki</label>
+            <div class="p-1 rounded-md outline outline-dashed outline-gray">
+                <div class="flex flex-col gap-2">
+                    {move || {
+                        if selected_meals().is_empty() {
+                            Either::Left(view! { "Nie wybrano posiłków" })
+                        } else {
+                            Either::Right(view! {})
+                        }
+                    }} <For each=selected_meals key=|meal: &MealDto| meal.id let:meal>
+                        <div class="rounded-md outline outline-stone-300 flex-1 flex align-center p-1">
+                            <span class="p-1 flex-1 align-self-center">{meal.name}</span>
+                            <button
+                                class="p-1 md:hover:bg-gray-700 md:active:bg-gray-600 md:cursor-pointer red rounded-md"
+                                on:click=move |_| on_remove(meal.id)
+                            >
+                                <CloseIcon />
+                            </button>
+                        </div>
+                    </For>
+                </div>
             </div>
 
-                <Dropdown
-                    name="Posiłki"
-                    options=available_meals
-                    key=|i| i.id
-                    on_select=on_meal_select
-                    item_view=|item| view! { <div class="p-1">{item.name}</div> }
-                    filter=|needle, hay| hay.name.to_lowercase().contains(&needle.to_lowercase())
-                />
+            <Dropdown
+                name="Posiłki"
+                options=available_meals
+                key=|i| i.id
+                on_select=on_meal_select
+                item_view=|item| view! { <div class="p-1">{item.name}</div> }
+                filter=|needle, hay| hay.name.to_lowercase().contains(&needle.to_lowercase())
+            />
 
             <div class="flex flex-col">
                 <label for="cancellation">Czas na odmowę</label>

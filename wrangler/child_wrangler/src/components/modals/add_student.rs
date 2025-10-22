@@ -174,7 +174,9 @@ fn InnerAddStudentModal(
     };
 
     view! {
-            <h2 class="text-center text-lg">{if update_id.is_none() { "Dodaj ucznia" } else { "Edytuj ucznia" }}</h2>
+        <h2 class="text-center text-lg">
+            {if update_id.is_none() { "Dodaj ucznia" } else { "Edytuj ucznia" }}
+        </h2>
         <div class="gap-2 flex flex-col">
             <div class="flex flex-row gap-2">
                 <div class="flex flex-col">
@@ -201,10 +203,8 @@ fn InnerAddStudentModal(
                 }}
                 <For each=selected_allergies key=|a: &AllergyDto| a.id let:allergy>
                     <li class="p-1 rounded-md flex-row flex outline space-between align-center">
-        <span class="flex-1 p-1 align-self-center">
-                        {allergy.name}
-        </span>
-        <button class="btn">
+                        <span class="flex-1 p-1 align-self-center">{allergy.name}</span>
+                        <button class="btn">
                             <CloseIcon on:click=move |_| {
                                 set_selected_allergies.write().retain(|a| a.id != allergy.id)
                             } />
@@ -235,10 +235,8 @@ fn InnerAddStudentModal(
                 }}
                 <For each=selected_guardians key=|g: &GuardianDto| g.id let:guardian>
                     <li class="p-1 rounded-md flex flex-row outline flex space-between align-center">
-                <span class="flex-1 p-1 align-self-center">
-    {guardian.fullname}
-                </span>
-                         <button class="btn">
+                        <span class="flex-1 p-1 align-self-center">{guardian.fullname}</span>
+                        <button class="btn">
                             <CloseIcon on:click=move |_| {
                                 set_selected_guardians.write().retain(|a| a.id != guardian.id)
                             } />
@@ -263,14 +261,10 @@ fn InnerAddStudentModal(
                 >
                     Anuluj
                 </button>
-                <button
-                    class="btn save"
-                    on:click=on_save
-                    disabled=save_student.pending()
-                >
+                <button class="btn save" on:click=on_save disabled=save_student.pending()>
                     {if update_id.is_some() { "Zapisz" } else { "Dodaj" }}
                 </button>
             </div>
-                </div>
-        }
+        </div>
+    }
 }

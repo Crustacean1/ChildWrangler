@@ -134,10 +134,16 @@ pub fn Catering(catering: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoVie
             <Breadcrumb trail />
 
             <div class="flex flex-row gap-1">
-                <button class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1" on:click=move |_| set_add_group(true)>
+                <button
+                    class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1"
+                    on:click=move |_| set_add_group(true)
+                >
                     <AddGroupIcon />
                 </button>
-                <button class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1" on:click=move |_| set_edit_group(true)>
+                <button
+                    class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1"
+                    on:click=move |_| set_edit_group(true)
+                >
                     <EditIcon />
                 </button>
             </div>
@@ -181,16 +187,28 @@ pub fn EmptyGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoView
         <div class="flex flex-row space-between">
             <Breadcrumb trail />
             <div class="flex flex-row gap-1">
-                <button class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1" on:click=move |_| set_add_student(true)>
+                <button
+                    class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1"
+                    on:click=move |_| set_add_student(true)
+                >
                     <AddUserIcon />
                 </button>
-                <button class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1" on:click=move |_| set_add_group(true)>
+                <button
+                    class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1"
+                    on:click=move |_| set_add_group(true)
+                >
                     <AddGroupIcon />
                 </button>
-                <button class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1" on:click=move |_| set_edit_group(true)>
+                <button
+                    class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1"
+                    on:click=move |_| set_edit_group(true)
+                >
                     <EditIcon />
                 </button>
-                <button class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1" on:click=move |_| set_delete_group(true)>
+                <button
+                    class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1"
+                    on:click=move |_| set_delete_group(true)
+                >
                     <DeleteIcon />
                 </button>
             </div>

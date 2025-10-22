@@ -130,11 +130,9 @@ pub fn Calendar() -> impl IntoView {
         <div class="bg-gray-900 rounded-xl outline outline-white/15 flex flex-row gap-2 p-2 select-none">
             <div class="flex-1"></div>
             <div class="flex-1 flex flex-row gap items-center place-content-between">
-                <a href=prev_month_href class="btn"
-                        title="Poprzedni miesiąc"
-            >
+                <a href=prev_month_href class="btn" title="Poprzedni miesiąc">
 
-                        <LeftArrow />
+                    <LeftArrow />
                 </a>
                 <h3 class="min-w-10 text-center">
                     {move || {
@@ -144,20 +142,14 @@ pub fn Calendar() -> impl IntoView {
                     }}
                 </h3>
                 <a href=next_month_href class="btn" title="Następny miesiąc">
-                        <RightArrow />
+                    <RightArrow />
                 </a>
             </div>
             <div class="flex-1 justify-end flex flex-row gap-2">
-                <button
-                    class="btn"
-                    title="Pobierz obecność"
-                >
+                <button class="btn" title="Pobierz obecność">
                     <DownloadIcon />
                 </button>
-                <button
-                    class="btn"
-                    title="Przełącz tryb zaznaczania"
-                >
+                <button class="btn" title="Przełącz tryb zaznaczania">
                     <SelectIcon />
                 </button>
             </div>
@@ -416,7 +408,10 @@ pub fn InnerCalendar(
                 })
                 .collect::<Vec<_>>()}
         </div>
-        <div class="flex-1 grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none" style="grid-template-rows: repeat(auto-fit, minmax(0, 1fr));">
+        <div
+            class="flex-1 grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none"
+            style="grid-template-rows: repeat(auto-fit, minmax(0, 1fr));"
+        >
             {daily_attendance
                 .into_iter()
                 .map(|(date, calendar_day)| {

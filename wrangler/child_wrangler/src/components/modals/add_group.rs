@@ -38,27 +38,27 @@ pub fn AddGroupModal(
 
     view! {
         <h2 class="text-center text-lg">Dodaj grupę</h2>
-            <div class="flex flex-col gap-2">
-        <div class="flex flex-col">
-            <label for="name">Nazwa</label>
-            <input class="p-1 rounded-md bg-gray-600 focus:outline-none" id="name" bind:value=(name, set_name) />
-        </div>
-        <div class="flex flex-row gap-2 justify-end">
-            <button
-                class="btn cancel"
-                on:click=move |_| on_close(None)
-                disabled=save_group.pending()
-            >
-                Anuluj
-            </button>
-            <button
-                class="btn save"
-                on:click=on_save
-                disabled=save_group.pending()
-            >
-                Zapisz
-            </button>
-        </div>
+        <div class="flex flex-col gap-2">
+            <div class="flex flex-col">
+                <label for="name">Nazwa</label>
+                <input
+                    class="p-1 rounded-md bg-gray-600 focus:outline-none"
+                    id="name"
+                    bind:value=(name, set_name)
+                />
+            </div>
+            <div class="flex flex-row gap-2 justify-end">
+                <button
+                    class="btn cancel"
+                    on:click=move |_| on_close(None)
+                    disabled=save_group.pending()
+                >
+                    Anuluj
+                </button>
+                <button class="btn save" on:click=on_save disabled=save_group.pending()>
+                    Zapisz
+                </button>
+            </div>
         </div>
     }
 }
