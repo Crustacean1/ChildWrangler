@@ -21,4 +21,4 @@ case $TARGETPLATFORM in
 esac
 
 cargo leptos build --release	
-cargo leptos build --bin message_daemon	
+cargo build --release --bin message_daemon	
