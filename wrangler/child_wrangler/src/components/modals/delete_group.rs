@@ -49,22 +49,24 @@ pub fn DeleteGroupModalInner(
     });
 
     view! {
-        <h2 class="h2">Usuń grupę</h2>
-        <div style:max-width="20em">
-            Czy na pewno chcesz usunąć grupę <em>{format!("{} ", info.name)}</em>oraz
-            <em>{format!("{} grup ", info.group_count)}</em>i
-            <em>{format!("{} uczniów ", info.student_count)}</em>którzy do niej należą?
+        <h2 class="text-center text-lg">Usuń grupę</h2>
+    <div class="flex flex-col gap-2">
+        <div class="max-w-72">
+            Czy na pewno chcesz usunąć grupę <em class="bg-gray-600 rounded-md p-0.5">{format!("{} ", info.name)}</em>oraz
+            <em class="bg-gray-600 rounded-md p-0.5">{format!("{} grup ", info.group_count)}</em>
+            i
+            <em class="bg-gray-600 rounded-md p-0.5">{format!("{} uczniów ", info.student_count)}</em>którzy do niej należą?
         </div>
-        <div class="horizontal gap flex-end">
+        <div class="flex flex-row gap-2 justify-end">
             <button
-                class="interactive padded rounded red"
+                class="btn cancel"
                 on:click=move |_| on_close(false)
                 disabled=delete_group.pending()
             >
                 Anuluj
             </button>
             <button
-                class="interactive padded rounded green"
+                class="btn save"
                 on:click=move |_| {
                     delete_group.dispatch(());
                 }
@@ -72,6 +74,7 @@ pub fn DeleteGroupModalInner(
             >
                 Usuń
             </button>
+        </div>
         </div>
     }
 }

@@ -38,26 +38,28 @@ pub fn ModifyGroupModal(
     };
 
     view! {
-        <h2 class="h2">Edytuj grupę</h2>
-        <div class="vertical">
+        <h2 class="text-center text-lg">Edytuj grupę</h2>
+            <div class="flex flex-col gap-2">
+        <div class="flex flex-col">
             <label for="name">Nazwa</label>
-            <input class="padded rounded" id="name" bind:value=(name, set_name) />
+            <input class="input" id="name" bind:value=(name, set_name) />
         </div>
-        <div class="horizontal gap flex-end">
+        <div class="flex flex-row gap-2 justify-end">
             <button
-                class="interactive rounded padded red"
+                class="btn cancel"
                 on:click=move |_| on_close(false)
                 disabled=modify_group.pending()
             >
                 Anuluj
             </button>
             <button
-                class="interactive rounded padded green"
+                class="btn save"
                 on:click=on_modify
                 disabled=modify_group.pending()
             >
                 Zapisz
             </button>
+        </div>
         </div>
     }
 }

@@ -3,7 +3,7 @@ use dto::{
     group::GroupDto,
 };
 use leptos::{either::Either, prelude::*};
-use leptos_router::hooks::{use_navigate, use_params};
+use leptos_router::hooks::use_params;
 use uuid::Uuid;
 
 use crate::{
@@ -133,11 +133,11 @@ pub fn Catering(catering: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoVie
         <div class="flex flex-row gap space-between">
             <Breadcrumb trail />
 
-            <div class="horizontal gap">
-                <button class="interactive icon-button" on:click=move |_| set_add_group(true)>
+            <div class="flex flex-row gap-1">
+                <button class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1" on:click=move |_| set_add_group(true)>
                     <AddGroupIcon />
                 </button>
-                <button class="interactive icon-button" on:click=move |_| set_edit_group(true)>
+                <button class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1" on:click=move |_| set_edit_group(true)>
                     <EditIcon />
                 </button>
             </div>
@@ -180,17 +180,17 @@ pub fn EmptyGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoView
     view! {
         <div class="flex flex-row space-between">
             <Breadcrumb trail />
-            <div class="horizontal gap">
-                <button class="interactive icon-button" on:click=move |_| set_add_student(true)>
+            <div class="flex flex-row gap-1">
+                <button class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1" on:click=move |_| set_add_student(true)>
                     <AddUserIcon />
                 </button>
-                <button class="interactive icon-button" on:click=move |_| set_add_group(true)>
+                <button class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1" on:click=move |_| set_add_group(true)>
                     <AddGroupIcon />
                 </button>
-                <button class="interactive icon-button" on:click=move |_| set_edit_group(true)>
+                <button class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1" on:click=move |_| set_edit_group(true)>
                     <EditIcon />
                 </button>
-                <button class="interactive icon-button" on:click=move |_| set_delete_group(true)>
+                <button class="md:cursor-pointer md:hover:bg-gray-800 md:active:bg-gray-700 rounded-md p-1" on:click=move |_| set_delete_group(true)>
                     <DeleteIcon />
                 </button>
             </div>
@@ -254,14 +254,14 @@ pub fn NonemptyGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoV
     view! {
         <div class="flex flex-row space-between">
             <Breadcrumb trail />
-            <div class="horizontal gap">
-                <button class="interactive icon-button" on:click=move |_| { set_add_group(true) }>
+            <div class="flex flex-row gap-1">
+                <button class="btn" on:click=move |_| { set_add_group(true) }>
                     <AddGroupIcon />
                 </button>
-                <button class="interactive icon-button" on:click=move |_| set_edit_group(true)>
+                <button class="btn" on:click=move |_| set_edit_group(true)>
                     <EditIcon />
                 </button>
-                <button class="interactive icon-button" on:click=move |_| set_delete_group(true)>
+                <button class="btn" on:click=move |_| set_delete_group(true)>
                     <DeleteIcon />
                 </button>
             </div>
@@ -313,14 +313,14 @@ pub fn StudentGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoVi
     view! {
         <div class="flex flex-row space-between">
             <Breadcrumb trail />
-            <div class="horizontal gap">
-                <button class="interactive icon-button" on:click=move |_| { set_add_student(true) }>
+            <div class="flex flex-row gap-1">
+                <button class="btn" on:click=move |_| { set_add_student(true) }>
                     <AddUserIcon />
                 </button>
-                <button class="interactive icon-button" on:click=move |_| set_edit_group(true)>
+                <button class="btn" on:click=move |_| set_edit_group(true)>
                     <EditIcon />
                 </button>
-                <button class="interactive icon-button" on:click=move |_| set_delete_group(true)>
+                <button class="btn" on:click=move |_| set_delete_group(true)>
                     <DeleteIcon />
                 </button>
             </div>
@@ -379,11 +379,11 @@ pub fn Student(student: StudentDetailsDto, trail: Vec<GroupDto>) -> impl IntoVie
     view! {
         <div class="flex flex-row space-between">
             <Breadcrumb trail />
-            <div class="horizontal gap">
-                <button class="interactive icon-button" on:click=move |_| set_edit_student(true)>
+            <div class="flex flex-row gap-1">
+                <button class="btn" on:click=move |_| set_edit_student(true)>
                     <EditIcon />
                 </button>
-                <button class="interactive icon-button" on:click=move |_| set_delete_student(true)>
+                <button class="btn" on:click=move |_| set_delete_student(true)>
                     <DeleteIcon />
                 </button>
             </div>

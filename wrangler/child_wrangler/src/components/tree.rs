@@ -104,8 +104,8 @@ fn Test(
     };
 
     view! {
-        <div class="overflow-auto">
-            <ul class="flex flex-col gap-0.5">
+        <div class="overflow-auto scrollbar-hide min-w-xs rounded-xl bg-gray-900 outline outline-white/15 p-2 m-0.5">
+            <ul class="flex flex-col">
                 {entities
                     .iter()
                     .filter(|item| item.parent.is_none())
@@ -132,9 +132,6 @@ fn TreeNode(
     expanded: ReadSignal<HashSet<Uuid>>,
     set_expanded: WriteSignal<HashSet<Uuid>>,
 ) -> impl IntoView {
-    let on_drag_end = |_| {};
-    let on_drag_start = |_| {};
-
     let id = root.id;
     let is_student = root.is_student;
     let name = root.name.clone();
@@ -156,20 +153,9 @@ fn TreeNode(
             node_ref=dropzone_ref
             class:expanded=move || !expanded().contains(&root.id)
         >
-            <span
-                class="flex-1 flex overflow-hidden rounded-lg"
-                draggable="true"
-                on:dragstart=move |e| {
-                    e.stop_propagation();
-                    if let Some(dt) = e.data_transfer() {
-                        dt.set_drop_effect("move");
-                    }
-                    on_drag_start(id);
-                }
-                on:dragend=move |_| { on_drag_end(None) }
-            >
+            <span class="flex-1 flex overflow-hidden rounded-lg">
                 <span
-                    class="flex-1 interactive p-2 center left-align hover:bg-gray-700 md:cursor-pointer"
+                    class="flex-1 btn"
                     on:click=move |_| {
                         navigate(&format!("/attendance/{}", root.id), Default::default())
                     }
@@ -183,7 +169,8 @@ fn TreeNode(
                         Either::Left(
                             view! {
                                 <button
-                                    class="p-2 hover:bg-gray-700 md:cursor-pointer"
+                                    class="btn "
+                                    class:rotate-180=move || expanded().contains(&id)
                                     on:click=on_toggle_expand
                                 >
                                     <ArrowDown />
@@ -192,45 +179,13 @@ fn TreeNode(
                         )
                     }
                 }}
-                <span
-                    class="dropzone-marker"
-                    on:dragover=|e| {
-                        e.prevent_default();
-                    }
-                    on:drop=move |e| {
-                        dropzone_ref
-                            .get()
-                            .map(|dropzone| {
-                                dropzone
-                                    .class(
-                                        format!("droptarget {}", if true { "expanded" } else { "" }),
-                                    )
-                            });
-                        on_drag_end(Some(id));
-                    }
-                    on:dragenter=move |e| {
-                        dropzone_ref
-                            .get()
-                            .map(|dropzone| { dropzone.class(format!("droptarget drag")) });
-                    }
-                    on:dragleave=move |e| {
-                        dropzone_ref
-                            .get()
-                            .map(|dropzone| { dropzone.class(format!("droptarget ")) });
-                    }
-                    on:dragend=move |e| {
-                        dropzone_ref
-                            .get()
-                            .map(|dropzone| { dropzone.class(format!("droptarget ")) });
-                    }
-                ></span>
             </span>
             {move || {
                 if expanded().contains(&id) {
                     Either::Left(
 
                         view! {
-                            <ul class="flex flex-col" style:padding-left="1em">
+                            <ul class="flex flex-col " style:padding-left="1em">
                                 {groups
                                     .iter()
                                     .filter(|g| g.parent == Some(root.id))

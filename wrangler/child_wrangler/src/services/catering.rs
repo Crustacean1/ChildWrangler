@@ -34,6 +34,10 @@ pub async fn create_catering(catering_dto: CreateCateringDto) -> Result<Uuid, Se
         return Err(ServerFnError::new("Catering must have a name"));
     }
 
+    if catering_dto.meals.is_empty() {
+        return Err(ServerFnError::new("Catering must have at least one meal"));
+    }
+
     let meals = catering_dto
         .meals
         .into_iter()

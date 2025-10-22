@@ -130,14 +130,12 @@ pub fn Calendar() -> impl IntoView {
         <div class="bg-gray-900 rounded-xl outline outline-white/15 flex flex-row gap-2 p-2 select-none">
             <div class="flex-1"></div>
             <div class="flex-1 flex flex-row gap items-center place-content-between">
-                <A href=prev_month_href>
-                    <span
-                        class="hover:bg-gray-700 cursor-pointer rounded-md"
+                <a href=prev_month_href class="btn"
                         title="Poprzedni miesiąc"
-                    >
+            >
+
                         <LeftArrow />
-                    </span>
-                </A>
+                </a>
                 <h3 class="min-w-10 text-center">
                     {move || {
                         NaiveDate::from_ymd_opt(year() as i32, month(), 1)
@@ -145,24 +143,19 @@ pub fn Calendar() -> impl IntoView {
                             .unwrap_or(String::new())
                     }}
                 </h3>
-                <A href=next_month_href>
-                    <span
-                        class="hover:bg-gray-700 cursor-pointer rounded-md"
-                        title="Następny miesiąc"
-                    >
+                <a href=next_month_href class="btn" title="Następny miesiąc">
                         <RightArrow />
-                    </span>
-                </A>
+                </a>
             </div>
             <div class="flex-1 justify-end flex flex-row gap-2">
                 <button
-                    class="hover:bg-gray-700 cursor-pointer p-1 rounded-md"
+                    class="btn"
                     title="Pobierz obecność"
                 >
                     <DownloadIcon />
                 </button>
                 <button
-                    class="hover:bg-gray-700 cursor-pointer p-1 rounded-md"
+                    class="btn"
                     title="Przełącz tryb zaznaczania"
                 >
                     <SelectIcon />
@@ -423,7 +416,7 @@ pub fn InnerCalendar(
                 })
                 .collect::<Vec<_>>()}
         </div>
-        <div class="flex-1 grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none">
+        <div class="flex-1 grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none" style="grid-template-rows: repeat(auto-fit, minmax(0, 1fr));">
             {daily_attendance
                 .into_iter()
                 .map(|(date, calendar_day)| {
@@ -539,7 +532,9 @@ pub fn Day(
                 view! {
                     <div class="flex-1 flex flex-row align-center">
                         <div
-                            class="flex-4 padded no-select text-left flex justify-left align-center"
+                            class="flex-4 padded no-select"
+                            class:text-left=!is_student
+                            class:text-center=is_student
                             on:mouseover=move |_| on_meal_select(meal_id)
                             on:mouseleave=move |_| on_unselect()
                             class:calendar-anchor=move || {
@@ -549,10 +544,10 @@ pub fn Day(
                                     false
                                 }
                             }
-                            class:green=status == EffectiveAttendance::Present
-                            class:red=status == EffectiveAttendance::Absent
-                            class:yellow=status == EffectiveAttendance::Cancelled
-                            class:gray=status == EffectiveAttendance::Blocked
+                            class:text-green-600=status == EffectiveAttendance::Present
+                            class:text-red-600=status == EffectiveAttendance::Absent
+                            class:text-yellow-600=status == EffectiveAttendance::Cancelled
+                            class:text-gray-600=status == EffectiveAttendance::Blocked
                         >
                             {meal_name.clone()}
                         </div>
@@ -560,7 +555,7 @@ pub fn Day(
                             Either::Left(
                                 view! {
                                     <div
-                                        class="flex-1 padded no-select rounded"
+                                        class="flex-1 padded no-select rounded text-right"
                                         class:calendar-anchor=move || {
                                             if let Some((selected_meal_id, _, selected_date)) = count_select() {
                                                 return selected_meal_id == meal_id && selected_date == date

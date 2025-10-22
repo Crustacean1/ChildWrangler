@@ -109,7 +109,7 @@ where
         >
             <input
                 id=name
-                class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-1 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:shadow-xs-light"
+                class="input flex-1 w-full"
                 node_ref=input_ref
                 bind:value=(input_value, set_input_value)
                 autocomplete="off"
@@ -130,7 +130,7 @@ where
                     Either::Left(
                         view! {
                             <ul
-                                class="bg-gray-700 flex-col max-h-48 rounded-md overflow-auto"
+                                class="bg-gray-700 max-h-48 rounded-md w-full flex flex-col overflow-auto absolute bot-0"
                                 style:display=move || if active() { "flex" } else { "none" }
                                 role="listbox"
                                 node_ref=list_ref

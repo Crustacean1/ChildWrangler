@@ -98,21 +98,21 @@ pub fn MealEditModal(
             <div class="flex flex-col">
                 <label>Notka</label>
                 <input
-                    class="p-1 rounded-md bg-gray-600"
+                    class="input"
                     bind:value=(note, set_note)
                     type="textfield"
                 />
             </div>
             <div class="flex flex-row gap-2 justify-end">
                 <button
-                    class="p-2 text-red-900 outline outline-red-900 rounded-md md:hover:bg-gray-700 cursor-pointer"
+                    class="btn cancel"
                     on:click=move |_| on_close(false)
                     disabled=edit_meal.pending()
                 >
                     Anuluj
                 </button>
                 <button
-                    class="p-2 text-green-900 outline outline-green-900 rounded-md md:hover:bg-gray-700 cursor-pointer"
+                    class="btn save"
                     on:click=on_save
                     disabled=move || edit_meal.pending()() || !changed()
                 >

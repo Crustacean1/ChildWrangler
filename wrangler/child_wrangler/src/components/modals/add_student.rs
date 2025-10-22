@@ -113,14 +113,15 @@ fn InnerAddStudentModal(
         Some(String::new())
     };
 
-    let on_add_guardian = move |guardian| {match guardian {
-        Ok(guardian) => set_selected_guardians.write().push(guardian),
-        Err(fullname) => set_selected_guardians.write().push(GuardianDto {
-            id: Uuid::new_v4(),
-            fullname,
-        }),
-    };
-    Some(String::new())
+    let on_add_guardian = move |guardian| {
+        match guardian {
+            Ok(guardian) => set_selected_guardians.write().push(guardian),
+            Err(fullname) => set_selected_guardians.write().push(GuardianDto {
+                id: Uuid::new_v4(),
+                fullname,
+            }),
+        };
+        Some(String::new())
     };
 
     let update_id = initial.as_ref().map(|i| i.id);
@@ -173,95 +174,103 @@ fn InnerAddStudentModal(
     };
 
     view! {
-        <h2 class="h2">{if update_id.is_none() { "Dodaj ucznia" } else { "Edytuj ucznia" }}</h2>
-        <div class="horizontal gap">
-            <div class="vertical">
-                <label for="name">Imię</label>
-                <input bind:value=(name, set_name) id="name" class="padded rounded" />
+            <h2 class="text-center text-lg">{if update_id.is_none() { "Dodaj ucznia" } else { "Edytuj ucznia" }}</h2>
+        <div class="gap-2 flex flex-col">
+            <div class="flex flex-row gap-2">
+                <div class="flex flex-col">
+                    <label for="name">Imię</label>
+                    <input bind:value=(name, set_name) id="name" class="input" />
+                </div>
+                <div class="flex flex-col">
+                    <label for="surname">Nazwisko</label>
+                    <input bind:value=(surname, set_surname) id="surname" class="input" />
+                </div>
             </div>
-            <div class="vertical">
-                <label for="surname">Nazwisko</label>
-                <input bind:value=(surname, set_surname) id="surname" class="padded rounded" />
+
+            <label>Alergie</label>
+            <ul
+                class="gap-1 flex flex-col p-1 rounded-md outline outline-dashed"
+                class:gray=move || selected_allergies().is_empty()
+            >
+                {move || {
+                    if selected_allergies().is_empty() {
+                        Either::Left(view! { <li class="text-center p-1">Brak alergii</li> })
+                    } else {
+                        Either::Right(view! {})
+                    }
+                }}
+                <For each=selected_allergies key=|a: &AllergyDto| a.id let:allergy>
+                    <li class="p-1 rounded-md flex-row flex outline space-between align-center">
+        <span class="flex-1 p-1 align-self-center">
+                        {allergy.name}
+        </span>
+        <button class="btn">
+                            <CloseIcon on:click=move |_| {
+                                set_selected_allergies.write().retain(|a| a.id != allergy.id)
+                            } />
+                        </button>
+                    </li>
+                </For>
+            </ul>
+            <Dropdown
+                name="alergie"
+                options=available_allergies
+                key=|a| a.id
+                on_select=on_add_allergy
+                item_view=|item| view! { <div class="p-1">{item.name}</div> }
+                filter=|needle, hay| hay.name.to_lowercase().contains(&needle.to_lowercase())
+            />
+
+            <label>Rodzice</label>
+            <ul
+                class="flex flex-col p-1 gap-1 rounded-md outline outline-dashed"
+                class:gray=move || selected_guardians().is_empty()
+            >
+                {move || {
+                    if selected_guardians().is_empty() {
+                        Either::Left(view! { <li class="text-center p-1">Brak rodziców</li> })
+                    } else {
+                        Either::Right(view! {})
+                    }
+                }}
+                <For each=selected_guardians key=|g: &GuardianDto| g.id let:guardian>
+                    <li class="p-1 rounded-md flex flex-row outline flex space-between align-center">
+                <span class="flex-1 p-1 align-self-center">
+    {guardian.fullname}
+                </span>
+                         <button class="btn">
+                            <CloseIcon on:click=move |_| {
+                                set_selected_guardians.write().retain(|a| a.id != guardian.id)
+                            } />
+                        </button>
+                    </li>
+                </For>
+            </ul>
+            <Dropdown
+                name="guardians"
+                options=available_guardians
+                key=|a| a.id
+                on_select=on_add_guardian
+                item_view=|item| view! { <div class="padded rounded">{item.fullname}</div> }
+                filter=|needle, hay| hay.fullname.to_lowercase().contains(&needle.to_lowercase())
+            />
+
+            <div class="flex flex-row gap-2 justify-end gap-2">
+                <button
+                    class="btn cancel"
+                    on:click=move |_| on_close(None)
+                    disabled=save_student.pending()
+                >
+                    Anuluj
+                </button>
+                <button
+                    class="btn save"
+                    on:click=on_save
+                    disabled=save_student.pending()
+                >
+                    {if update_id.is_some() { "Zapisz" } else { "Dodaj" }}
+                </button>
             </div>
-        </div>
-
-        <label>Alergie</label>
-        <ul
-            class="gap vertical padded rounded dashed"
-            class:gray=move || selected_allergies().is_empty()
-        >
-            {move || {
-                if selected_allergies().is_empty() {
-                    Either::Left(view! { <li class="gray">Brak alergii</li> })
-                } else {
-                    Either::Right(view! {})
-                }
-            }}
-            <For each=selected_allergies key=|a: &AllergyDto| a.id let:allergy>
-                <li class="padded rounded background-3 horizontal flex space-between align-center">
-                    {allergy.name} <button class="interactive red rounded flex icon">
-                        <CloseIcon on:click=move |_| {
-                            set_selected_allergies.write().retain(|a| a.id != allergy.id)
-                        } />
-                    </button>
-                </li>
-            </For>
-        </ul>
-        <Dropdown
-            name="alergie"
-            options=available_allergies
-            key=|a| a.id
-            on_select=on_add_allergy
-            item_view=|item| view! { <div class="padded rounded">{item.name}</div> }
-            filter=|needle, hay| hay.name.to_lowercase().contains(&needle.to_lowercase())
-        />
-
-        <label>Rodzice</label>
-        <ul
-            class="vertical padded gap rounded dashed"
-            class:gray=move || selected_guardians().is_empty()
-        >
-            {move || {
-                if selected_guardians().is_empty() {
-                    Either::Left(view! { <li>Brak rodziców</li> })
-                } else {
-                    Either::Right(view! {})
-                }
-            }}
-            <For each=selected_guardians key=|g: &GuardianDto| g.id let:guardian>
-                <li class="padded rounded background-3 horizontal flex space-between align-center">
-                    {guardian.fullname} <button class="interactive red rounded flex icon">
-                        <CloseIcon on:click=move |_| {
-                            set_selected_guardians.write().retain(|a| a.id != guardian.id)
-                        } />
-                    </button>
-                </li>
-            </For>
-        </ul>
-        <Dropdown
-            name="guardians"
-            options=available_guardians
-            key=|a| a.id
-            on_select=on_add_guardian
-            item_view=|item| view! { <div class="padded rounded">{item.fullname}</div> }
-            filter=|needle, hay| hay.fullname.to_lowercase().contains(&needle.to_lowercase())
-        />
-
-        <div class="horizontal flex-end gap">
-            <button
-                class="interactive padded rounded red"
-                on:click=move |_| on_close(None)
-                disabled=save_student.pending()
-            >
-                Anuluj
-            </button>
-            <button
-                class="interactive padded rounded green"
-                on:click=on_save
-                disabled=save_student.pending()
-            >
-                {if update_id.is_some() { "Zapisz" } else { "Dodaj" }}
-            </button>
-        </div>
-    }
+                </div>
+        }
 }

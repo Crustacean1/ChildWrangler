@@ -2,3 +2,29 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css" layer(utilities);
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+/* For IE, Edge and Firefox */
+.scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+.btn {
+	@apply p-1 md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600 rounded-md
+}
+
+.save {
+	@apply outline outline-green-600 text-green-600
+}
+
+.cancel {
+	@apply outline outline-red-600 text-red-600
+}
+
+.input {
+	@apply p-1 rounded-md bg-gray-600 focus:outline-none
+}
