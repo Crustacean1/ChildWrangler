@@ -13,4 +13,7 @@ pub mod select;
 pub mod person;
 pub mod download;
 pub mod refresh;
+pub mod history;
+pub mod list_icon;
+pub mod range;
 

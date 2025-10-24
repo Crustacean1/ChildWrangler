@@ -16,6 +16,9 @@ use web_sys::{
     js_sys::Array, wasm_bindgen::JsValue, Blob, FileSystemFileHandle, FileSystemWritableFileStream,
 };
 
+use crate::icons::history::HistoryIcon;
+use crate::icons::list_icon::ListIcon;
+use crate::icons::range::RangeIcon;
 use crate::{
     components::{
         loader::Loader,
@@ -30,10 +33,20 @@ use crate::{
     services::attendance::{get_effective_attendance, get_month_attendance, get_monthly_summary},
 };
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AttendanceSelectionMode {
+    Sequential,
+    Rectangular,
+    History,
+    List,
+}
+
 #[component]
 pub fn Calendar() -> impl IntoView {
     let GroupVersion(group_version, _) = use_context().unwrap();
     let AttendanceVersion(attendance_version, _) = use_context().unwrap();
+
+    let snackbar = use_snackbar();
 
     let params = use_params::<AttendanceParams>();
     let params = move || params.read();
@@ -45,6 +58,9 @@ pub fn Calendar() -> impl IntoView {
             .and_then(|attendance| attendance.year)
             .unwrap_or(Utc::now().year() as u32)
     };
+
+    let (attendance_selection_mode, set_attendance_selection_mode) =
+        signal(AttendanceSelectionMode::Sequential);
 
     let month = move || {
         params()
@@ -126,12 +142,25 @@ pub fn Calendar() -> impl IntoView {
         }
     };
 
+    let download_summary = {
+        Action::new(move |_: &()| async move {
+            if let Ok(summary) = get_monthly_summary(target().unwrap(), year() as i32, month()).await {
+                save_to_file(&summary).await;
+            } else {
+                snackbar.error("Nie udało się pobrac danych o obecności", "");
+            }
+        })
+    };
+
     view! {
         <div class="bg-gray-900 rounded-xl outline outline-white/15 flex flex-row gap-2 p-2 select-none">
-            <div class="flex-1"></div>
+            <div class="flex-1">
+                <button class="btn" title="Pobierz obecność" on:click=move |_| {download_summary.dispatch(());} disabled={download_summary.pending()}>
+                    <DownloadIcon />
+                </button>
+            </div>
             <div class="flex-1 flex flex-row gap items-center place-content-between">
                 <a href=prev_month_href class="btn" title="Poprzedni miesiąc">
-
                     <LeftArrow />
                 </a>
                 <h3 class="min-w-10 text-center">
@@ -146,11 +175,53 @@ pub fn Calendar() -> impl IntoView {
                 </a>
             </div>
             <div class="flex-1 justify-end flex flex-row gap-2">
-                <button class="btn" title="Pobierz obecność">
-                    <DownloadIcon />
+                <button
+                    class="btn"
+                    class:bg-gray-600=move || {
+                        attendance_selection_mode() == AttendanceSelectionMode::List
+                    }
+                    title="Lista obecności"
+                    on:click=move |_| set_attendance_selection_mode(
+                        AttendanceSelectionMode::List,
+                    )
+                >
+                    <ListIcon />
                 </button>
-                <button class="btn" title="Przełącz tryb zaznaczania">
+                <button
+                    class="btn"
+                    class:bg-gray-600=move || {
+                        attendance_selection_mode() == AttendanceSelectionMode::History
+                    }
+                    title="Historia obecności"
+                    on:click=move |_| set_attendance_selection_mode(
+                        AttendanceSelectionMode::History,
+                    )
+                >
+                    <HistoryIcon />
+                </button>
+                <button
+                    class="btn"
+                    class:bg-gray-600=move || {
+                        attendance_selection_mode() == AttendanceSelectionMode::Rectangular
+                    }
+                    title="Przełącz tryb zaznaczania"
+                    on:click=move |_| set_attendance_selection_mode(
+                        AttendanceSelectionMode::Rectangular,
+                    )
+                >
                     <SelectIcon />
+                </button>
+                <button
+                    class="btn"
+                    class:bg-gray-600=move || {
+                        attendance_selection_mode() == AttendanceSelectionMode::Sequential
+                    }
+                    title="Przełącz tryb zaznaczania"
+                    on:click=move |_| set_attendance_selection_mode(
+                        AttendanceSelectionMode::Sequential,
+                    )
+                >
+                    <RangeIcon />
                 </button>
             </div>
         </div>
@@ -224,7 +295,6 @@ pub fn InnerCalendar(
 ) -> impl IntoView {
     let AttendanceVersion(_, set_attendance_version) = use_context().unwrap();
 
-    let snackbar = use_snackbar();
     let is_student = local_attendance.is_student;
 
     let (meal_history, set_meal_history) = signal(None::<(Uuid, Uuid, NaiveDate)>);
@@ -234,20 +304,6 @@ pub fn InnerCalendar(
 
     let (drag_start, set_drag_start) = signal(None::<NaiveDate>);
     let (drag_end, set_drag_end) = signal(None::<NaiveDate>);
-
-    let download_summary = {
-        Action::new(move |_: &()| async move {
-            if let Ok(summary) = get_monthly_summary(target, year, month).await {
-                save_to_file(&summary).await;
-            } else {
-                snackbar.error("Nie udało się pobrac danych o obecności", "");
-            }
-        })
-    };
-
-    /*let on_download = move |_| {
-        download_summary.dispatch(());
-    };*/
 
     let end_date = NaiveDate::from_ymd_opt(year, month, 1)
         .and_then(|d| d.checked_add_months(Months::new(1)))
@@ -407,7 +463,7 @@ pub fn InnerCalendar(
                 .collect::<Vec<_>>()}
         </div>
         <div
-
+            on:mouseup=move |_| on_drag_end()
             class="flex-1 grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none"
             style="grid-template-rows: repeat(auto-fit, minmax(0, 1fr));"
         >
@@ -416,12 +472,11 @@ pub fn InnerCalendar(
                 .map(|(date, calendar_day)| {
                     view! {
                         <div
-                            data-testid={format!("day-{}", date.format("%Y-%m-%d"))}
+                            data-testid=format!("day-{}", date.format("%Y-%m-%d"))
                             class="flex flex-col overflow-hidden gap-1 align-center rounded-lg p-2 outline outline-white/15 hover:bg-gray-800 active:bg-gray-700"
                             class:bg-gray-800=move || is_selected(date)
                             class:bg-gray-900=move || !is_selected(date)
                             on:mousedown=move |_| set_drag_start(Some(date))
-                            on:mouseup=move |_| on_drag_end()
                             on:mouseover=move |_| set_drag_end(Some(date))
                         >
                             {match calendar_day {
@@ -525,9 +580,13 @@ pub fn Day(
             .into_iter()
             .map(|(meal_id, meal_name, attendance, status)| {
                 view! {
-                    <div class="flex-1 flex flex-row align-center" >
+                    <div class="flex-1 flex flex-row align-center">
                         <div
-                            data-testid={format!("meal-name-{}-{}", meal_name, date.format("%Y-%m-%d"))}
+                            data-testid=format!(
+                                "meal-name-{}-{}",
+                                meal_name,
+                                date.format("%Y-%m-%d"),
+                            )
                             class="flex-4 padded no-select"
                             class:text-left=!is_student
                             class:text-center=is_student
@@ -551,7 +610,11 @@ pub fn Day(
                             Either::Left(
                                 view! {
                                     <div
-                                        data-testid={format!("meal-count-{}-{}", meal_name, date.format("%Y-%m-%d"))}
+                                        data-testid=format!(
+                                            "meal-count-{}-{}",
+                                            meal_name,
+                                            date.format("%Y-%m-%d"),
+                                        )
                                         class="flex-1 padded no-select rounded text-right"
                                         class:calendar-anchor=move || {
                                             if let Some((selected_meal_id, _, selected_date)) = count_select() {
