@@ -31,9 +31,9 @@ COPY --from=builder /wrangler/target/site  /wrangler/target/site
 
 ENTRYPOINT ["/wrangler/child_wrangler"]
 
-FROM --platform=$TARGETPLATFORM gcr.io/distroless/cc-debian12 AS message_daemon
+#FROM --platform=$TARGETPLATFORM gcr.io/distroless/cc-debian12 AS message_daemon
 
-COPY --from=builder /wrangler/target/armv7-unknown-linux-gnueabihf/release/message_daemon /wrangler/
+#COPY --from=builder /wrangler/target/armv7-unknown-linux-gnueabihf/release/message_daemon /wrangler/
 
-ENTRYPOINT ["/wrangler/message_daemon"]
+#ENTRYPOINT ["/wrangler/message_daemon"]
 

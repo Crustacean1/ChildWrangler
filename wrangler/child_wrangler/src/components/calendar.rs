@@ -407,6 +407,7 @@ pub fn InnerCalendar(
                 .collect::<Vec<_>>()}
         </div>
         <div
+
             class="flex-1 grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none"
             style="grid-template-rows: repeat(auto-fit, minmax(0, 1fr));"
         >
@@ -415,6 +416,7 @@ pub fn InnerCalendar(
                 .map(|(date, calendar_day)| {
                     view! {
                         <div
+                            data-testid={format!("day-{}", date.format("%Y-%m-%d"))}
                             class="flex flex-col overflow-hidden gap-1 align-center rounded-lg p-2 outline outline-white/15 hover:bg-gray-800 active:bg-gray-700"
                             class:bg-gray-800=move || is_selected(date)
                             class:bg-gray-900=move || !is_selected(date)
@@ -523,8 +525,9 @@ pub fn Day(
             .into_iter()
             .map(|(meal_id, meal_name, attendance, status)| {
                 view! {
-                    <div class="flex-1 flex flex-row align-center" id={format!("day-{}", date.format("%Y-%m-%d"))}>
+                    <div class="flex-1 flex flex-row align-center" >
                         <div
+                            data-testid={format!("meal-name-{}-{}", meal_name, date.format("%Y-%m-%d"))}
                             class="flex-4 padded no-select"
                             class:text-left=!is_student
                             class:text-center=is_student
@@ -548,6 +551,7 @@ pub fn Day(
                             Either::Left(
                                 view! {
                                     <div
+                                        data-testid={format!("meal-count-{}-{}", meal_name, date.format("%Y-%m-%d"))}
                                         class="flex-1 padded no-select rounded text-right"
                                         class:calendar-anchor=move || {
                                             if let Some((selected_meal_id, _, selected_date)) = count_select() {
