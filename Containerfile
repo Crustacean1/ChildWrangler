@@ -8,6 +8,7 @@ ENV PATH="$PATH:/root/.cargo/bin"
 ENV CARGO_TARGET_DIR=/output
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=/usr/bin/aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=/usr/bin/arm-linux-gnueabihf-gcc
+ENV RUSTC_WRAPPER=/usr/bin/sccache
 
 WORKDIR /wrangler
 

@@ -16,6 +16,7 @@ use web_sys::{
     js_sys::Array, wasm_bindgen::JsValue, Blob, FileSystemFileHandle, FileSystemWritableFileStream,
 };
 
+use crate::components::modals::meal_history_modal::MealHistoryModal;
 use crate::icons::history::HistoryIcon;
 use crate::icons::list_icon::ListIcon;
 use crate::icons::range::RangeIcon;
@@ -157,7 +158,14 @@ pub fn Calendar() -> impl IntoView {
     view! {
         <div class="bg-gray-900 rounded-xl outline outline-white/15 flex flex-row gap-2 p-2 select-none m-0.5">
             <div class="flex-1">
-                <button class="btn" title="Pobierz obecność" on:click=move |_| {download_summary.dispatch(());} disabled={download_summary.pending()}>
+                <button
+                    class="btn"
+                    title="Pobierz obecność"
+                    on:click=move |_| {
+                        download_summary.dispatch(());
+                    }
+                    disabled=download_summary.pending()
+                >
                     <DownloadIcon />
                 </button>
             </div>
@@ -184,9 +192,7 @@ pub fn Calendar() -> impl IntoView {
                     }
                     title="Lista obecności"
                     data-testid="attendance-list-button"
-                    on:click=move |_| set_attendance_selection_mode(
-                        AttendanceSelectionMode::List,
-                    )
+                    on:click=move |_| set_attendance_selection_mode(AttendanceSelectionMode::List)
                 >
                     <ListIcon />
                 </button>
@@ -463,7 +469,7 @@ pub fn InnerCalendar(
         </div>
         <div
             on:mouseup=move |_| on_drag_end()
-                class="flex-1 grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none"
+            class="flex-1 grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none"
             style="grid-template-rows: repeat(auto-fit, minmax(0, 1fr));"
         >
             {daily_attendance
@@ -492,15 +498,7 @@ pub fn InnerCalendar(
                                     )
                                 }
                                 CalendarDay::Day(meals) => {
-                                    Either::Right(
-                                        view! {
-                                            <Day
-                                                date
-                                                is_student
-                                                meals
-                                            />
-                                        },
-                                    )
+                                    Either::Right(view! { <Day date is_student meals /> })
                                 }
                             }}
                         </div>
@@ -537,16 +535,23 @@ pub fn InnerCalendar(
         </Modal>
 
         <Modal is_open=move || meal_count().is_some() on_close=move || set_meal_count(None)>
-        {move || {
-            meal_count()
-                .map(|(target, date)| {
-                    view! {
-                        <div class="calendar-meal-tooltip pretty-background">
-                            <MealCountModal target date />
-                        </div>
-                    }
-                })
-        }}
+            {move || {
+                meal_count()
+                    .map(|(target, date)| {
+                        view! {
+                            <div class="calendar-meal-tooltip pretty-background">
+                                <MealCountModal target date />
+                            </div>
+                        }
+                    })
+            }}
+        </Modal>
+        <Modal is_open=move || meal_history().is_some() on_close = move || set_meal_history(None)>
+    {move || {meal_history().map(|(target, date)| {
+                                view!{
+                                    <MealHistoryModal target date/>
+                                }
+                            })}}
         </Modal>
     }
 }

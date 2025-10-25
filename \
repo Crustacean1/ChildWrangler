@@ -1,0 +1,52 @@
+use chrono::NaiveDate;
+use dto::attendance::{AttendanceHistoryDto, AttendanceHistoryItemDto, GetAttendanceHistoryDto};
+use leptos::prelude::*;
+use uuid::Uuid;
+
+use crate::{components::dropdown::Dropdown, services::attendance::get_attendance_history};
+
+#[component]
+pub fn MealHistoryModal(target: Uuid, date: NaiveDate) -> impl IntoView {
+    let history = Resource::new(
+        || (),
+        move |_| async move { get_attendance_history(GetAttendanceHistoryDto { target, date }).await },
+    );
+
+    view! {
+        <h2>Lista wydarzeń</h2>
+        <Suspense fallback=|| view! { <div>Loading</div> }>
+            <ErrorBoundary fallback=|_| {
+                view! { <div>Error</div> }
+            }>
+                {Suspend::new(async move {
+                    let history = history.await?;
+                    Ok::<_, ServerFnError>(view! { <MealHistoryModalInner history /> })
+                })}
+            </ErrorBoundary>
+        </Suspense>
+    }
+}
+
+#[component]
+pub fn MealHistoryModalInner(history: AttendanceHistoryDto) -> impl IntoView {
+    view! {
+        <h3>{format!("{:?}", history.status)}</h3>
+        //<Dropdown name="meals" options=move || vec![] key=|a: &Uuid| *a filter=|a,b| true on_select=|_|None item_view=|i| view!{format("{}",i)}/>
+        <ul class="before:content-[''] before:bg-gray-400/20 before:rounded-full before:min-w-[1px] before:-left-[10px] before:absolute before:h-full relative ml-2">
+            {history
+                .events
+                .into_iter()
+                .map(|att| {
+                    view! {
+                        <li class="relative before:content-[''] before:bg-gray-400 before:rounded-full before:min-w-2 before:min-h-2 before:absolute before:-left-3 before:top-1 ">
+                            <h4 class="text-xs text-gray-300">{format!("{}", att.time.format("%Y %B %d %H:%M:%S"))}</h4>
+                            <span>
+                            {format!("{:?}", att.item)}
+                            </span>
+                        </li>
+                    }
+                })
+                .collect::<Vec<_>>()}
+        </ul>
+    }
+}

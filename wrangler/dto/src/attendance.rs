@@ -64,19 +64,19 @@ pub struct UpdateAttendanceDto {
 pub struct GetAttendanceHistoryDto {
     pub date: NaiveDate,
     pub target: Uuid,
-    pub meal_id: Uuid,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum AttendanceItemDto {
     Cancellation(i32, String, String),
-    Override(String, bool),
+    Override(Uuid,String),
     Init,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AttendanceHistoryItemDto {
     pub time: NaiveDateTime,
+    pub meals: Vec<(Uuid, bool)>,
     pub item: AttendanceItemDto,
 }
 

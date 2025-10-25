@@ -197,13 +197,15 @@ pub async fn get_attendance_history(
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
     let history = sqlx::query!(
-        "SELECT attendance.originated, attendance.value , attendance_override.note AS note, processing_trigger.message_id AS msg_id FROM attendance 
-        LEFT JOIN attendance_override ON attendance_override.id = attendance.cause_id
-        LEFT JOIN processing_trigger ON processing_trigger.processing_id = attendance.cause_id
-        WHERE target=$1 AND day = $2 AND meal_id = $3 ORDER BY originated",
+        "SELECT attendance.target, attendance.cause_id, originated, ARRAY_AGG((meal_id, value)) AS \"meals: Vec<(Uuid,bool)>\", note, processing_trigger.message_id AS msg_id FROM group_relations
+    INNER JOIN attendance ON attendance.target = group_relations.parent
+    LEFT JOIN attendance_override ON attendance_override.id = attendance.cause_id
+    LEFT JOIN processing_trigger ON processing_trigger.processing_id = attendance.cause_id
+    WHERE group_relations.child = $1 AND attendance.day = $2 
+    GROUP BY cause_id, originated, attendance_override.id, processing_trigger.message_id , target
+    ORDER BY originated",
         dto.target,
-        dto.date,
-        dto.meal_id
+        dto.date
     )
     .fetch_all(&pool)
     .await?;
@@ -214,16 +216,19 @@ pub async fn get_attendance_history(
             if let Some(msg_id) = row.msg_id {
                 AttendanceHistoryItemDto {
                     time: row.originated,
+                    meals: row.meals.unwrap_or_default(),
                     item: AttendanceItemDto::Cancellation(msg_id, String::new(), String::new()),
                 }
             } else if let Some(note) = row.note {
                 AttendanceHistoryItemDto {
                     time: row.originated,
-                    item: AttendanceItemDto::Override(note, false),
+                    meals: row.meals.unwrap_or_default(),
+                    item: AttendanceItemDto::Override(row.target, note),
                 }
             } else {
                 AttendanceHistoryItemDto {
                     time: row.originated,
+                    meals: row.meals.unwrap_or_default(),
                     item: AttendanceItemDto::Init,
                 }
             }
@@ -235,7 +240,7 @@ pub async fn get_attendance_history(
     LEFT JOIN attendance_override ON attendance_override.id = effective_attendance.cause_id
     LEFT JOIN processing_trigger ON processing_trigger.processing_id = effective_attendance.cause_id
     WHERE group_relations.child = $1 AND effective_attendance.day = $2 AND effective_attendance.meal_id = $3 AND ((level > 0 AND value = false) OR level = 0)
-    ORDER BY level DESC LIMIT 1", dto.target, dto.date, dto.meal_id)
+    ORDER BY level DESC LIMIT 1", dto.target, dto.date, Uuid::nil())
     .fetch_optional(&pool)
     .await?;
 
@@ -282,27 +287,40 @@ pub async fn get_attendance_breakdown(
     })
     .collect();
 
-    let groups = sqlx::query!(
-        "SELECT groups.id, groups.name FROM groups
+    let groups: Vec<GroupDto> = {
+        let groups: Vec<_> = sqlx::query!(
+            "SELECT groups.id, groups.name FROM groups
     INNER JOIN group_relations ON group_relations.child = groups.id AND group_relations.level = 1
-    WHERE group_relations.parent = $1",
-        dto.target
-    )
-    .fetch_all(&pool)
-    .await?
-    .into_iter()
-    .map(|row| GroupDto {
-        id: row.id,
-        name: row.name,
-        parent: None,
-    })
-    .collect();
+    WHERE group_relations.parent = $1 ORDER BY name",
+            dto.target
+        )
+        .fetch_all(&pool)
+        .await?
+        .into_iter()
+        .map(|row| GroupDto {
+            id: row.id,
+            name: row.name,
+            parent: None,
+        })
+        .collect();
 
-    let attendance_rows = sqlx::query!("SELECT groups.id, meal_id, groups.name, COUNT(*) AS max_attendance, SUM(present::int) AS attendance FROM groups
-    INNER JOIN group_relations ON group_relations.child = groups.id AND group_relations.level = 1 
+        if groups.is_empty() {
+            sqlx::query!("SELECT students.id, students.name, students.surname FROM students
+        INNER JOIN group_relations ON group_relations.child = students.id AND group_relations.level = 1
+        WHERE group_relations.parent = $1 ORDER BY surname", dto.target).fetch_all(&pool).await?.into_iter().map(|row| GroupDto{
+                    id: row.id,
+                    name: format!("{} {}", row.name, row.surname),
+                    parent: None
+                }).collect()
+        } else {
+            groups
+        }
+    };
+
+    let attendance_rows = sqlx::query!("SELECT group_relations.child AS id, meal_id, COUNT(*) AS max_attendance, SUM(present::int) AS attendance FROM group_relations
     INNER JOIN rooted_attendance ON rooted_attendance.root = group_relations.child
-    WHERE group_relations.parent = $1 AND rooted_attendance.day = $2
-    GROUP BY groups.id, rooted_attendance.meal_id
+    WHERE group_relations.parent = $1 AND group_relations.level = 1 AND rooted_attendance.day = $2
+    GROUP BY group_relations.child, rooted_attendance.meal_id
     ", dto.target, dto.date).fetch_all(&pool)
     .await?;
 

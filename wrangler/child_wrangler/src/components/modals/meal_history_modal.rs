@@ -1,25 +1,19 @@
 use chrono::NaiveDate;
 use dto::attendance::{AttendanceHistoryDto, AttendanceHistoryItemDto, GetAttendanceHistoryDto};
-use leptos::prelude::*;
+use leptos::{either::Either, prelude::*};
 use uuid::Uuid;
 
-use crate::services::attendance::get_attendance_history;
+use crate::{components::dropdown::Dropdown, services::attendance::get_attendance_history};
 
 #[component]
-pub fn MealHistoryModal(meal_id: Uuid, target: Uuid, date: NaiveDate) -> impl IntoView {
+pub fn MealHistoryModal(target: Uuid, date: NaiveDate) -> impl IntoView {
     let history = Resource::new(
         || (),
-        move |_| async move {
-            get_attendance_history(GetAttendanceHistoryDto {
-                meal_id,
-                target,
-                date,
-            })
-            .await
-        },
+        move |_| async move { get_attendance_history(GetAttendanceHistoryDto { target, date }).await },
     );
 
     view! {
+        <h2 class="text-center text-lg">Lista wydarzeń</h2>
         <Suspense fallback=|| view! { <div>Loading</div> }>
             <ErrorBoundary fallback=|_| {
                 view! { <div>Error</div> }
@@ -36,16 +30,37 @@ pub fn MealHistoryModal(meal_id: Uuid, target: Uuid, date: NaiveDate) -> impl In
 #[component]
 pub fn MealHistoryModalInner(history: AttendanceHistoryDto) -> impl IntoView {
     view! {
-        <h3>{format!("{:?}", history.status)}</h3>
-        <ul>
+        <ul class="before:content-[''] before:bg-gray-400/20 before:rounded-full before:min-w-[1px] before:-left-[9px] before:absolute before:h-full relative ml-2 flex flex-col gap-2">
             {history
                 .events
                 .into_iter()
                 .map(|att| {
                     view! {
-                        <li>
-                            <h4>{format!("{}", att.time)}</h4>
-                            {format!("{:?}", att.item)}
+                        <li class="relative before:content-[''] before:bg-gray-400 before:rounded-full before:min-w-2 before:min-h-2 before:absolute before:-left-3 before:top-1 ">
+                            <h4 class="text-xs text-gray-300">{format!("{}", att.time.format("%Y %B %d %H:%M:%S"))}</h4>
+                            {match att.item {
+                                dto::attendance::AttendanceItemDto::Cancellation(_, _, _) => Either::Left(Either::Left(view!{})),
+                                dto::attendance::AttendanceItemDto::Override(id, reason) => Either::Left(Either::Right(view!{
+                                        <h2 class="text-lg">Nadpisano obecność w grupie</h2>
+                                        <div>{format!("{}", id)}</div>
+                                        {
+                                        if reason.is_empty() {
+                                            Either::Left(view!{
+                                                <span class="text-xs text-gray-600" > Nie podano powodu</span>
+                                            })
+                                        }else{
+                                            Either::Right(view!{
+                                                <span class="text-sx text-gray-600">{reason}</span>
+                                            })
+                                        }
+                                    }
+                                {
+                                    
+                                }
+                                        <div class="outline rounded-lg bg-red-500/20 outline-red-700 p-0.5 w-fit">śniadanie</div>
+                                })),
+                                dto::attendance::AttendanceItemDto::Init => Either::Right(view!{})
+                            }}
                         </li>
                     }
                 })
