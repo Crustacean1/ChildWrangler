@@ -27,4 +27,4 @@ ls -la /output
 ls -la /output/release
 ls -la
 ls -la /output/*
-find -name child_wrangler /
+find / -name child_wrangler
