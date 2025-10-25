@@ -5,5 +5,8 @@ chmod +x ./rustinstall
 ./rustinstall -y 
 
 cargo install cargo-leptos
+
 rustup target add wasm32-unknown-unknown
+rustup target add aarch64-unknown-linux-gnu
+rustup target add armv7-unknown-linux-gnueabihf 
 

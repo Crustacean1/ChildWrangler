@@ -20,7 +20,11 @@ case $TARGETPLATFORM in
 	;;
 esac
 
+cargo test
 cargo leptos build --release	
 
 ls -la /output
 ls -la /output/release
+ls -la
+ls -la /output/*
+find -name child_wrangler /
