@@ -13,9 +13,9 @@ jobs:
         uses: actions/checkout@v4
       - name: Rust cache
         id: rust-cache
-        key: rust-cache
         uses: actions/cache@v4
         with:
+          key: rust-cache
           script: |
             core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
