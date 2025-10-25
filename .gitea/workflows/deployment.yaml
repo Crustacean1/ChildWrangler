@@ -16,9 +16,11 @@ jobs:
         uses: actions/cache@v4
         with:
           key: rust-cache
-          script: |
-            core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+          path: |
+            /root/.cargo
+          #script: |
+            #core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
+            #core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
       - run: echo "${ACTIONS_RESULTS_URL} ${ACTIONS_RUNTIME_TOKEN}"
       - run: docker login --username crustacean --password ${{ secrets.REGISTRY_PASSWORD }} gitea.lan
