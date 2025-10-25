@@ -70,39 +70,28 @@ pub fn Snackbar(children: ChildrenFn) -> impl IntoView {
 
     view! {
         {children()}
-        <div class="snackbar-root absolute z-2 w-0" style:bottom="0" style:left="50%">
+        <div class="snackbar-root absolute z-2 w-0" style:bottom="0" style:left="50%" data-testid="snackbar-root">
             <div node_ref=div_ref class="relative gap reverse-vertical align-center">
-                <ForEnumerate
+                <For
                     each=move || {
                         let mut messages = messages();
                         messages.reverse();
                         messages
                     }
                     key=|m: &SnackbarMsg| m.id
-                    let(i,
-                    child)
+                    let:child
                 >
                     <div
-                        class="snackbar-msg rounded-md p-2 outline-2 select-none"
+                        class="snackbar-msg rounded-md p-2 outline-2 select-none w-fit"
                         class:bg-red-600=child.msg_type == MsgType::Error
                         class:bg-green-600=child.msg_type == MsgType::Success
                         on:click=move |_| set_messages.write().retain(|msg| msg.id != child.id)
                     >
                         {child.content}
                     </div>
-                </ForEnumerate>
+                </For>
             </div>
         </div>
-    }
-}
-
-impl MsgType {
-    fn get_snackbar_class(&self) -> &'static str {
-        match self {
-            MsgType::Success => "snackbar success",
-            MsgType::Warning => "snackbar warning",
-            MsgType::Error => "snackbar error",
-        }
     }
 }
 

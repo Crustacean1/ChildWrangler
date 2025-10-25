@@ -88,6 +88,16 @@ pub fn InfoPage() -> impl IntoView {
 
 #[component]
 pub fn Breadcrumb(trail: Vec<GroupDto>) -> impl IntoView {
+    let params = use_params::<AttendanceParams>();
+
+    let url = move |id| {
+        let params = params.read();
+        let par = params.as_ref().ok();
+        let year = par.and_then(|params| params.year);
+        let month = par.and_then(|params| params.month);
+        Some(format!("/attendance/{}/{}/{}", id, year?, month?))
+    };
+
     view! {
         <nav class="flex flex-1" aria-label="Breadcrumb">
             <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
@@ -110,8 +120,8 @@ pub fn Breadcrumb(trail: Vec<GroupDto>) -> impl IntoView {
                                 />
                             </svg>
                             <a
-                                class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400 md:hover:text-gray-200 align-self-center"
-                                href=""
+                                class="ms-1 text-md text-gray-500 md:hover:text-gray-200"
+                                href=move || url(item.id)
                             >
                                 {item.name}
                             </a>

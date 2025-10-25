@@ -8,8 +8,18 @@ jobs:
       - run: echo "${{ secrets.k8s_cert}}" | base64 -d > /usr/local/share/ca-certificates/kubernetes.crt
       - run: mkdir -p /etc/docker/certs.d/gitea.lan/ && echo "${{ secrets.k8s_cert}}" | base64 -d > /etc/docker/certs.d/gitea.lan/ca.crt
       - run: update-ca-certificates 
+      - run: apt-get update && apt-get install sccache
       - name: Check out repository code
         uses: actions/checkout@v4
+      - name: Rust cache
+        id: rust-cache
+        uses: actions/cache@v4
+        with:
+          script: |
+            core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      - run: echo "${ACTIONS_RESULTS_URL} ${ACTIONS_RUNTIME_TOKEN}"
       - run: docker login --username crustacean --password ${{ secrets.REGISTRY_PASSWORD }} gitea.lan
       - run: docker build -t gitea.lan/crustacean/child-wrangler:$(git rev-parse --short HEAD) 
           --platform linux/amd64,linux/arm64,linux/arm/v7

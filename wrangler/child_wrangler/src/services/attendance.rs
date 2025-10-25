@@ -1,10 +1,14 @@
 use chrono::{Days, Months, NaiveDate};
-use dto::attendance::{
-    AttendanceBreakdownDto, AttendanceHistoryDto, AttendanceHistoryItemDto, AttendanceItemDto,
-    AttendanceOverviewDto, AttendanceOverviewType, CateringMealDto, EffectiveAttendance,
-    EffectiveMonthAttendance, GetAttendanceBreakdownDto, GetAttendanceHistoryDto,
-    GetEffectiveMonthAttendance, GetMonthAttendanceDto, MealStatus, MonthAttendanceDto,
-    MonthlyStudentAttendanceDto, UpdateAttendanceDto,
+use dto::{
+    attendance::{
+        AttendanceBreakdownDto, AttendanceHistoryDto, AttendanceHistoryItemDto, AttendanceItemDto,
+        AttendanceOverviewDto, AttendanceOverviewType, CateringMealDto, EffectiveAttendance,
+        EffectiveMonthAttendance, GetAttendanceBreakdownDto, GetAttendanceHistoryDto,
+        GetEffectiveMonthAttendance, GetMonthAttendanceDto, MealStatus, MonthAttendanceDto,
+        MonthlyStudentAttendanceDto, UpdateAttendanceDto,
+    },
+    catering::MealDto,
+    group::GroupDto,
 };
 use std::collections::{BTreeMap, HashMap};
 use uuid::Uuid;
@@ -135,22 +139,20 @@ pub async fn get_effective_attendance(
             entries.entry(day).or_insert(BTreeMap::new()).insert(
                 entry.meal_id.unwrap_or(Default::default()),
                 if entry.value.unwrap_or(false) {
-
                     EffectiveAttendance::Present
-            }else{
-
-                if entry.is_override.unwrap_or(false) {
-                    if Some(dto.target) == entry.target {
-                        EffectiveAttendance::Absent
-                    } else {
-                        EffectiveAttendance::Blocked
-                    }
-                } else if entry.is_cancellation.unwrap_or(false) {
-                    EffectiveAttendance::Cancelled
                 } else {
+                    if entry.is_override.unwrap_or(false) {
+                        if Some(dto.target) == entry.target {
+                            EffectiveAttendance::Absent
+                        } else {
+                            EffectiveAttendance::Blocked
+                        }
+                    } else if entry.is_cancellation.unwrap_or(false) {
+                        EffectiveAttendance::Cancelled
+                    } else {
                         panic!("Wtf? Invalid attendance record, consult administrator")
                     }
-            }
+                },
             );
         }
     }
@@ -263,50 +265,61 @@ pub async fn get_attendance_breakdown(
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
-    let meal = sqlx::query!("SELECT * FROM meals WHERE meals.id = $1", dto.meal_id)
-        .fetch_one(&pool)
-        .await?
-        .name;
-
-    let student_level = sqlx::query!(
-        "SELECT * FROM group_relations
-    INNER JOIN students ON students.id = group_relations.child
-    WHERE group_relations.parent = $1
-    ORDER BY level
-    LIMIT 1",
+    let meals = sqlx::query!(
+        "SELECT meals.id, meals.name FROM meals
+    INNER JOIN catering_meals ON catering_meals.meal_id = meals.id
+    INNER JOIN caterings ON caterings.id = catering_meals.catering_id
+    INNER JOIN group_relations ON group_relations.parent = caterings.group_id
+    WHERE group_relations.child = $1",
         dto.target
     )
-    .fetch_optional(&pool)
+    .fetch_all(&pool)
     .await?
-    .map(|row| row.level);
+    .into_iter()
+    .map(|row| MealDto {
+        id: row.id,
+        name: row.name,
+    })
+    .collect();
 
-    let attendance = if student_level == Some(0) {
-        vec![]
-    } else if student_level == Some(1) {
-        sqlx::query!("SELECT students.id, students.name, students.surname, SUM(rooted_attendance.present::int) AS attendance , SUM((rooted_attendance.present IS NOT NULL)::int) AS total FROM group_relations
-    INNER JOIN students ON students.id = group_relations.child
-    LEFT JOIN rooted_attendance ON rooted_attendance.root = group_relations.child AND rooted_attendance.day = $2 AND rooted_attendance.meal_id = $3
-    WHERE group_relations.parent=$1 AND group_relations.level = 1 AND NOT students.removed
-    GROUP BY students.id
-    ORDER BY students.surname", dto.target, dto.date, dto.meal_id)
-        .fetch_all(&pool).await?
-        .into_iter()
-            .map(|row| (format!("{} {}", row.name, row.surname),(row.id,row.attendance.unwrap_or(0), row.total.unwrap_or(0))))
-        .collect::<Vec<_>>()
-    } else {
-        sqlx::query!("SELECT groups.id, groups.name, SUM(rooted_attendance.present::int) AS attendance, SUM((rooted_attendance.present IS NOT NULL)::int) AS total FROM group_relations
-    INNER JOIN groups ON groups.id = group_relations.child
-    LEFT JOIN rooted_attendance ON rooted_attendance.root = group_relations.child AND rooted_attendance.day = $2 AND rooted_attendance.meal_id = $3
-    WHERE group_relations.parent=$1 AND group_relations.level = 1 AND NOT groups.removed
-    GROUP BY groups.id
-    ORDER BY groups.name", dto.target, dto.date, dto.meal_id)
-        .fetch_all(&pool).await?
-        .into_iter()
-            .map(|row| (row.name,(row.id,row.attendance.unwrap_or(0), row.total.unwrap_or(0))))
-        .collect::<Vec<_>>()
-    };
+    let groups = sqlx::query!(
+        "SELECT groups.id, groups.name FROM groups
+    INNER JOIN group_relations ON group_relations.child = groups.id AND group_relations.level = 1
+    WHERE group_relations.parent = $1",
+        dto.target
+    )
+    .fetch_all(&pool)
+    .await?
+    .into_iter()
+    .map(|row| GroupDto {
+        id: row.id,
+        name: row.name,
+        parent: None,
+    })
+    .collect();
 
-    Ok(AttendanceBreakdownDto { attendance, meal })
+    let attendance_rows = sqlx::query!("SELECT groups.id, meal_id, groups.name, COUNT(*) AS max_attendance, SUM(present::int) AS attendance FROM groups
+    INNER JOIN group_relations ON group_relations.child = groups.id AND group_relations.level = 1 
+    INNER JOIN rooted_attendance ON rooted_attendance.root = group_relations.child
+    WHERE group_relations.parent = $1 AND rooted_attendance.day = $2
+    GROUP BY groups.id, rooted_attendance.meal_id
+    ", dto.target, dto.date).fetch_all(&pool)
+    .await?;
+
+    let mut attendance = HashMap::new();
+
+    for row in attendance_rows {
+        attendance.entry(row.id).or_insert(HashMap::new()).insert(
+            row.meal_id.unwrap_or_default(),
+            (row.max_attendance.unwrap_or(0), row.attendance.unwrap_or(0)),
+        );
+    }
+
+    Ok(AttendanceBreakdownDto {
+        attendance,
+        meals,
+        groups,
+    })
 }
 
 #[server]

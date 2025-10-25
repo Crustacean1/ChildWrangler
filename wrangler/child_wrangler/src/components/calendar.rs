@@ -6,12 +6,12 @@ use dto::attendance::{
     GetMonthAttendanceDto, MonthAttendanceDto,
 };
 use leptos::wasm_bindgen::JsCast;
-use leptos::{either::Either, prelude::*};
+use leptos::{either::Either, logging::log, prelude::*, tachys::renderer::dom::Node};
 
-use leptos::logging::log;
-use leptos_router::{components::A, hooks::use_params};
+use leptos_router::hooks::use_params;
 use uuid::Uuid;
 use wasm_bindgen_futures::JsFuture;
+use web_sys::HtmlDialogElement;
 use web_sys::{
     js_sys::Array, wasm_bindgen::JsValue, Blob, FileSystemFileHandle, FileSystemWritableFileStream,
 };
@@ -144,7 +144,9 @@ pub fn Calendar() -> impl IntoView {
 
     let download_summary = {
         Action::new(move |_: &()| async move {
-            if let Ok(summary) = get_monthly_summary(target().unwrap(), year() as i32, month()).await {
+            if let Ok(summary) =
+                get_monthly_summary(target().unwrap(), year() as i32, month()).await
+            {
                 save_to_file(&summary).await;
             } else {
                 snackbar.error("Nie udało się pobrac danych o obecności", "");
@@ -153,7 +155,7 @@ pub fn Calendar() -> impl IntoView {
     };
 
     view! {
-        <div class="bg-gray-900 rounded-xl outline outline-white/15 flex flex-row gap-2 p-2 select-none">
+        <div class="bg-gray-900 rounded-xl outline outline-white/15 flex flex-row gap-2 p-2 select-none m-0.5">
             <div class="flex-1">
                 <button class="btn" title="Pobierz obecność" on:click=move |_| {download_summary.dispatch(());} disabled={download_summary.pending()}>
                     <DownloadIcon />
@@ -181,6 +183,7 @@ pub fn Calendar() -> impl IntoView {
                         attendance_selection_mode() == AttendanceSelectionMode::List
                     }
                     title="Lista obecności"
+                    data-testid="attendance-list-button"
                     on:click=move |_| set_attendance_selection_mode(
                         AttendanceSelectionMode::List,
                     )
@@ -193,6 +196,7 @@ pub fn Calendar() -> impl IntoView {
                         attendance_selection_mode() == AttendanceSelectionMode::History
                     }
                     title="Historia obecności"
+                    data-testid="attendance-history-button"
                     on:click=move |_| set_attendance_selection_mode(
                         AttendanceSelectionMode::History,
                     )
@@ -205,6 +209,7 @@ pub fn Calendar() -> impl IntoView {
                         attendance_selection_mode() == AttendanceSelectionMode::Rectangular
                     }
                     title="Przełącz tryb zaznaczania"
+                    data-testid="attendance-rectangle-button"
                     on:click=move |_| set_attendance_selection_mode(
                         AttendanceSelectionMode::Rectangular,
                     )
@@ -217,6 +222,7 @@ pub fn Calendar() -> impl IntoView {
                         attendance_selection_mode() == AttendanceSelectionMode::Sequential
                     }
                     title="Przełącz tryb zaznaczania"
+                    data-testid="attendance-linear-button"
                     on:click=move |_| set_attendance_selection_mode(
                         AttendanceSelectionMode::Sequential,
                     )
@@ -235,6 +241,7 @@ pub fn Calendar() -> impl IntoView {
                 >(
                     view! {
                         <InnerCalendar
+                            selection_mode=attendance_selection_mode
                             target=target().unwrap_or_default()
                             year=year() as i32
                             month=month()
@@ -290,6 +297,7 @@ pub fn InnerCalendar(
     target: Uuid,
     year: i32,
     month: u32,
+    selection_mode: impl Fn() -> AttendanceSelectionMode + Send + Sync + Clone + Copy + 'static,
     attendance: MonthAttendanceDto,
     local_attendance: EffectiveMonthAttendance,
 ) -> impl IntoView {
@@ -297,10 +305,9 @@ pub fn InnerCalendar(
 
     let is_student = local_attendance.is_student;
 
-    let (meal_history, set_meal_history) = signal(None::<(Uuid, Uuid, NaiveDate)>);
-    let (meal_count, set_meal_count) = signal(None::<(Uuid, Uuid, NaiveDate)>);
+    let (meal_history, set_meal_history) = signal(None::<(Uuid, NaiveDate)>);
+    let (meal_count, set_meal_count) = signal(None::<(Uuid, NaiveDate)>);
     let (meal_edit, set_meal_edit) = signal(None::<Vec<_>>);
-    let (selection_mode, set_selection_mode) = signal(false);
 
     let (drag_start, set_drag_start) = signal(None::<NaiveDate>);
     let (drag_end, set_drag_end) = signal(None::<NaiveDate>);
@@ -342,11 +349,11 @@ pub fn InnerCalendar(
         let Some(r_end) = drag_end() else {
             return false;
         };
+
         let start = if r_start < r_end { r_start } else { r_end };
         let end = if r_start < r_end { r_end } else { r_start };
-        let mode = selection_mode();
 
-        if mode {
+        if selection_mode() == AttendanceSelectionMode::Rectangular {
             let (start_week, end_week) = (start.iso_week().week(), end.iso_week().week());
             let day_week = day.iso_week().week();
             let (start_dow, end_dow) = (
@@ -354,26 +361,20 @@ pub fn InnerCalendar(
                 end.weekday().num_days_from_monday(),
             );
             let day_dow = day.weekday().num_days_from_monday();
-            (start_week <= day_week && day_week <= end_week)
-                && (start_dow <= day_dow && day_dow <= end_dow)
-        } else {
+            (start_week <= day_week && day_week <= end_week
+                || start_week >= day_week && day_week >= end_week)
+                && (start_dow <= day_dow && day_dow <= end_dow
+                    || start_dow >= day_dow && day_dow >= end_dow)
+        } else if selection_mode() == AttendanceSelectionMode::Sequential {
             start <= day && day <= end
+        } else {
+            false
         }
     };
 
     let is_active = move |day: NaiveDate| {
-        let Some(r_start) = drag_start() else {
-            return false;
-        };
-        let Some(r_end) = drag_end() else {
-            return false;
-        };
         let att_start = attendance.start;
         let att_end = attendance.end;
-        let start = if r_start < r_end { r_start } else { r_end };
-        let end = if r_start < r_end { r_end } else { r_start };
-        let mode = selection_mode();
-
         if att_start <= day
             && day <= att_end
             && dow
@@ -381,19 +382,7 @@ pub fn InnerCalendar(
                 .map(|b| *b)
                 .unwrap_or(false)
         {
-            if mode {
-                let (start_week, end_week) = (start.iso_week().week(), end.iso_week().week());
-                let day_week = day.iso_week().week();
-                let (start_dow, end_dow) = (
-                    start.weekday().num_days_from_monday(),
-                    end.weekday().num_days_from_monday(),
-                );
-                let day_dow = day.weekday().num_days_from_monday();
-                (start_week <= day_week && day_week <= end_week)
-                    && (start_dow <= day_dow && day_dow <= end_dow)
-            } else {
-                start <= day && day <= end
-            }
+            is_selected(day)
         } else {
             false
         }
@@ -409,7 +398,17 @@ pub fn InnerCalendar(
         })
         .filter(|d| is_active(*d));
         let days: Vec<_> = days.collect();
-        set_meal_edit(Some(days));
+        match selection_mode() {
+            AttendanceSelectionMode::History => {
+                set_meal_history(drag_start().map(|drag| (target, drag)))
+            }
+            AttendanceSelectionMode::List => {
+                set_meal_count(drag_start().map(|drag| (target, drag)));
+            }
+            _ => {
+                set_meal_edit(Some(days));
+            }
+        }
         set_drag_start(None);
         set_drag_end(None);
     };
@@ -464,7 +463,7 @@ pub fn InnerCalendar(
         </div>
         <div
             on:mouseup=move |_| on_drag_end()
-            class="flex-1 grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none"
+                class="flex-1 grid gap-2 grid-cols-7 overflow-auto p-0.5 select-none"
             style="grid-template-rows: repeat(auto-fit, minmax(0, 1fr));"
         >
             {daily_attendance
@@ -499,16 +498,6 @@ pub fn InnerCalendar(
                                                 date
                                                 is_student
                                                 meals
-                                                meal_select=meal_history
-                                                count_select=meal_count
-                                                on_unselect=move || {
-                                                    set_meal_history(None);
-                                                    set_meal_count(None);
-                                                }
-                                                on_meal_select=move |meal_id| {
-                                                    set_meal_history(Some((meal_id, target, date)))
-                                                }
-                                                on_count_select=move |meal_id| {}
                                             />
                                         },
                                     )
@@ -534,9 +523,7 @@ pub fn InnerCalendar(
                                         days
                                         meals
                                         on_close=move |changed| {
-                                            log!("Helloł: {:?}", changed);
                                             if changed {
-                                                log!("Hello");
                                                 *set_attendance_version.write() += 1;
                                             }
                                             set_meal_edit(None)
@@ -549,17 +536,18 @@ pub fn InnerCalendar(
             }
         </Modal>
 
-        {}
+        <Modal is_open=move || meal_count().is_some() on_close=move || set_meal_count(None)>
         {move || {
             meal_count()
-                .map(|(meal_id, target, date)| {
+                .map(|(target, date)| {
                     view! {
                         <div class="calendar-meal-tooltip pretty-background">
-                            <MealCountModal target meal_id date />
+                            <MealCountModal target date />
                         </div>
                     }
                 })
         }}
+        </Modal>
     }
 }
 
@@ -568,11 +556,6 @@ pub fn Day(
     date: NaiveDate,
     is_student: bool,
     meals: Vec<(Uuid, String, u32, EffectiveAttendance)>,
-    meal_select: impl Fn() -> Option<(Uuid, Uuid, NaiveDate)> + Send + Sync + Copy + 'static,
-    count_select: impl Fn() -> Option<(Uuid, Uuid, NaiveDate)> + Send + Sync + Copy + 'static,
-    on_meal_select: impl Fn(Uuid) + Send + Sync + Copy + 'static,
-    on_count_select: impl Fn(Uuid) + Send + Sync + Copy + 'static,
-    on_unselect: impl Fn() + Send + Sync + Copy + 'static,
 ) -> impl IntoView {
     view! {
         <h3 class="text-center flex-1 justify-start">{format!("{}", date.format("%e %B"))}</h3>
@@ -590,15 +573,6 @@ pub fn Day(
                             class="flex-4 padded no-select"
                             class:text-left=!is_student
                             class:text-center=is_student
-                            on:mouseover=move |_| on_meal_select(meal_id)
-                            on:mouseleave=move |_| on_unselect()
-                            class:calendar-anchor=move || {
-                                if let Some((selected_meal_id, _, selected_date)) = meal_select() {
-                                    return selected_meal_id == meal_id && selected_date == date
-                                } else {
-                                    false
-                                }
-                            }
                             class:text-green-600=status == EffectiveAttendance::Present
                             class:text-red-600=status == EffectiveAttendance::Absent
                             class:text-yellow-600=status == EffectiveAttendance::Cancelled
@@ -616,15 +590,6 @@ pub fn Day(
                                             date.format("%Y-%m-%d"),
                                         )
                                         class="flex-1 padded no-select rounded text-right"
-                                        class:calendar-anchor=move || {
-                                            if let Some((selected_meal_id, _, selected_date)) = count_select() {
-                                                return selected_meal_id == meal_id && selected_date == date
-                                            } else {
-                                                false
-                                            }
-                                        }
-                                        on:mouseover=move |_| on_count_select(meal_id)
-                                        on:mouseleave=move |_| on_unselect()
                                     >
                                         {format!("{}", attendance)}
                                     </div>

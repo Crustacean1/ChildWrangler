@@ -130,7 +130,7 @@ where
                     Either::Left(
                         view! {
                             <ul
-                                class="bg-gray-700 max-h-48 rounded-md w-full flex flex-col overflow-auto absolute bot-0"
+                                class="bg-gray-700 max-h-48 rounded-md w-full flex flex-col overflow-auto absolute bot-0 z-2"
                                 style:display=move || if active() { "flex" } else { "none" }
                                 role="listbox"
                                 node_ref=list_ref

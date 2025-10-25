@@ -4,6 +4,8 @@ use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::{catering::MealDto, group::GroupDto};
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GetMonthAttendanceDto {
     pub target: Uuid,
@@ -94,15 +96,15 @@ pub struct AttendanceHistoryDto {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GetAttendanceBreakdownDto {
-    pub meal_id: Uuid,
     pub target: Uuid,
     pub date: NaiveDate,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AttendanceBreakdownDto {
-    pub meal: String,
-    pub attendance: Vec<(String, (Uuid, i64,i64))>,
+    pub meals: Vec<MealDto>,
+    pub groups: Vec<GroupDto>,
+    pub attendance: HashMap<Uuid, HashMap<Uuid, (i64, i64)>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
