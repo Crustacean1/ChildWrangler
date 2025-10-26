@@ -39,3 +39,9 @@ pub struct CreateGuardianDto {
     #[serde(default)]
     pub students: Vec<Uuid>,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AllergyCombinationDto {
+    pub id: Uuid,
+    pub allergies: Vec<String>,
+}

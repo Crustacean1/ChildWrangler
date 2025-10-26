@@ -1,14 +1,19 @@
+use std::collections::HashMap;
 use std::f32::consts::PI;
 
 use chrono::Utc;
-use dto::attendance::{AttendanceOverviewDto, AttendanceOverviewType};
-use dto::catering::CateringDto;
+use dto::attendance::{AttendanceOverviewDto, AttendanceOverviewType, AttendanceStatus};
+use dto::catering::{CateringDto, MealDto};
+use dto::group::GroupDto;
+use dto::student::{AllergyCombinationDto, StudentDto};
+use leptos::either::Either;
 use leptos::prelude::*;
 use uuid::Uuid;
-use web_sys::wasm_bindgen::JsCast;
-use web_sys::MouseEvent;
 
 use crate::components::dropdown::Dropdown;
+use crate::components::general_provider::{
+    AllergyResource, GroupResource, MealResource, StudentResource,
+};
 use crate::components::loader::Loader;
 use crate::services::attendance::get_attendance_overview;
 use crate::services::catering::get_caterings;
@@ -17,7 +22,8 @@ use crate::services::catering::get_caterings;
 pub fn Chart(
     mut padding: i32,
     name: String,
-    series: Vec<(AttendanceOverviewType, i32)>,
+    allergies: HashMap<Uuid, AllergyCombinationDto>,
+    series: Vec<(AttendanceOverviewType, i64)>,
 ) -> impl IntoView {
     if series.len() == 1 {
         padding = 1;
@@ -25,7 +31,7 @@ pub fn Chart(
 
     let range = (360 - series.len() * padding as usize) as f32 / 360 as f32;
     let scalar = 2.0 * PI * (padding as f32 / 360 as f32);
-    let total = series.iter().map(|(_, s)| s).sum::<i32>() as f32;
+    let total = series.iter().map(|(_, s)| s).sum::<i64>() as f32;
 
     let sizes = series
         .iter()
@@ -38,31 +44,46 @@ pub fn Chart(
 
     let radius = 80.0;
 
-    let (position, set_position) = signal(None::<(usize, i32, i32)>);
-
     let colour = |att_type: &AttendanceOverviewType| match att_type {
-        AttendanceOverviewType::Present => "green",
+        AttendanceOverviewType::Present(id) => {
+            if allergies
+                .get(&id)
+                .map(|allergies| allergies.allergies.is_empty())
+                .unwrap_or(true)
+            {
+                "green"
+            } else {
+                "blue"
+            }
+        }
         AttendanceOverviewType::Cancelled => "yellow",
         AttendanceOverviewType::Disabled => "red",
-        AttendanceOverviewType::Allergic(items) => "blue",
     };
 
     let title = |att_type: &AttendanceOverviewType| match att_type {
-        AttendanceOverviewType::Present => "Obecni",
-        AttendanceOverviewType::Cancelled => "Odmówieni",
-        AttendanceOverviewType::Disabled => "Nadpisani",
-        AttendanceOverviewType::Allergic(items) => "Alergicy",
+        AttendanceOverviewType::Present(id) => {
+            let allergies = allergies
+                .get(&id)
+                .map(|allergies| allergies.allergies.clone())
+                .unwrap_or(vec![]);
+            if allergies.is_empty() {
+                "Obecni".into()
+            } else {
+                format!("Alergicy [{}]", allergies.join(", "))
+            }
+        }
+        AttendanceOverviewType::Cancelled => "Odmówieni".into(),
+        AttendanceOverviewType::Disabled => "Nadpisani".into(),
     };
 
     let attendance_sum = series
         .iter()
         .filter_map(|(kind, cnt)| match kind {
-            AttendanceOverviewType::Present => Some(cnt),
+            AttendanceOverviewType::Present(_) => Some(cnt),
             AttendanceOverviewType::Cancelled => None,
             AttendanceOverviewType::Disabled => None,
-            AttendanceOverviewType::Allergic(items) => Some(cnt),
         })
-        .sum::<i32>();
+        .sum::<i64>();
 
     view! {
         <div class="flex-1 flex flex-row justify-center items-center">
@@ -83,8 +104,8 @@ pub fn Chart(
                         .zip(sizes.iter())
                         .enumerate()
                         .map(|(i, (start, end))| {
-                            let start = start + i as f32 * scalar;
-                            let end = end + i as f32 * scalar;
+                            let start = start + i as f32 * scalar + scalar * 0.5;
+                            let end = end + i as f32 * scalar + scalar * 0.5;
                             let path = format!(
                                 "M {} {} A {} {} 0 {} 1 {} {}",
                                 (start).cos() * radius,
@@ -102,12 +123,6 @@ pub fn Chart(
                                     stroke-width="2"
                                     fill="none"
                                     stroke-linecap="round"
-                                    on:mousemove=move |e| {
-                                        if let Ok(e) = e.dyn_into::<MouseEvent>() {
-                                            set_position(Some((i, e.layer_x(), e.layer_y())));
-                                        }
-                                    }
-                                    on:mouseout=move |_| set_position(None)
                                 />
                             }
                         })
@@ -134,13 +149,13 @@ pub fn Chart(
                     {format!("{}", attendance_sum)}
                 </text>
             </svg>
-            <div class="grid grid-cols-2 gap-2 align-start justify-center card h-fit w-32">
+            <div class="grid grid-cols-2 gap-2 align-start justify-center card h-fit">
                 {series
                     .iter()
                     .enumerate()
                     .map(|(_, (name, value))| {
                         view! {
-                            <div class="text-left" style:--background-color={colour(name)}>{title(name)} </div>
+                            <div class="legend text-left" style:--background-color={colour(name)}>{title(name)} </div>
                             <div class="text-right">{format!("{}", value)}</div>
                         }
                     })
@@ -154,6 +169,10 @@ pub fn Chart(
 pub fn AttendanceDashboard() -> impl IntoView {
     let (selected_catering, set_selected_catering) = signal(None::<Uuid>);
     let caterings = Resource::new(|| (), |_| async move { get_caterings().await });
+    let meals = expect_context::<MealResource>().0;
+    let students = expect_context::<StudentResource>().0;
+    let groups = expect_context::<GroupResource>().0;
+    let allergies = expect_context::<AllergyResource>().0;
 
     Effect::new(move |_| {
         caterings
@@ -166,7 +185,6 @@ pub fn AttendanceDashboard() -> impl IntoView {
             get_attendance_overview(Utc::now().date_naive(), catering).await
         } else {
             Ok(AttendanceOverviewDto {
-                meal_list: vec![],
                 student_list: Default::default(),
                 attendance: Default::default(),
             })
@@ -187,6 +205,10 @@ pub fn AttendanceDashboard() -> impl IntoView {
             {move || Suspend::new(async move {
                 let caterings = caterings.await?;
                 let attendance = overview.await?;
+                let meals = meals.await?;
+                let students = students.await?;
+                let groups = groups.await?;
+                let allergies = allergies.await?;
                 Ok::<
                     _,
                     ServerFnError,
@@ -208,7 +230,7 @@ pub fn AttendanceDashboard() -> impl IntoView {
                             </h2>
                             <div class="flex-1"></div>
                         </div>
-                        <AttendanceDashboardInner attendance />
+                        <AttendanceDashboardInner attendance meals groups students allergies />
                     },
                 )
             })}
@@ -218,56 +240,129 @@ pub fn AttendanceDashboard() -> impl IntoView {
 }
 
 #[component]
-pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoView {
-    let meals = attendance.meal_list.into_iter().map(|(id, name)| {
-        (
-            name,
-            attendance.student_list.get(&id).clone(),
-            attendance.attendance.get(&id).clone(),
-        )
-    });
-
-    let attendance_map = |present: bool| {
-        view! {
-            <span class:red=!present class:green=present>
-                {if present { String::from("tak") } else { String::from("nie") }}
-            </span>
-        }
-    };
+pub fn AttendanceDashboardInner(
+    attendance: AttendanceOverviewDto,
+    meals: HashMap<Uuid, MealDto>,
+    allergies: HashMap<Uuid, AllergyCombinationDto>,
+    students: HashMap<Uuid, StudentDto>,
+    groups: HashMap<Uuid, GroupDto>,
+) -> impl IntoView {
+    let available_meals = attendance
+        .attendance
+        .iter()
+        .map(|(meal_id, _)| *meal_id)
+        .collect::<Vec<_>>();
 
     view! {
         <div class="flex flex-row">
-            {meals
-                .map(|(meal_name, student_list, att)| {
+            {attendance
+                .attendance
+                .into_iter()
+                .map(|(meal_id, attendance)| {
                     view! {
                         <div class="flex-1">
                             <Chart
-                                name=meal_name
+                                name=meals
+                                    .get(&meal_id)
+                                    .map(|m| m.name.clone())
+                                    .unwrap_or(format!("Unknown meal"))
+                                allergies=allergies.clone()
                                 padding=12
-                                series=att
-                                    .map(|att| {
-                                        att.iter()
-                                            .map(|(status, count)| (status.clone(), *count as i32))
-                                            .collect::<Vec<_>>()
-                                    })
-                                    .unwrap_or(vec![])
+                                series=attendance
                             />
                         </div>
                     }
                 })
                 .collect::<Vec<_>>()}
         </div>
-        <div class="flex-1 overflow-hidden card">
-            <table class="background-3 rounded flex-1 rounded">
+        <div class="flex-1 overflow-hidden rounded-md">
+            <table class="w-full border-collapse text-left">
                 <thead>
-                    <tr>
-                        <th class="padded">Imię</th>
-                        <th class="padded">Nazwisko</th>
-                        <th class="padded">Grupa</th>
-                        <th class="padded">Obecny</th>
+                    <tr class="bg-gray-600">
+                        <th class="p-2">Imię</th>
+                        <th class="p-2">Nazwisko</th>
+                        <th class="p-2">Grupa</th>
+                        {available_meals
+                            .iter()
+                            .map(|meal_id| {
+                                view! {
+                                    <th class="p-2">
+                                        {meals
+                                            .get(meal_id)
+                                            .map(|m| m.name.clone())
+                                            .unwrap_or(format!("Unknown meal"))}
+                                    </th>
+                                }
+                            })
+                            .collect::<Vec<_>>()}
                     </tr>
                 </thead>
-                <tbody class="background-1"></tbody>
+                <tbody class="background-1">
+                    {attendance
+                        .student_list
+                        .into_iter()
+                        .map(|(student_id, attendance)| {
+                            let student = students.get(&student_id).unwrap();
+                            let group = groups.get(&student.group_id).unwrap();
+                            view! {
+                                <tr class="even:bg-gray-800 odd:bg-gray-900">
+                                    <td class="p-2 r-border">
+                                        <a href=format!(
+                                            "attendance/{}",
+                                            student.id,
+                                        )>{format!("{}", student.name)}</a>
+                                    </td>
+                                    <td class="p-2 ">
+                                        <a href=format!(
+                                            "attendance/{}",
+                                            student.id,
+                                        )>{format!("{}", student.surname)}</a>
+                                    </td>
+                                    <td class="p-2 ">
+                                        <a href=format!(
+                                            "attendance/{}",
+                                            group.id,
+                                        )>{format!("{}", group.name)}</a>
+                                    </td>
+
+                                    {available_meals
+                                        .iter()
+                                        .map(|meal_id| {
+                                            view! {
+                                                <td class="p-2">
+                                                    {match attendance.get(meal_id) {
+                                                        Some(AttendanceStatus::Present) => {
+                                                            Either::Left(
+                                                                Either::Left(
+                                                                    view! { <span class="text-green-800">tak</span> },
+                                                                ),
+                                                            )
+                                                        }
+                                                        Some(AttendanceStatus::Overriden) => {
+                                                            Either::Left(
+                                                                Either::Right(
+                                                                    view! { <span class="text-red-800">nie</span> },
+                                                                ),
+                                                            )
+                                                        }
+                                                        Some(AttendanceStatus::Cancelled) => {
+                                                            Either::Right(
+                                                                Either::Left(
+                                                                    view! { <span class="text-yellow-800">nie</span> },
+                                                                ),
+                                                            )
+                                                        }
+                                                        None => Either::Right(Either::Right(view! {})),
+                                                    }}
+                                                </td>
+                                            }
+                                        })
+                                        .collect::<Vec<_>>()}
+                                </tr>
+                            }
+                        })
+                        .collect::<Vec<_>>()}
+                </tbody>
             </table>
         </div>
     }

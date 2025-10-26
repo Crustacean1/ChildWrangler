@@ -1,6 +1,6 @@
 use dto::catering::{AllergyDto, GuardianDto, MealDto};
 use dto::details::StudentDetailsDto;
-use dto::student::{CreateGuardianDto, CreateStudentDto, StudentDto};
+use dto::student::{AllergyCombinationDto, CreateGuardianDto, CreateStudentDto, StudentDto};
 use leptos::logging::log;
 use leptos::prelude::*;
 use uuid::Uuid;
@@ -273,4 +273,16 @@ pub async fn create_guardian(dto: CreateGuardianDto) -> Result<(), ServerFnError
 
     tr.commit().await?;
     Ok(())
+}
+
+#[server]
+pub async fn get_allergy_combinations() -> Result<Vec<AllergyCombinationDto>, ServerFnError> {
+    use sqlx::postgres::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+    let dto = sqlx::query!("SELECT allergy_combinations.id, ARRAY_AGG(allergies.name) AS allergies FROM allergy_combinations
+    INNER JOIN allergies ON allergies.id = allergy_combinations.allergy_id
+    GROUP BY allergy_combinations.id").fetch_all(&pool).await?.into_iter().map(|row| AllergyCombinationDto{id: row.id, allergies: row.allergies.unwrap_or(vec![])}).collect();
+
+    Ok(dto)
 }

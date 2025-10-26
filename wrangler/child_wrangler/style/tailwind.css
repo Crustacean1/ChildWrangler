@@ -13,6 +13,10 @@
     scrollbar-width: none;  /* Firefox */
 }
 
+.legend {
+	color: var(--background-color);
+}
+
 .day{
 	grid-template-columns: auto auto;
 }

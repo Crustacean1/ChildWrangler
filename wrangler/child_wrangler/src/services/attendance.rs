@@ -2,10 +2,10 @@ use chrono::{Days, Months, NaiveDate};
 use dto::{
     attendance::{
         AttendanceBreakdownDto, AttendanceHistoryDto, AttendanceHistoryItemDto, AttendanceItemDto,
-        AttendanceOverviewDto, AttendanceOverviewType, CateringMealDto, EffectiveAttendance,
-        EffectiveMonthAttendance, GetAttendanceBreakdownDto, GetAttendanceHistoryDto,
-        GetEffectiveMonthAttendance, GetMonthAttendanceDto, MealStatus, MonthAttendanceDto,
-        MonthlyStudentAttendanceDto, UpdateAttendanceDto,
+        AttendanceOverviewDto, AttendanceOverviewType, AttendanceStatus, CateringMealDto,
+        EffectiveAttendance, EffectiveMonthAttendance, GetAttendanceBreakdownDto,
+        GetAttendanceHistoryDto, GetEffectiveMonthAttendance, GetMonthAttendanceDto, MealStatus,
+        MonthAttendanceDto, MonthlyStudentAttendanceDto, UpdateAttendanceDto,
     },
     catering::MealDto,
     group::GroupDto,
@@ -407,64 +407,69 @@ pub async fn get_attendance_overview(
     use sqlx::postgres::PgPool;
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
-    let student_attendance = sqlx::query!("SELECT students.name, students.surname, students.id, SUM(value::int) AS present, meal_id FROM group_relations
+    let students = sqlx::query!("SELECT bool_and(value) AS value, meal_id,  (attendance_override.id IS NOT NULL) AS is_override, students.id AS id, (processing_id IS NOT NULL) AS is_cancellation, students.allergy_combination_id AS allergies_id FROM caterings
+    INNER JOIN group_relations ON group_relations.parent = caterings.group_id
     INNER JOIN students ON students.id = group_relations.child
-    INNER JOIN caterings ON caterings.group_id = group_relations.parent
-    INNER JOIN total_attendance ON total_attendance.student_id = students.id AND total_attendance.day = $2
-    WHERE caterings.id = $1
-    GROUP BY students.id, meal_id
-    ORDER BY students.surname
-", catering_id, date).fetch_all(&pool).await?;
-
-    let students = sqlx::query!("SELECT COUNT(*) AS cnt,meal_id,  (attendance_override.id IS NOT NULL) AS is_override, (processing_id IS NOT NULL) AS is_cancellation  FROM total_attendance
+    INNER JOIN total_attendance ON total_attendance.student_id = students.id
     LEFT JOIN attendance_override ON attendance_override.id = total_attendance.cause_id
     LEFT JOIN processing_trigger ON processing_trigger.processing_id = total_attendance.cause_id
-    WHERE total_attendance.day = $1 
-    GROUP BY meal_id, is_override, is_cancellation
-",  date)
+    WHERE total_attendance.day = $1 AND caterings.id = $2
+    GROUP BY students.id, meal_id, is_override, is_cancellation
+",  date, catering_id)
     .fetch_all(&pool)
     .await?;
 
     let mut attendance = HashMap::new();
-
-    for student in students {
-        if student.is_override.unwrap_or(false) {
-            attendance
-                .entry(student.meal_id.unwrap())
-                .or_insert(HashMap::new())
-                .insert(AttendanceOverviewType::Disabled, student.cnt.unwrap_or(0));
-        } else if student.is_cancellation.unwrap_or(false) {
-            attendance
-                .entry(student.meal_id.unwrap())
-                .or_insert(HashMap::new())
-                .insert(AttendanceOverviewType::Cancelled, student.cnt.unwrap_or(0));
-        } else {
-            attendance
-                .entry(student.meal_id.unwrap())
-                .or_insert(HashMap::new())
-                .insert(AttendanceOverviewType::Present, student.cnt.unwrap_or(0));
-        }
-    }
-
-    let meal_list = sqlx::query!("SELECT * FROM meals INNER JOIN catering_meals ON catering_meals.meal_id = meals.id WHERE catering_meals.catering_id = $1 ORDER BY meal_order", catering_id).fetch_all(&pool).await?.into_iter().map(|row| (row.id, row.name)).collect::<Vec<_>>();
-
     let mut student_list = HashMap::new();
 
-    for student in student_attendance {
+    for student in students {
+        let meal_id = student.meal_id.unwrap();
+
+        if student.value.unwrap_or(false) {
+            *attendance
+                .entry(meal_id)
+                .or_insert(HashMap::new())
+                .entry(AttendanceOverviewType::Present(
+                    student.allergies_id.unwrap_or_default(),
+                ))
+                .or_insert(0) += 1;
+        } else if student.is_override.unwrap_or(false) {
+            *attendance
+                .entry(meal_id)
+                .or_insert(HashMap::new())
+                .entry(AttendanceOverviewType::Disabled)
+                .or_insert(0) += 1;
+        } else if student.is_cancellation.unwrap_or(false) {
+            *attendance
+                .entry(meal_id)
+                .or_insert(HashMap::new())
+                .entry(AttendanceOverviewType::Cancelled)
+                .or_insert(0) += 1;
+        }
+
         student_list
-            .entry(student.meal_id.unwrap_or(Uuid::nil()))
-            .or_insert(vec![])
-            .push((
-                student.id,
-                student.name,
-                student.surname,
-                student.present.unwrap_or(0) != 0,
-            ));
+            .entry(student.id)
+            .or_insert(HashMap::new())
+            .insert(
+                meal_id,
+                if student.value.unwrap_or(false) {
+                    AttendanceStatus::Present
+                } else if student.is_override.unwrap_or(false) {
+                    AttendanceStatus::Overriden
+                } else if student.is_cancellation.unwrap_or(false) {
+                    AttendanceStatus::Cancelled
+                } else {
+                    panic!("This shouldn't have happened: invalid student presence")
+                },
+            );
     }
+    let attendance = attendance
+        .into_iter()
+        .map(|(id, types)| (id, types.into_iter().collect()))
+        .collect();
 
     Ok(AttendanceOverviewDto {
         student_list,
         attendance,
-        meal_list,
     })
 }

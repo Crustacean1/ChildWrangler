@@ -69,7 +69,7 @@ pub struct GetAttendanceHistoryDto {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum AttendanceItemDto {
     Cancellation(i32, String, String),
-    Override(Uuid,String),
+    Override(Uuid, String),
     Init,
 }
 
@@ -86,6 +86,13 @@ pub enum MealStatus {
     Overriden,
     Cancelled,
     Blocked(Uuid),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum AttendanceStatus {
+    Present,
+    Cancelled,
+    Overriden,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -118,15 +125,13 @@ pub struct MonthlyStudentAttendanceDto {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum AttendanceOverviewType {
-    Present,
+    Present(Uuid),
     Cancelled,
     Disabled,
-    Allergic(Vec<(Uuid, String)>),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AttendanceOverviewDto {
-    pub student_list: HashMap<Uuid, Vec<(Uuid, String, String, bool)>>,
-    pub meal_list: Vec<(Uuid, String)>,
-    pub attendance: HashMap<Uuid, HashMap<AttendanceOverviewType, i64>>,
+    pub student_list: HashMap<Uuid, HashMap<Uuid, AttendanceStatus>>,
+    pub attendance: HashMap<Uuid, Vec<(AttendanceOverviewType, i64)>>,
 }

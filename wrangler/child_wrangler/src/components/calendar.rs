@@ -566,10 +566,10 @@ pub fn Day(
 ) -> impl IntoView {
     view! {
         <div class="flex-1 grid gap-x-4 items-center" class:day=!is_student>
-        {meals
-            .into_iter()
-            .map(|(meal_id, meal_name, attendance, status)| {
-                view! {
+            {meals
+                .into_iter()
+                .map(|(meal_id, meal_name, attendance, status)| {
+                    view! {
                         <div
                             data-testid=format!(
                                 "meal-name-{}-{}",
@@ -604,9 +604,9 @@ pub fn Day(
                         } else {
                             Either::Right(view! {})
                         }}
-                }
-            })
-            .collect::<Vec<_>>()}
-            </div>
+                    }
+                })
+                .collect::<Vec<_>>()}
+        </div>
     }
 }
