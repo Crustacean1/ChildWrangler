@@ -11,7 +11,7 @@ jobs:
       - run: apt-get update && apt-get install sccache
       - name: Check out repository code
         uses: actions/checkout@v4
-      - run: docker login --tls-verify=false --username crustacean --password ${{ secrets.REGISTRY_PASSWORD }} gitea.lan
+      - run: docker login --tls=false --username crustacean --password ${{ secrets.REGISTRY_PASSWORD }} gitea.lan
       - run: docker build -t gitea.lan/crustacean/test-image:latest -f Containerfile.test --push  .
       #- run: echo "${ACTIONS_RESULTS_URL} ${ACTIONS_RUNTIME_TOKEN}"
       #- run: docker build -t gitea.lan/crustacean/child-wrangler:$(git rev-parse --short HEAD) 
