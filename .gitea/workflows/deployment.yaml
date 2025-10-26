@@ -8,10 +8,9 @@ jobs:
       - run: echo "${{ secrets.k8s_cert}}" | base64 -d > /usr/local/share/ca-certificates/kubernetes.crt
       - run: mkdir -p /etc/docker/certs.d/gitea.lan/ && echo "${{ secrets.k8s_cert}}" | base64 -d > /etc/docker/certs.d/gitea.lan/ca.crt
       - run: update-ca-certificates 
-      - run: apt-get update && apt-get install sccache
       - name: Check out repository code
         uses: actions/checkout@v4
-      - run: docker login --tls=false --username crustacean --password ${{ secrets.REGISTRY_PASSWORD }} gitea.lan
+      - run: docker login --tlsverify=false --username crustacean --password ${{ secrets.REGISTRY_PASSWORD }} gitea.lan
       - run: docker build -t gitea.lan/crustacean/test-image:latest -f Containerfile.test --push  .
       #- run: echo "${ACTIONS_RESULTS_URL} ${ACTIONS_RUNTIME_TOKEN}"
       #- run: docker build -t gitea.lan/crustacean/child-wrangler:$(git rev-parse --short HEAD) 
