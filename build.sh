@@ -25,6 +25,7 @@ cargo leptos build --release
 
 ls -la /output
 ls -la /output/release
-ls -la
+ls -la /wrangler
 ls -la /output/*
-find / -name child_wrangler
+
+cp $(find / -name child_wrangler -type f) /child_wrangler

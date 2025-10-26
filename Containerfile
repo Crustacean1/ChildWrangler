@@ -23,7 +23,7 @@ FROM --platform=$TARGETPLATFORM gcr.io/distroless/cc-debian12 AS child_wrangler
 
 WORKDIR /wrangler
 
-COPY --from=builder /output/release/child_wrangler /wrangler/
+COPY --from=builder /child_wrangler /wrangler/
 COPY --from=builder /wrangler/target/site  /wrangler/target/site
 
 ENTRYPOINT ["/wrangler/child_wrangler"]
