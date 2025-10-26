@@ -6,12 +6,11 @@ use dto::attendance::{
     GetMonthAttendanceDto, MonthAttendanceDto,
 };
 use leptos::wasm_bindgen::JsCast;
-use leptos::{either::Either, logging::log, prelude::*, tachys::renderer::dom::Node};
+use leptos::{either::Either, prelude::*};
 
 use leptos_router::hooks::use_params;
 use uuid::Uuid;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::HtmlDialogElement;
 use web_sys::{
     js_sys::Array, wasm_bindgen::JsValue, Blob, FileSystemFileHandle, FileSystemWritableFileStream,
 };
@@ -35,7 +34,7 @@ use crate::{
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum AttendanceSelectionMode {
+pub enum AttendanceSelectionMode {
     Sequential,
     Rectangular,
     History,
@@ -546,12 +545,13 @@ pub fn InnerCalendar(
                     })
             }}
         </Modal>
-        <Modal is_open=move || meal_history().is_some() on_close = move || set_meal_history(None)>
-    {move || {meal_history().map(|(target, date)| {
-                                view!{
-                                    <MealHistoryModal target date/>
-                                }
-                            })}}
+        <Modal is_open=move || meal_history().is_some() on_close=move || set_meal_history(None)>
+            {move || {
+                meal_history()
+                    .map(|(target, date)| {
+                        view! { <MealHistoryModal target date /> }
+                    })
+            }}
         </Modal>
     }
 }

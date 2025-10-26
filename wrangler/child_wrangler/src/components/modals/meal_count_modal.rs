@@ -17,14 +17,14 @@ pub fn MealCountModal(target: Uuid, date: NaiveDate) -> impl IntoView {
 
     view! {
         <div class="flex flex-col gap-2">
-        <h2>{format!("{}", date)}</h2>
-        <h3 class="text-center text-lg">{format!("Obecność dla grupy {}", target)}</h3>
-        <Loader>
-            {Suspend::new(async move {
-                let attendance = attendance.await?;
-                Ok::<_, ServerFnError>(view! { <MealCountModalInner target date attendance /> })
-            })}
-        </Loader>
+            <h2>{format!("{}", date)}</h2>
+            <h3 class="text-center text-lg">{format!("Obecność dla grupy {}", target)}</h3>
+            <Loader>
+                {Suspend::new(async move {
+                    let attendance = attendance.await?;
+                    Ok::<_, ServerFnError>(view! { <MealCountModalInner target date attendance /> })
+                })}
+            </Loader>
         </div>
     }
 }
@@ -43,7 +43,11 @@ pub fn MealCountModalInner(
                     {attendance
                         .meals
                         .iter()
-                        .map(|meal| view! { <th class="p-2 border border-gray-300/50">{meal.name.clone()}</th> })
+                        .map(|meal| {
+                            view! {
+                                <th class="p-2 border border-gray-300/50">{meal.name.clone()}</th>
+                            }
+                        })
                         .collect::<Vec<_>>()}
                     <th class="p-2 border border-gray-300/50">Total</th>
                 </tr>
@@ -57,14 +61,11 @@ pub fn MealCountModalInner(
                             <tr class="text-sm">
                                 <td class="p-2 border border-gray-300/50">
                                     <a href=format!(
-                                            "/attendance/{}/{}/{}",
-                                            group.id,
-                                            date.year(),
-                                            date.month(),
-                                        )
-                                    >
-                                        {format!("{}", group.name)}
-                                    </a>
+                                        "/attendance/{}/{}/{}",
+                                        group.id,
+                                        date.year(),
+                                        date.month(),
+                                    )>{format!("{}", group.name)}</a>
                                 </td>
                                 {attendance
                                     .meals

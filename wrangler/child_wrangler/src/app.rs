@@ -7,9 +7,16 @@ use leptos_router::{
 };
 
 use crate::{
-    components::{searchbar::Searchbar, snackbar::Snackbar},
+    components::{general_provider::GeneralProvider, searchbar::Searchbar, snackbar::Snackbar},
     pages::{
-        attendance_dashboard::AttendanceDashboard, attendance_page::{AttendancePage, AttendanceVersion, GroupVersion}, detail_page::DetailPage, guardian_contact_details::GuardianContactDetails, message_dashboard::MessageDashboard, message_page::MessagePage, test_page::TestPage, unknown_contact_details::UnknownContactDetails
+        attendance_dashboard::AttendanceDashboard,
+        attendance_page::{AttendancePage, AttendanceVersion, GroupVersion},
+        detail_page::DetailPage,
+        guardian_contact_details::GuardianContactDetails,
+        message_dashboard::MessageDashboard,
+        message_page::MessagePage,
+        test_page::TestPage,
+        unknown_contact_details::UnknownContactDetails,
     },
 };
 
@@ -76,7 +83,7 @@ pub fn App() -> impl IntoView {
                                     </div>
                                 </nav>
                                 <main class="flex flex-1 flex-row overflow-hidden">
-                                    <Outlet />
+                                    <GeneralProvider />
                                 </main>
                             }
                         }
