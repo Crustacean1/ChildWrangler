@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM guardians",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "created",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 2,
+        "name": "removed",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 3,
+        "name": "fullname",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "phone",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "04e45c6a660558249931a3d032defb7fee9802023fef92d1adec41fb67d9e681"
+}

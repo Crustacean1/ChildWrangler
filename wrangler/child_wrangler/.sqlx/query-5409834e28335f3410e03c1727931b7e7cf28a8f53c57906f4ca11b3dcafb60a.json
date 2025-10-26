@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM groups INNER JOIN group_relations ON group_relations.level = 1 AND group_relations.parent = $1 LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "removed",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "child",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "parent",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "level",
+        "type_info": "Int2"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "5409834e28335f3410e03c1727931b7e7cf28a8f53c57906f4ca11b3dcafb60a"
+}

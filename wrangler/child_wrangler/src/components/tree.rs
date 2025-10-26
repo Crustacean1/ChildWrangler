@@ -1,17 +1,16 @@
-use std::collections::HashSet;
-use std::iter;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
+use chrono::{Datelike, Utc};
 use leptos::either::Either;
 use leptos::{html, prelude::*};
 use leptos_router::hooks::{use_navigate, use_params};
 use uuid::Uuid;
 
+use crate::components::general_provider::{GroupResource, StudentResource};
 use crate::components::loader::Loader;
 use crate::icons::arrow_down::ArrowDown;
-use crate::pages::attendance_page::{AttendanceParams, GroupVersion};
-use crate::services::group::get_groups;
-use crate::services::student::get_students;
+use crate::pages::attendance_page::AttendanceParams;
 use dto::group::GroupDto;
 use dto::student::StudentDto;
 
@@ -25,28 +24,16 @@ pub struct TreeItem {
 
 #[component]
 pub fn InnerTree() -> impl IntoView {
-    let GroupVersion(group_version, set_group_version) = use_context::<GroupVersion>().unwrap();
-
-    let groups = Resource::new(
-        move || (group_version()),
-        |i| async move { get_groups().await },
-    );
-    let students = Resource::new(
-        move || (group_version()),
-        |i| async move { get_students().await },
-    );
+    let students = expect_context::<StudentResource>().0;
+    let groups = expect_context::<GroupResource>().0;
 
     let (expanded, set_expanded) = signal(HashSet::new());
 
     let params = use_params::<AttendanceParams>();
     let params = move || params.read();
 
-    let target = move || {
-        params()
-            .as_ref()
-            .ok()
-            .and_then(|attendance| attendance.target)
-    };
+    let year = move || params().as_ref().ok().map(|p| p.year).unwrap_or(Utc::now().year() as u32);
+    let month = move || params().as_ref().ok().map(|p| p.month).unwrap_or(Utc::now().month());
 
     view! {
         <Loader>
@@ -56,7 +43,7 @@ pub fn InnerTree() -> impl IntoView {
                 Ok::<
                     _,
                     ServerFnError,
-                >(view! { <Test groups students target expanded set_expanded /> })
+                >(view! { <Test groups students expanded set_expanded year month /> })
             })}
         </Loader>
     }
@@ -64,19 +51,20 @@ pub fn InnerTree() -> impl IntoView {
 
 #[component]
 fn Test(
-    groups: Vec<GroupDto>,
-    students: Vec<StudentDto>,
+    groups: HashMap<Uuid, GroupDto>,
+    students: HashMap<Uuid, StudentDto>,
     expanded: ReadSignal<HashSet<Uuid>>,
     set_expanded: WriteSignal<HashSet<Uuid>>,
-    target: impl Fn() -> Option<Uuid> + Send + Sync + Copy + 'static,
+    year: impl Fn() -> u32 + Send + Sync + Clone + Copy + 'static,
+    month: impl Fn() -> u32 + Send + Sync + Clone + Copy + 'static,
 ) -> impl IntoView {
-    let students = students.into_iter().map(|s| TreeItem {
+    let students = students.into_iter().map(|(_, s)| TreeItem {
         is_student: true,
         parent: Some(s.group_id),
         id: s.id,
         name: format!("{} {}", s.name, s.surname),
     });
-    let groups = groups.into_iter().map(|g| TreeItem {
+    let groups = groups.into_iter().map(|(_, g)| TreeItem {
         is_student: false,
         parent: g.parent,
         id: g.id,
@@ -89,20 +77,6 @@ fn Test(
         entities
     });
 
-    let all_expanded = {
-        let entities = entities.clone();
-        move || {
-            iter::successors(target(), |item| {
-                entities
-                    .iter()
-                    .find(|e| e.id == *item)
-                    .and_then(|e| e.parent)
-            })
-            .chain(expanded().into_iter())
-            .collect::<HashSet<_>>()
-        }
-    };
-
     view! {
         <div class="overflow-auto scrollbar-hide min-w-xs rounded-xl bg-gray-900 outline outline-white/15 p-2 m-0.5">
             <ul class="flex flex-col">
@@ -112,6 +86,8 @@ fn Test(
                     .map(|item| {
                         view! {
                             <TreeNode
+                                year
+                                month
                                 root=item.clone()
                                 groups=entities.clone()
                                 expanded
@@ -131,13 +107,14 @@ fn TreeNode(
     groups: Arc<Vec<TreeItem>>,
     expanded: ReadSignal<HashSet<Uuid>>,
     set_expanded: WriteSignal<HashSet<Uuid>>,
+    year: impl Fn() -> u32 + Send + Sync + Clone + Copy + 'static,
+    month: impl Fn() -> u32 + Send + Sync + Clone + Copy + 'static,
 ) -> impl IntoView {
     let id = root.id;
     let is_student = root.is_student;
     let name = root.name.clone();
 
     let dropzone_ref: NodeRef<html::Li> = NodeRef::new();
-    let navigate = use_navigate();
 
     let on_toggle_expand = move |_| {
         if expanded().contains(&root.id) {
@@ -154,14 +131,12 @@ fn TreeNode(
             class:expanded=move || !expanded().contains(&root.id)
         >
             <span class="flex-1 flex overflow-hidden rounded-lg">
-                <span
+                <a
                     class="flex-1 btn"
-                    on:click=move |_| {
-                        navigate(&format!("/attendance/{}", root.id), Default::default())
-                    }
+                    href=move || format!("/attendance/{}/{}/{}", root.id, year(), month())
                 >
                     {name.clone()}
-                </span>
+                </a>
                 {move || {
                     if is_student {
                         Either::Right(view! {})
@@ -192,6 +167,8 @@ fn TreeNode(
                                     .map(|g| {
                                         view! {
                                             <TreeNode
+                                                year
+                                                month
                                                 groups=groups.clone()
                                                 root=g.clone()
                                                 expanded

@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT students.id, students.name, students.surname FROM students\n        INNER JOIN group_relations ON group_relations.child = students.id AND group_relations.level = 1\n        WHERE group_relations.parent = $1 ORDER BY surname",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "surname",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f83af7c174e2c90cde352c25117efe1169dab25f8d1c899415b42bd64e2ff768"
+}

@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT group_relations.child AS id, meal_id, COUNT(*) AS max_attendance, SUM(present::int) AS attendance FROM group_relations\n    INNER JOIN rooted_attendance ON rooted_attendance.root = group_relations.child\n    WHERE group_relations.parent = $1 AND group_relations.level = 1 AND rooted_attendance.day = $2\n    GROUP BY group_relations.child, rooted_attendance.meal_id\n    ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "meal_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "max_attendance",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "attendance",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "298e912d4500ef0fba58bb67d2ee480fc6a17072e6b69d4cae7339c2e31ab2e8"
+}

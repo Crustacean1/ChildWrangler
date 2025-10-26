@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT meals.id, meals.name FROM meals\n    INNER JOIN catering_meals ON catering_meals.meal_id = meals.id\n    INNER JOIN caterings ON caterings.id = catering_meals.catering_id\n    INNER JOIN group_relations ON group_relations.parent = caterings.group_id\n    WHERE group_relations.child = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "cdf3283ddfc76ea20f904255e6d281322e83d2c53cd63c6ad9d3e3f4cdbe2d9d"
+}

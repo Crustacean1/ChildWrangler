@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO allergies (name) SELECT * FROM UNNEST($1::text[]) ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4b4fe9daea5c0da3df7eb33e90ba891909ada323294445157e26b64613825300"
+}

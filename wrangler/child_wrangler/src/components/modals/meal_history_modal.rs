@@ -57,7 +57,7 @@ pub fn MealHistoryModalInner(
     groups: HashMap<Uuid, GroupDto>,
 ) -> impl IntoView {
     view! {
-        <ul class="before:content-[''] before:bg-gray-400/20 before:rounded-full before:min-w-[1px] before:-left-[9px] before:absolute before:h-full relative ml-2 flex flex-col gap-4">
+        <ul class="pt-5 before:content-[''] before:bg-gray-400/20 before:rounded-full before:min-w-[1px] before:top-0 before:-left-[9px] before:absolute before:h-full relative ml-2 flex flex-col gap-4">
             {history
                 .events
                 .into_iter()
@@ -78,7 +78,10 @@ pub fn MealHistoryModalInner(
                                                 <div class="flex flex-col gap-2">
                                                     <h2 class="text-lg">
                                                         Nadpisano obecność dla
-                                                        <span class="rounded-md p-1 bg-gray-400 outline outline-gray-300">
+                                                        <a
+                                                            class="rounded-md p-1 bg-gray-600 outline outline-gray-400"
+                                                            href=format!("/attendance/{}", id)
+                                                        >
                                                             {groups
                                                                 .get(&id)
                                                                 .map(|g| g.name.clone())
@@ -88,29 +91,32 @@ pub fn MealHistoryModalInner(
                                                                         .map(|s| format!("{} {}", s.name, s.surname))
                                                                         .unwrap_or(format!("Nieznany obiekt")),
                                                                 )}
-                                                        </span>
+                                                        </a>
 
                                                     </h2>
-                                                    {att
-                                                        .meals
-                                                        .iter()
-                                                        .map(|meal| {
-                                                            view! {
-                                                                <div
-                                                                    class="w-fit p-1 outline-2 rounded-md flex gap-2"
-                                                                    class:outline-red-800=!meal.1
-                                                                    class:bg-red-600=!meal.1
-                                                                    class:outline-green-800=meal.1
-                                                                    class:bg-green-600=meal.1
-                                                                >
-                                                                    {meals
-                                                                        .get(&meal.0)
-                                                                        .map(|meal| format!("{}", meal.name))
-                                                                        .unwrap_or(format!("Nieprawidłówy posiłek"))}
-                                                                </div>
-                                                            }
-                                                        })
-                                                        .collect::<Vec<_>>()}
+
+                                                    <ul class="flex flex-row gap-2">
+                                                        {att
+                                                            .meals
+                                                            .iter()
+                                                            .map(|meal| {
+                                                                view! {
+                                                                    <li
+                                                                        class="w-fit p-1 outline-2 rounded-md gap-2"
+                                                                        class:outline-red-800=!meal.1
+                                                                        class:bg-red-600=!meal.1
+                                                                        class:outline-green-800=meal.1
+                                                                        class:bg-green-600=meal.1
+                                                                    >
+                                                                        {meals
+                                                                            .get(&meal.0)
+                                                                            .map(|meal| format!("{}", meal.name))
+                                                                            .unwrap_or(format!("Nieprawidłówy posiłek"))}
+                                                                    </li>
+                                                                }
+                                                            })
+                                                            .collect::<Vec<_>>()}
+                                                    </ul>
                                                     {if reason.is_empty() {
                                                         Either::Left(
                                                             view! {
@@ -131,6 +137,7 @@ pub fn MealHistoryModalInner(
                                 }
                                 dto::attendance::AttendanceItemDto::Init => {
                                     Either::Right(
+
                                         view! { <h2 class="text-lg">Dodano catering</h2> },
                                     )
                                 }

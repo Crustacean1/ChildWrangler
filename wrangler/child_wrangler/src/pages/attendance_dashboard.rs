@@ -65,8 +65,8 @@ pub fn Chart(
         .sum::<i32>();
 
     view! {
-        <div class="horizontal-wrap relative rounded background-2 gap align-center padded flex-1 align-center justify-center flex-1 overflow-hidden">
-            <svg viewBox="-100 -100 200 200" style:height="100%" style:aspect-ratio="1">
+        <div class="flex-1 flex flex-row justify-center items-center">
+            <svg viewBox="-100 -100 200 200" class="aspect-ratio-1 min-w-32 max-w-96 flex-1">
                 <defs>
                     <filter id="gaussian-1">
                         <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="gauss" />
@@ -99,7 +99,7 @@ pub fn Chart(
                                 <path
                                     d=path
                                     stroke=colour(&series[i].0)
-                                    stroke-width="12"
+                                    stroke-width="2"
                                     fill="none"
                                     stroke-linecap="round"
                                     on:mousemove=move |e| {
@@ -134,13 +134,14 @@ pub fn Chart(
                     {format!("{}", attendance_sum)}
                 </text>
             </svg>
-            <div class="grid-2 gap align-start justify-center">
+            <div class="grid grid-cols-2 gap-2 align-start justify-center card h-fit w-32">
                 {series
                     .iter()
                     .enumerate()
                     .map(|(_, (name, value))| {
                         view! {
-                            <div class="rounded-decoration" style:--background-color={colour(name)}>{title(name)} </div><div>{format!("{}", value)}</div>
+                            <div class="text-left" style:--background-color={colour(name)}>{title(name)} </div>
+                            <div class="text-right">{format!("{}", value)}</div>
                         }
                     })
                     .collect::<Vec<_>>()}
@@ -191,7 +192,7 @@ pub fn AttendanceDashboard() -> impl IntoView {
                     ServerFnError,
                 >(
                     view! {
-                        <div class="flex flex-row rounded-xl bg-gray-900 outline outline-white/15 p-2">
+                        <div class="flex flex-row align-center card">
                             <Dropdown
                                 name="Cateringi"
                                 options=move || caterings.clone()
@@ -199,19 +200,15 @@ pub fn AttendanceDashboard() -> impl IntoView {
                                 filter=|a, b| true
                                 on_select
                                 item_view=|catering| {
-                                    view! {
-                                        <div class="horizontal padded align-center">
-                                            {catering.name}
-                                        </div>
-                                    }
+                                    view! { <div class="p-1 text-center">{catering.name}</div> }
                                 }
                             />
-                            <h2 class="h2 flex-1">{format!("{}", Utc::now().date_naive())}</h2>
+                            <h2 class="text-lg text-center flex-1">
+                                {format!("{}", Utc::now().format("%d %B %Y"))}
+                            </h2>
                             <div class="flex-1"></div>
                         </div>
-                        <div class="flex-1 rounded-xl bg-gray-900 outline outline-white/15">
-                            <AttendanceDashboardInner attendance />
-                        </div>
+                        <AttendanceDashboardInner attendance />
                     },
                 )
             })}
@@ -238,54 +235,40 @@ pub fn AttendanceDashboardInner(attendance: AttendanceOverviewDto) -> impl IntoV
         }
     };
 
-    meals
-        .map(|(meal_name, student_list, att)| {
-            view! {
-                <div class="vertical rounded gap overflow-hidden gap">
-                    <Chart
-                        name=meal_name
-                        padding=12
-                        series=att
-                            .map(|att| {
-                                att.iter()
-                                    .map(|(status, count)| (status.clone(), *count as i32))
-                                    .collect::<Vec<_>>()
-                            })
-                            .unwrap_or(vec![])
-                    />
-
-                    <div class="table-wrapper flex-2 horizontal overflow-hidden rounded background-2">
-                        <table class="background-3 rounded flex-1 rounded">
-                            <thead>
-                                <tr>
-                                    <th class="padded">Imię</th>
-                                    <th class="padded">Nazwisko</th>
-                                    <th class="padded">Grupa</th>
-                                    <th class="padded">Obecny</th>
-                                </tr>
-                            </thead>
-                            <tbody class="background-1">
-                                {student_list
-                                    .map(|list| {
-                                        list.iter()
-                                            .map(|(id, name, surname, present)| {
-                                                view! {
-                                                    <tr>
-                                                        <td class="padded">{format!("{}", name)}</td>
-                                                        <td class="padded">{format!("{}", surname)}</td>
-                                                        <td class="padded">N/A</td>
-                                                        <td class="padded">{attendance_map(*present)}</td>
-                                                    </tr>
-                                                }
-                                            })
+    view! {
+        <div class="flex flex-row">
+            {meals
+                .map(|(meal_name, student_list, att)| {
+                    view! {
+                        <div class="flex-1">
+                            <Chart
+                                name=meal_name
+                                padding=12
+                                series=att
+                                    .map(|att| {
+                                        att.iter()
+                                            .map(|(status, count)| (status.clone(), *count as i32))
                                             .collect::<Vec<_>>()
                                     })
-                                    .unwrap_or(vec![])}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            }
-        })
-        .collect::<Vec<_>>()
+                                    .unwrap_or(vec![])
+                            />
+                        </div>
+                    }
+                })
+                .collect::<Vec<_>>()}
+        </div>
+        <div class="flex-1 overflow-hidden card">
+            <table class="background-3 rounded flex-1 rounded">
+                <thead>
+                    <tr>
+                        <th class="padded">Imię</th>
+                        <th class="padded">Nazwisko</th>
+                        <th class="padded">Grupa</th>
+                        <th class="padded">Obecny</th>
+                    </tr>
+                </thead>
+                <tbody class="background-1"></tbody>
+            </table>
+        </div>
+    }
 }

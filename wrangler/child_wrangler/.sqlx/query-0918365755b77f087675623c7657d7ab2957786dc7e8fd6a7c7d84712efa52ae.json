@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO allergy_combinations (id, allergy_id) SELECT $1, * FROM UNNEST($2::uuid[])",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0918365755b77f087675623c7657d7ab2957786dc7e8fd6a7c7d84712efa52ae"
+}

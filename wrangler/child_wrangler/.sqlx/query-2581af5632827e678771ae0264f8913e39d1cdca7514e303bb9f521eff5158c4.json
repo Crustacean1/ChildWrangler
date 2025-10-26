@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT attendance.target, attendance.cause_id, originated, ARRAY_AGG((meal_id, value)) AS \"meals: Vec<(Uuid,bool)>\", note, processing_trigger.message_id AS msg_id FROM group_relations\n    INNER JOIN attendance ON attendance.target = group_relations.parent\n    LEFT JOIN attendance_override ON attendance_override.id = attendance.cause_id\n    LEFT JOIN processing_trigger ON processing_trigger.processing_id = attendance.cause_id\n    WHERE group_relations.child = $1 AND attendance.day = $2 \n    GROUP BY cause_id, originated, attendance_override.id, processing_trigger.message_id , target\n    ORDER BY originated",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "target",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "cause_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "originated",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 3,
+        "name": "meals: Vec<(Uuid,bool)>",
+        "type_info": "RecordArray"
+      },
+      {
+        "ordinal": 4,
+        "name": "note",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "msg_id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      true,
+      true
+    ]
+  },
+  "hash": "2581af5632827e678771ae0264f8913e39d1cdca7514e303bb9f521eff5158c4"
+}

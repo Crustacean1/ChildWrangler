@@ -7,9 +7,9 @@ use crate::components::{modal::Modal, modals::add_catering::AddCateringModal, tr
 
 #[derive(Params, PartialEq)]
 pub struct AttendanceParams {
-    pub target: Option<Uuid>,
-    pub year: Option<u32>,
-    pub month: Option<u32>,
+    pub target: Uuid,
+    pub year: u32,
+    pub month: u32,
 }
 
 #[derive(Clone, Debug)]

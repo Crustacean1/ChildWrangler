@@ -13,6 +13,14 @@
     scrollbar-width: none;  /* Firefox */
 }
 
+.day{
+	grid-template-columns: auto auto;
+}
+
+.card {
+	@apply rounded-xl bg-gray-900 outline outline-white/15 p-2 m-0.5
+}
+
 .btn {
 	@apply p-1 md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600 rounded-md
 }

@@ -1,0 +1,94 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM inbox WHERE \"SenderNumber\" LIKE $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "UpdatedInDB",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 1,
+        "name": "ReceivingDateTime",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 2,
+        "name": "Text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "SenderNumber",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "Coding",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "UDH",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "SMSCNumber",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "Class",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "TextDecoded",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "ID",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "RecipientID",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "Processed",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 12,
+        "name": "Status",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a85f5ea7345dd2cd2b69dc4b93f203e05d31b2cce94c9e5a0adaaa8570fcc4fd"
+}

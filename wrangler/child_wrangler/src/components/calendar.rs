@@ -55,7 +55,7 @@ pub fn Calendar() -> impl IntoView {
         params()
             .as_ref()
             .ok()
-            .and_then(|attendance| attendance.year)
+            .map(|attendance| attendance.year)
             .unwrap_or(Utc::now().year() as u32)
     };
 
@@ -66,16 +66,11 @@ pub fn Calendar() -> impl IntoView {
         params()
             .as_ref()
             .ok()
-            .and_then(|attendance| attendance.month)
+            .map(|attendance| attendance.month)
             .unwrap_or(Utc::now().month())
     };
 
-    let target = move || {
-        params()
-            .as_ref()
-            .ok()
-            .and_then(|attendance| attendance.target)
-    };
+    let target = move || params().as_ref().ok().map(|attendance| attendance.target);
 
     let attendance = Resource::new(
         move || {
@@ -489,15 +484,22 @@ pub fn InnerCalendar(
                                     Either::Left(
                                         Either::Right(
                                             view! {
-                                                <h3 class="text-center text-gray-600">
-                                                    {format!("{}", date.format("%d %B"))}
+                                                <h3 class="text-center justify-start text-gray-600">
+                                                    {format!("{}", date.format("%e %B"))}
                                                 </h3>
                                             },
                                         ),
                                     )
                                 }
                                 CalendarDay::Day(meals) => {
-                                    Either::Right(view! { <Day date is_student meals /> })
+                                    Either::Right(
+                                        view! {
+                                            <h3 class="text-center justify-start">
+                                                {format!("{}", date.format("%e %B"))}
+                                            </h3>
+                                            <Day date is_student meals />
+                                        },
+                                    )
                                 }
                             }}
                         </div>
@@ -563,20 +565,19 @@ pub fn Day(
     meals: Vec<(Uuid, String, u32, EffectiveAttendance)>,
 ) -> impl IntoView {
     view! {
-        <h3 class="text-center flex-1 justify-start">{format!("{}", date.format("%e %B"))}</h3>
+        <div class="flex-1 grid gap-x-4 items-center" class:day=!is_student>
         {meals
             .into_iter()
             .map(|(meal_id, meal_name, attendance, status)| {
                 view! {
-                    <div class="flex-1 flex flex-row align-center">
                         <div
                             data-testid=format!(
                                 "meal-name-{}-{}",
                                 meal_name,
                                 date.format("%Y-%m-%d"),
                             )
-                            class="flex-4 padded no-select"
-                            class:text-left=!is_student
+                            class="no-select p-auto"
+                            class:text-right=!is_student
                             class:text-center=is_student
                             class:text-green-600=status == EffectiveAttendance::Present
                             class:text-red-600=status == EffectiveAttendance::Absent
@@ -594,7 +595,7 @@ pub fn Day(
                                             meal_name,
                                             date.format("%Y-%m-%d"),
                                         )
-                                        class="flex-1 padded no-select rounded text-right"
+                                        class="no-select text-left"
                                     >
                                         {format!("{}", attendance)}
                                     </div>
@@ -603,9 +604,9 @@ pub fn Day(
                         } else {
                             Either::Right(view! {})
                         }}
-                    </div>
                 }
             })
             .collect::<Vec<_>>()}
+            </div>
     }
 }

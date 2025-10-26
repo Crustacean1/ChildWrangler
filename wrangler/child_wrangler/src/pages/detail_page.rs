@@ -41,7 +41,7 @@ pub fn InfoPage() -> impl IntoView {
             .read()
             .as_ref()
             .ok()
-            .and_then(|params| params.target)
+            .map(|params| params.target)
             .unwrap_or_default()
     };
     let info = Resource::new(id, |id| async move { get_details(id).await });
@@ -93,8 +93,8 @@ pub fn Breadcrumb(trail: Vec<GroupDto>) -> impl IntoView {
     let url = move |id| {
         let params = params.read();
         let par = params.as_ref().ok();
-        let year = par.and_then(|params| params.year);
-        let month = par.and_then(|params| params.month);
+        let year = par.map(|params| params.year);
+        let month = par.map(|params| params.month);
         Some(format!("/attendance/{}/{}/{}", id, year?, month?))
     };
 
