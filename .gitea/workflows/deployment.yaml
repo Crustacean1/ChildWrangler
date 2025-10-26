@@ -11,32 +11,22 @@ jobs:
       - run: apt-get update && apt-get install sccache
       - name: Check out repository code
         uses: actions/checkout@v4
-      - name: Rust cache
-        id: rust-cache
-        uses: actions/cache@v4
-        with:
-          key: rust-cache
-          path: |
-            /root/.cargo
-          #script: |
-            #core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
-            #core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-
-      - run: echo "${ACTIONS_RESULTS_URL} ${ACTIONS_RUNTIME_TOKEN}"
-      - run: docker login --username crustacean --password ${{ secrets.REGISTRY_PASSWORD }} gitea.lan
-      - run: docker build -t gitea.lan/crustacean/child-wrangler:$(git rev-parse --short HEAD) 
-          --platform linux/amd64,linux/arm64,linux/arm/v7
-          -t gitea.lan/crustacean/child-wrangler:latest 
-          -f Containerfile
-          --push
-          --target child_wrangler
-          .
-      - run: docker push -a gitea.lan/crustacean/child-wrangler
-      - run: docker build -t gitea.lan/crustacean/message-daemon:$(git rev-parse --short HEAD) 
-          --platform linux/amd64,linux/arm64,linux/arm/v7
-          -t gitea.lan/crustacean/message-daemon:latest 
-          -f Containerfile
-          --push
-          --target message_daemon
-          .
-      - run: docker push -a gitea.lan/crustacean/message-daemon
+      - run: docker build -t gitea.lan/crustacean/test-image:latest -f Containerfile.test --push 
+      #- run: echo "${ACTIONS_RESULTS_URL} ${ACTIONS_RUNTIME_TOKEN}"
+      #- run: docker login --username crustacean --password ${{ secrets.REGISTRY_PASSWORD }} gitea.lan
+      #- run: docker build -t gitea.lan/crustacean/child-wrangler:$(git rev-parse --short HEAD) 
+      #    --platform linux/amd64,linux/arm64,linux/arm/v7
+      #    -t gitea.lan/crustacean/child-wrangler:latest 
+      #    -f Containerfile
+      #    --push
+      #    --target child_wrangler
+      #    .
+      #- run: docker push -a gitea.lan/crustacean/child-wrangler
+      #- run: docker build -t gitea.lan/crustacean/message-daemon:$(git rev-parse --short HEAD) 
+      #    --platform linux/amd64,linux/arm64,linux/arm/v7
+      #    -t gitea.lan/crustacean/message-daemon:latest 
+      #    -f Containerfile
+      #    --push
+      #    --target message_daemon
+      #    .
+      #- run: docker push -a gitea.lan/crustacean/message-daemon
