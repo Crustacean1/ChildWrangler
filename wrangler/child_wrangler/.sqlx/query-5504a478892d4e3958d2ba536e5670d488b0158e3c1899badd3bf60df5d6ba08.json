@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT allergy_combinations.id, ARRAY_AGG(allergies.name) AS allergies FROM allergy_combinations\n    INNER JOIN allergies ON allergies.id = allergy_combinations.allergy_id\n    GROUP BY allergy_combinations.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "allergies",
+        "type_info": "TextArray"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "5504a478892d4e3958d2ba536e5670d488b0158e3c1899badd3bf60df5d6ba08"
+}
