@@ -18,18 +18,11 @@ services:
       - c log_error_verbosity=verbose
 
   wrangler:
-    image: gitea.lan/crustacean/child_wrangler:latest
+    image: gitea.lan/crustacean/child-wrangler:latest
     ports:
       - 2137:2137
     environment:
-      CONNECTION_STRING: "postgres://admin:PzM9ZQaVx58rDF0hwzhri2iqeSafMWCMyTEfjsZPmNuxIX2WqaWmN1lE91vFu2Bj@postgres/wrangler"
+      CONNECTION_STRING: "postgres://admin:admin@postgres/wrangler"
       LEPTOS_SITE_ADDR: "0.0.0.0:2137"
+      RUST_LOG: debug
       TZ: "Europe/Warsaw"
-
-  message_daemon:
-    image: gitea.lan/crustacean/child_wrangler:latest
-    environment:
-      DATABASE_URL: "postgres://admin:PzM9ZQaVx58rDF0hwzhri2iqeSafMWCMyTEfjsZPmNuxIX2WqaWmN1lE91vFu2Bj@postgres/wrangler"
-      TZ: "Europe/Warsaw"
-
-  
