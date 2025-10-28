@@ -32,8 +32,20 @@ pub fn InnerTree() -> impl IntoView {
     let params = use_params::<AttendanceParams>();
     let params = move || params.read();
 
-    let year = move || params().as_ref().ok().map(|p| p.year).unwrap_or(Utc::now().year() as u32);
-    let month = move || params().as_ref().ok().map(|p| p.month).unwrap_or(Utc::now().month());
+    let year = move || {
+        params()
+            .as_ref()
+            .ok()
+            .map(|p| p.year)
+            .unwrap_or(Utc::now().year() as u32)
+    };
+    let month = move || {
+        params()
+            .as_ref()
+            .ok()
+            .map(|p| p.month)
+            .unwrap_or(Utc::now().month())
+    };
 
     view! {
         <Loader>
@@ -78,7 +90,7 @@ fn Test(
     });
 
     view! {
-        <div class="overflow-auto scrollbar-hide min-w-xs rounded-xl bg-gray-900 outline outline-white/15 p-2 m-0.5">
+        <div data-testid="group-tree" class="overflow-auto scrollbar-hide md:w-72 flex-1 ">
             <ul class="flex flex-col">
                 {entities
                     .iter()
@@ -126,13 +138,14 @@ fn TreeNode(
 
     view! {
         <li
-            class="flex-row overflow-hidden"
+            class="flex-row overflow-hidden "
             node_ref=dropzone_ref
             class:expanded=move || !expanded().contains(&root.id)
         >
-            <span class="flex-1 flex overflow-hidden rounded-lg">
+            <span class="flex-1 flex overflow-hidden rounded-md mt-0.5">
                 <a
-                    class="flex-1 btn"
+                    data-testid=format!("tree-link-{}", root.id)
+                    class="flex-1 bg-gray-800 md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600 p-2"
                     href=move || format!("/attendance/{}/{}/{}", root.id, year(), month())
                 >
                     {name.clone()}
@@ -144,7 +157,8 @@ fn TreeNode(
                         Either::Left(
                             view! {
                                 <button
-                                    class="btn "
+                                    data-testid=format!("tree-expand-button-{}", root.id)
+                                    class="bg-gray-800 md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600 p-2"
                                     class:rotate-180=move || expanded().contains(&id)
                                     on:click=on_toggle_expand
                                 >
@@ -160,7 +174,7 @@ fn TreeNode(
                     Either::Left(
 
                         view! {
-                            <ul class="flex flex-col " style:padding-left="1em">
+                            <ul class="flex flex-col pl-3 before:content-[''] before:h-full before:min-w-1 before:bg-gray-500 before:absolute before:left-1 before:rounded-full relative">
                                 {groups
                                     .iter()
                                     .filter(|g| g.parent == Some(root.id))

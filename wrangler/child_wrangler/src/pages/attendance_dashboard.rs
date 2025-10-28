@@ -149,7 +149,7 @@ pub fn Chart(
                     {format!("{}", attendance_sum)}
                 </text>
             </svg>
-            <div class="grid grid-cols-2 gap-2 align-start justify-center card h-fit">
+            <div class="grid grid-cols-2 gap-2 align-start justify-center card p-2 h-fit">
                 {series
                     .iter()
                     .enumerate()
@@ -214,7 +214,7 @@ pub fn AttendanceDashboard() -> impl IntoView {
                     ServerFnError,
                 >(
                     view! {
-                        <div class="flex flex-row align-center card">
+                        <div class="flex flex-row align-center card p-1">
                             <Dropdown
                                 name="Cateringi"
                                 options=move || caterings.clone()

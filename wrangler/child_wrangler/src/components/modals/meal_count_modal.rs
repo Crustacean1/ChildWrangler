@@ -17,7 +17,6 @@ pub fn MealCountModal(target: Uuid, date: NaiveDate) -> impl IntoView {
 
     view! {
         <div class="flex flex-col gap-2">
-            <h2>{format!("{}", date)}</h2>
             <h3 class="text-center text-lg">{format!("Obecność dla grupy {}", target)}</h3>
             <Loader>
                 {Suspend::new(async move {

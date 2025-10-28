@@ -8,8 +8,7 @@ use uuid::Uuid;
 
 use crate::{
     components::{
-        dropdown::Dropdown,
-        snackbar::{use_snackbar, SnackbarContext},
+        dropdown::Dropdown, general_provider::StudentVersion, snackbar::{SnackbarContext, use_snackbar}
     },
     icons::close::CloseIcon,
     services::student::{create_student, get_allergies, get_guardians, update_student},
@@ -58,6 +57,7 @@ fn InnerAddStudentModal(
     initial: Option<StudentDetailsDto>,
 ) -> impl IntoView {
     let snackbar = use_snackbar();
+    let student_version = expect_context::<StudentVersion>().0;
 
     let (name, set_name) = signal(
         initial
@@ -142,6 +142,7 @@ fn InnerAddStudentModal(
                 };
                 match update_student(dto).await {
                     Ok(_) => {
+                        *student_version.write() += 1;
                         snackbar.success("Zaktualizowano ucznia");
                         on_close(Some(id))
                     }
@@ -150,6 +151,7 @@ fn InnerAddStudentModal(
             } else {
                 match create_student(insert_dto).await {
                     Ok(id) => {
+                        *student_version.write() += 1;
                         snackbar.success("Dodano ucznia");
                         on_close(Some(id))
                     }

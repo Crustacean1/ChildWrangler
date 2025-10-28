@@ -8,6 +8,7 @@ use uuid::Uuid;
 use crate::{
     components::{
         dropdown::Dropdown,
+        general_provider::GroupVersion,
         modal::Modal,
         snackbar::{use_snackbar, SnackbarContext},
     },
@@ -43,6 +44,7 @@ fn InnerCateringModal(
     meals: Vec<MealDto>,
 ) -> impl IntoView {
     let snackbar = use_snackbar();
+    let update_groups = expect_context::<GroupVersion>();
     let on_cancel = move |_| on_close(None);
 
     let (selected_meals, set_selected_meals) = signal(vec![]);
@@ -94,6 +96,7 @@ fn InnerCateringModal(
             let id = create_catering(dto).await;
             match id {
                 Ok(id) => {
+                    *update_groups.0.write() += 1;
                     snackbar.success("Dodano nowy catering");
                     on_close(Some(id));
                 }
@@ -144,13 +147,19 @@ fn InnerCateringModal(
             <h2 class="text-center text-lg">Dodaj catering</h2>
             <div class="flex flex-col">
                 <label for="name">Nazwa</label>
-                <input bind:value=(name, set_name) class="p-1 rounded-md bg-gray-600" id="name" />
+                <input
+                    data-testid="catering-name"
+                    bind:value=(name, set_name)
+                    class="p-1 rounded-md bg-gray-600"
+                    id="name"
+                />
             </div>
 
             <div class="flex flex-row gap-2">
                 <div class="flex flex-col flex-1">
                     <label for="start">Początek</label>
                     <input
+                        data-testid="catering-start"
                         bind:value=(start, set_start)
                         id="start"
                         class="p-1 rounded-md bg-gray-600"
@@ -160,6 +169,7 @@ fn InnerCateringModal(
                 <div class="flex flex-col flex-1">
                     <label for="end">Koniec</label>
                     <input
+                        data-testid="catering-end"
                         bind:value=(end, set_end)
                         id="end"
                         class="p-1 rounded-md bg-gray-600"
@@ -203,6 +213,7 @@ fn InnerCateringModal(
             <div class="flex flex-col">
                 <label for="cancellation">Czas na odmowę</label>
                 <input
+                    data-testid="catering-cancellation"
                     bind:value=(grace, set_grace)
                     id="cancellation"
                     class="p-1 rounded-md bg-gray-600"
@@ -221,6 +232,7 @@ fn InnerCateringModal(
                             view! {
                                 <button
                                     id=format!("{}", w)
+                                    data-testid=format!("dow-{}", w)
                                     class:outline-2=*enabled
                                     class="p-1 rounded-md outline-green-900 md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600 flex-1"
                                     on:click=move |_| set_dow.write()[i].1 = !dow()[i].1
@@ -235,6 +247,7 @@ fn InnerCateringModal(
 
             <div class="flex flex-row justify-end gap-2">
                 <button
+                    data-testid="catering-cancel"
                     class="p-1 rounded-md outline outline-red-800 text-red-800 md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600"
                     on:click=on_cancel
                     disabled=create_catering.pending()
@@ -242,6 +255,7 @@ fn InnerCateringModal(
                     Anuluj
                 </button>
                 <button
+                    data-testid="catering-save"
                     class="p-1 rounded-md outline outline-green-800 text-green-800 md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600"
                     on:click=on_save
                     disabled=create_catering.pending()

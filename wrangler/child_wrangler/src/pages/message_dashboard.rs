@@ -13,12 +13,12 @@ pub fn MessageDashboard() -> impl IntoView {
     let messages = Resource::new(|| (), move |_| async move { get_latest_messages().await });
 
     view! {
-        <div class="vertical gap flex-1">
+        <div class="flex-1 flex flex-col gap-2">
             <Loader>
                 {move || Suspend::new(async move {
                     let phone = phone.await?;
                     let messages = messages.await?;
-                    Ok::<_, ServerFnError>(view! { <MessageDashbaordInner phone messages /> })
+                    Ok::<_, ServerFnError>(view! { <MessageDashboardInner phone messages /> })
                 })}
             </Loader>
         </div>
@@ -63,14 +63,14 @@ pub fn MessageView(message: GeneralMessageDto) -> impl IntoView {
 }
 
 #[component]
-pub fn MessageDashbaordInner(
+pub fn MessageDashboardInner(
     phone: Option<PhoneStatusDto>,
     mut messages: Vec<GeneralMessageDto>,
 ) -> impl IntoView {
     messages.sort_by_key(|m| m.received);
 
     view! {
-        <div class="background-2 rounded padded gap">
+        <div class="card">
             <h2 class="h2">Phone status</h2>
             {phone
                 .map(|phone| {
@@ -100,7 +100,7 @@ pub fn MessageDashbaordInner(
                 })
                 .unwrap_or(Either::Right(view! { <span>Nie wykryto modemu</span> }))}
         </div>
-        <div class="background-2 rounded padded flex-1 overflow-auto reverse-vertical gap">
+        <div class="card flex-1">
             {messages
                 .into_iter()
                 .rev()

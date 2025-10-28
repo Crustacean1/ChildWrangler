@@ -48,11 +48,11 @@ pub fn InnerMessagePage(contacts: Vec<ContactDto>) -> impl IntoView {
     };
 
     view! {
-        <div class="horizontal flex-1 gap overflow-hidden">
-            <div class="vertical gap w-20 rounded min-w-10">
-                <div class="vertical padded background-2 flex-1 rounded min-w-10 overflow-hidden">
+        <div class="flex flex-row gap-2 flex-1">
+            <div class="flex flex-col gap-2">
+                <div class="flex-1">
                     <div class="overflow-auto">
-                        <ul class="flex-1 vertical gap-2">
+                        <ul class="flex-1 flex flex-col md:w-72 gap-0.5">
                             {move || {
                                 searched_contacts()
                                     .iter()
@@ -61,9 +61,9 @@ pub fn InnerMessagePage(contacts: Vec<ContactDto>) -> impl IntoView {
                                             ContactDto::Unknown(u) => {
                                                 Either::Left(
                                                     view! {
-                                                        <li class="rounded vertical text-left">
+                                                        <li class="bg-gray-800 rounded-md overflow-hidden text-left w-full">
                                                             <a
-                                                                class="interactive horizontal padded-2 flex-1 rounded space-between"
+                                                                class="md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600 p-2"
                                                                 href=format!("/messages/unknown/{}", u)
                                                             >
                                                                 <span>Nieznany</span>
@@ -76,9 +76,9 @@ pub fn InnerMessagePage(contacts: Vec<ContactDto>) -> impl IntoView {
                                             ContactDto::GuardianWithPhone(guardian) => {
                                                 Either::Right(
                                                     view! {
-                                                        <li class="rounded vertical">
+                                                        <li class="bg-gray-800 rounded-md overflow-hidden text-left w-full flex">
                                                             <a
-                                                                class="interactive horizontal padded-2 flex-1 rounded flex-start"
+                                                                class="md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600 flex-1 p-2"
                                                                 href=format!("/messages/guardian/{}", guardian.id)
                                                             >
                                                                 {format!("{}", guardian.fullname)}
@@ -96,7 +96,7 @@ pub fn InnerMessagePage(contacts: Vec<ContactDto>) -> impl IntoView {
                 </div>
                 <input
                     autocomplete="off"
-                    class="rounded padded"
+                    class="input"
                     bind:value=(search, set_search)
                     placeholder="Szukaj"
                 />

@@ -22,7 +22,7 @@
 }
 
 .card {
-	@apply rounded-xl bg-gray-900 outline outline-white/15 p-2 m-0.5
+	@apply rounded-xl bg-gray-900 outline outline-white/15 m-0.5
 }
 
 .btn {

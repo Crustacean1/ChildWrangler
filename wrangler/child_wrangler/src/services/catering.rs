@@ -1,4 +1,5 @@
 use dto::catering::{CateringDto, CreateCateringDto};
+use leptos::html::P;
 use leptos::logging::log;
 use leptos::prelude::*;
 use uuid::Uuid;
@@ -12,9 +13,9 @@ pub async fn create_catering(catering_dto: CreateCateringDto) -> Result<Uuid, Se
 
     let dow: i16 = catering_dto
         .dow
-        .into_iter()
+        .iter()
         .enumerate()
-        .map(|(i, d)| (d as i16) * 2_i16.pow(i as u32))
+        .map(|(i, d)| (*d as i16) * 2_i16.pow(i as u32))
         .sum();
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
@@ -36,6 +37,12 @@ pub async fn create_catering(catering_dto: CreateCateringDto) -> Result<Uuid, Se
 
     if catering_dto.meals.is_empty() {
         return Err(ServerFnError::new("Catering must have at least one meal"));
+    }
+
+    if !catering_dto.dow.iter().any(|d| *d) {
+        return Err(ServerFnError::new(
+            "Catering needs to specify at least one day of week",
+        ));
     }
 
     let meals = catering_dto

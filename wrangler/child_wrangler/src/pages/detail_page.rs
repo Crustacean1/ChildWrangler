@@ -25,7 +25,7 @@ use crate::{
 pub fn DetailPage() -> impl IntoView {
     view! {
         <div class="flex flex-col gap-2 flex-1">
-            <div class="bg-gray-900 outline outline-white/15 rounded-xl p-2 m-0.5">
+            <div class="card p-1">
                 <InfoPage />
             </div>
             <Calendar />

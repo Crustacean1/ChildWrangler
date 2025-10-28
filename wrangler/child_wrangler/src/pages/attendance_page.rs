@@ -28,7 +28,11 @@ pub fn AttendancePage() -> impl IntoView {
         <div class="flex flex-row flex-1 gap-2">
             <div class="flex flex-col gap-2">
                 <InnerTree />
-                <button class="btn bg-gray-900" on:click=move |_| set_catering_modal(true)>
+                <button
+                    class="rounded-md bg-gray-800 md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600 p-2"
+                    on:click=move |_| set_catering_modal(true)
+                    data-testid="add-catering"
+                >
                     Dodaj catering
                 </button>
             </div>

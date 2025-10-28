@@ -3,7 +3,10 @@ use leptos::prelude::*;
 use uuid::Uuid;
 
 use crate::{
-    components::snackbar::{use_snackbar, SnackbarContext},
+    components::{
+        general_provider::GroupVersion,
+        snackbar::{use_snackbar, SnackbarContext},
+    },
     services::group::create_group,
 };
 
@@ -14,6 +17,7 @@ pub fn AddGroupModal(
 ) -> impl IntoView {
     let (name, set_name) = signal(String::new());
     let snackbar = use_snackbar();
+    let group_version = expect_context::<GroupVersion>().0;
 
     let save_group = Action::new(move |dto: &CreateGroupDto| {
         let dto = dto.clone();
@@ -21,6 +25,7 @@ pub fn AddGroupModal(
             match create_group(dto).await {
                 Ok(id) => {
                     snackbar.success("Dodano grupę");
+                    *group_version.write() += 1;
                     on_close(Some(id))
                 }
                 Err(e) => snackbar.error("Nie udało się dodać grupy", e),
@@ -50,12 +55,18 @@ pub fn AddGroupModal(
             <div class="flex flex-row gap-2 justify-end">
                 <button
                     class="btn cancel"
+                    data-testid="add-group-cancel"
                     on:click=move |_| on_close(None)
                     disabled=save_group.pending()
                 >
                     Anuluj
                 </button>
-                <button class="btn save" on:click=on_save disabled=save_group.pending()>
+                <button
+                    class="btn save"
+                    on:click=on_save
+                    disabled=save_group.pending()
+                    data-testid="add-group-save"
+                >
                     Zapisz
                 </button>
             </div>

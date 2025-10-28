@@ -150,9 +150,10 @@ pub fn Calendar() -> impl IntoView {
     };
 
     view! {
-        <div class="bg-gray-900 rounded-xl outline outline-white/15 flex flex-row gap-2 p-2 select-none m-0.5">
+        <div class="card select-none p-1 flex">
             <div class="flex-1">
                 <button
+                    data-testid="download-attendance-button"
                     class="btn"
                     title="Pobierz obecność"
                     on:click=move |_| {
@@ -178,25 +179,25 @@ pub fn Calendar() -> impl IntoView {
                     <RightArrow />
                 </a>
             </div>
-            <div class="flex-1 justify-end flex flex-row gap-2">
+            <div class="flex-1 justify-end flex flex-row gap-1">
                 <button
                     class="btn"
+                    data-testid="attendance-list-button"
                     class:bg-gray-600=move || {
                         attendance_selection_mode() == AttendanceSelectionMode::List
                     }
                     title="Lista obecności"
-                    data-testid="attendance-list-button"
                     on:click=move |_| set_attendance_selection_mode(AttendanceSelectionMode::List)
                 >
                     <ListIcon />
                 </button>
                 <button
                     class="btn"
+                    data-testid="attendance-history-button"
                     class:bg-gray-600=move || {
                         attendance_selection_mode() == AttendanceSelectionMode::History
                     }
                     title="Historia obecności"
-                    data-testid="attendance-history-button"
                     on:click=move |_| set_attendance_selection_mode(
                         AttendanceSelectionMode::History,
                     )

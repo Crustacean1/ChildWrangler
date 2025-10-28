@@ -46,7 +46,7 @@ pub async fn create_student(student: CreateStudentDto) -> Result<Uuid, ServerFnE
     let guardian_names = student
         .guardians
         .into_iter()
-        .map(|g| String::from(g.to_lowercase().trim()))
+        .map(|g| String::from(g.trim()))
         .filter(|g| !g.is_empty())
         .collect::<Vec<_>>();
 

@@ -9,13 +9,6 @@ services:
       POSTGRES_PASSWORD: "admin"
       POSTGRES_DB: "wrangler"
       TZ: "Europe/Warsaw"
-    commands:
-      - c logging_collector=on
-      - c log_statement=all
-      - c log_duration=on
-      - c log_min_messages=debug5
-      - c log_min_error_statement=debug5
-      - c log_error_verbosity=verbose
 
   wrangler:
     image: gitea.lan/crustacean/child-wrangler:latest
