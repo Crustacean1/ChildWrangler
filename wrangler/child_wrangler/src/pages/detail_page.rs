@@ -16,7 +16,10 @@ use crate::{
             delete_student::DeleteStudentModal, modify_group::ModifyGroupModal,
         },
     },
-    icons::{add_group::AddGroupIcon, add_user::AddUserIcon, delete::DeleteIcon, edit::EditIcon},
+    icons::{
+        add_group::AddGroupIcon, add_user::AddUserIcon, delete::DeleteIcon, edit::EditIcon,
+        meal::MealIcon, person::PersonIcon,
+    },
     pages::attendance_page::{AttendanceParams, GroupVersion},
     services::group::{get_breadcrumbs, get_details},
 };
@@ -99,7 +102,7 @@ pub fn Breadcrumb(trail: Vec<GroupDto>) -> impl IntoView {
     };
 
     view! {
-        <nav class="flex flex-1" aria-label="Breadcrumb">
+        <nav class="flex" aria-label="Breadcrumb">
             <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                 <For each=move || trail.clone() key=|g| g.id let:item>
                     <li>
@@ -405,9 +408,38 @@ pub fn Student(student: StudentDetailsDto, trail: Vec<GroupDto>) -> impl IntoVie
     };
 
     view! {
-        <div class="flex flex-row space-between">
+        <div class="flex flex-row gap-4">
             <Breadcrumb trail />
-            <div class="flex flex-row gap-1">
+            <div class="flex flex-row gap-2 flex-1">
+                {student
+                    .guardians
+                    .iter()
+                    .map(|guardian| {
+                        view! {
+                            <a
+                                href=format!("/messages/guardian/{}", guardian.id)
+                                class="rounded-full p-1 outline outline-green-800 bg-green-800/25 flex flex-row pr-2 pl-2"
+                            >
+                                <PersonIcon />
+                                {format!("{}", guardian.fullname)}
+                            </a>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+                {student
+                    .allergies
+                    .iter()
+                    .map(|allergy| {
+                        view! {
+                            <span class="rounded-full p-1 outline outline-blue-800 bg-blue-800/25 flex flex-row pr-2 pl-2">
+                                <MealIcon />
+                                {format!("{}", allergy.name)}
+                            </span>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+            </div>
+            <div class="flex-1 justify-end flex flex-row gap-1">
                 <button class="btn" on:click=move |_| set_edit_student(true)>
                     <EditIcon />
                 </button>

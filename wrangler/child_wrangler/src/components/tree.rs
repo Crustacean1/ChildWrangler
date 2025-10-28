@@ -39,6 +39,7 @@ pub fn InnerTree() -> impl IntoView {
             .map(|p| p.year)
             .unwrap_or(Utc::now().year() as u32)
     };
+
     let month = move || {
         params()
             .as_ref()
@@ -46,6 +47,10 @@ pub fn InnerTree() -> impl IntoView {
             .map(|p| p.month)
             .unwrap_or(Utc::now().month())
     };
+
+    let target = move || params().as_ref().ok().map(|p| p.target).unwrap_or_default();
+
+    Effect::new(move |_| set_expanded.write().insert(target()));
 
     view! {
         <Loader>

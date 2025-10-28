@@ -29,7 +29,7 @@ pub async fn create_group(group: CreateGroupDto) -> Result<Uuid, ServerFnError> 
         return Err(ServerFnError::new("Invalid group selected"));
     }
 
-    let name = String::from(group.name.to_lowercase().trim());
+    let name = String::from(group.name.trim());
     let id: Uuid = sqlx::query!("INSERT INTO groups (name) VALUES ($1) RETURNING id", name)
         .fetch_one(&mut *tr)
         .await?

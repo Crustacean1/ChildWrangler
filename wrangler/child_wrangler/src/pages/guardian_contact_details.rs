@@ -1,3 +1,4 @@
+use chrono::{Datelike, Utc};
 use dto::messages::GuardianDetails;
 use leptos::either::Either;
 use leptos::prelude::*;
@@ -9,6 +10,7 @@ use crate::components::messages::Messages;
 use crate::components::modal::Modal;
 use crate::components::modals::modify_guardian_phone::ModifyGuardianModal;
 use crate::icons::edit::EditIcon;
+use crate::icons::person::PersonIcon;
 use crate::icons::phone::PhoneIcon;
 use crate::services::messages::get_guardian_details;
 
@@ -51,32 +53,45 @@ pub fn GuardianContactDetails() -> impl IntoView {
 #[component]
 pub fn InnerGuardianContactDetails(details: GuardianDetails) -> impl IntoView {
     let (edit_guardian, set_edit_guardian) = signal(false);
+    let now = Utc::now();
 
     view! {
-        <div class="vertical gap flex-1">
-            <div class="background-2 horizontal padded rounded">
+        <div class="flex flex-col gap-2 flex-1">
+            <div class="flex flex-row card p-1 gap-2 items-center">
+                <h2 class="text-lg">{format!("{}", details.fullname)}</h2>
                 {if let Some(phone) = details.phone.clone() {
                     Either::Left(
                         view! {
-                            <h2 class="h2 flex-1 text-left horizontal gap align-center">
-                                <span>{format!("{} ", details.fullname)}</span>
-                                <span class="horizontal align-center">
-                                    {format!("{}", phone)} <PhoneIcon />
-                                </span>
-                            </h2>
+                            <span class="horizontal align-center">
+                                {format!("{}", phone)} <PhoneIcon />
+                            </span>
                         },
                     )
                 } else {
                     Either::Right(
                         view! {
-                            <h2 class="h2 flex-1 text-left">{format!("{}", details.fullname)}</h2>
+                            <span class="flex flex-row items-center outline outline-red-800 text-red-800 rounded-md bg-red-800/15 p-1">
+                                Nie podano numeru telefonu
+                            </span>
                         },
                     )
                 }}
-                <button
-                    class="self-end interactive icon-button"
-                    on:click=move |_| set_edit_guardian(true)
-                >
+                {details
+                    .students
+                    .iter()
+                    .map(|student| {
+                        view! {
+                            <a
+                                href=format!("/attendance/{}/{}/{}", student.id, now.year(), now.month())
+                                class="rounded-full p-1 outline outline-green-800 bg-green-800/25 flex flex-row pr-2 pl-2"
+                            >
+                                <PersonIcon />
+                                {format!("{} {}", student.name, student.surname)}
+                            </a>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+                <button class="btn self-end" on:click=move |_| set_edit_guardian(true)>
                     <EditIcon />
                 </button>
             </div>

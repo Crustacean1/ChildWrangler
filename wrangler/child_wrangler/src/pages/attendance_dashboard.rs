@@ -86,7 +86,7 @@ pub fn Chart(
         .sum::<i64>();
 
     view! {
-        <div class="flex-1 flex flex-row justify-center items-center">
+        <div class="flex-1 flex flex-row flex-wrap min-w-72 justify-center items-center">
             <svg viewBox="-100 -100 200 200" class="aspect-ratio-1 min-w-32 max-w-96 flex-1">
                 <defs>
                     <filter id="gaussian-1">
@@ -260,7 +260,7 @@ pub fn AttendanceDashboardInner(
                 .into_iter()
                 .map(|(meal_id, attendance)| {
                     view! {
-                        <div class="flex-1">
+                        <div class="flex-1 flex-wrap flex flex-row">
                             <Chart
                                 name=meals
                                     .get(&meal_id)

@@ -67,16 +67,17 @@ pub fn App() -> impl IntoView {
                         path=path!("/")
                         view=|| {
                             view! {
-                                <nav class="flex flex-row card p-1 gap-1">
+                                <nav class="flex flex-row p-1 gap-1">
+                                    <div class="md:flex-1"></div>
                                     <Searchbar />
                                     <div class="flex flex-row flex-1 items-center justify-end gap-1">
                                         <A href="/attendance">
-                                            <span class="hover:bg-gray-700 md:cursor-pointer rounded-md p-2">
+                                            <span class="bg-gray-900 hover:bg-gray-700 md:cursor-pointer rounded-md p-2">
                                                 Obecność
                                             </span>
                                         </A>
                                         <A href="/messages">
-                                            <span class="hover:bg-gray-700 md:cursor-pointer rounded-md p-2">
+                                            <span class="bg-gray-900 hover:bg-gray-700 md:cursor-pointer rounded-md p-2">
                                                 Wiadomości
                                             </span>
                                         </A>

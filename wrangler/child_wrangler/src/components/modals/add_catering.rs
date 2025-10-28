@@ -179,7 +179,7 @@ fn InnerCateringModal(
             </div>
 
             <label for="meals">Posiłki</label>
-            <div class="p-1 rounded-md outline outline-dashed outline-gray">
+            <div class="p-1 rounded-md outline outline-dashed outline-gray/25">
                 <div class="flex flex-col gap-2">
                     {move || {
                         if selected_meals().is_empty() {
@@ -188,7 +188,7 @@ fn InnerCateringModal(
                             Either::Right(view! {})
                         }
                     }} <For each=selected_meals key=|meal: &MealDto| meal.id let:meal>
-                        <div class="rounded-md outline outline-stone-300 flex-1 flex align-center p-1">
+                        <div class="rounded-md outline outline-stone-300/25 flex-1 flex align-center p-1">
                             <span class="p-1 flex-1 align-self-center">{meal.name}</span>
                             <button
                                 class="p-1 md:hover:bg-gray-700 md:active:bg-gray-600 md:cursor-pointer red rounded-md"

@@ -14,7 +14,7 @@
 }
 
 .legend {
-	color: var(--background-color);
+	color: color-mix(in srgb, var(--background-color), white);
 }
 
 .day{
@@ -38,5 +38,5 @@
 }
 
 .input {
-	@apply p-1 rounded-md bg-gray-600 focus:outline-none
+	@apply p-1 rounded-lg bg-gray-600 focus:outline-none
 }

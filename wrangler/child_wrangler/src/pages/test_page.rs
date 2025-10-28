@@ -1,6 +1,9 @@
 use leptos::prelude::*;
 
-use crate::services::test::generate_random_data;
+use crate::{
+    components::snackbar::{use_snackbar, SnackbarContext},
+    services::test::generate_random_data,
+};
 
 #[component]
 pub fn TestPage() -> impl IntoView {
@@ -9,14 +12,19 @@ pub fn TestPage() -> impl IntoView {
     let (student_count, set_student_count) = signal(String::from("1000"));
     let (guardian_count, set_guardian_count) = signal(String::from("800"));
 
+    let snackbar = use_snackbar();
     let on_click_action = Action::new(move |_: &()| async move {
-        generate_random_data(
+        match generate_random_data(
             catering_count().parse::<i32>().unwrap(),
             group_count().parse::<i32>().unwrap(),
             student_count().parse::<i32>().unwrap(),
             guardian_count().parse::<i32>().unwrap(),
         )
-        .await;
+        .await
+        {
+            Ok(_) => snackbar.success("Dodano dane testowe"),
+            Err(e) => snackbar.error("Nie udało się dodać danych", e),
+        }
     });
 
     view! {
