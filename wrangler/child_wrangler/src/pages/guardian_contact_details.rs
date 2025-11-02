@@ -62,7 +62,7 @@ pub fn InnerGuardianContactDetails(details: GuardianDetails) -> impl IntoView {
                 {if let Some(phone) = details.phone.clone() {
                     Either::Left(
                         view! {
-                            <span class="horizontal align-center">
+                            <span class="flex flex-row align-center">
                                 {format!("{}", phone)} <PhoneIcon />
                             </span>
                         },
@@ -82,7 +82,12 @@ pub fn InnerGuardianContactDetails(details: GuardianDetails) -> impl IntoView {
                     .map(|student| {
                         view! {
                             <a
-                                href=format!("/attendance/{}/{}/{}", student.id, now.year(), now.month())
+                                href=format!(
+                                    "/attendance/{}/{}/{}",
+                                    student.id,
+                                    now.year(),
+                                    now.month(),
+                                )
                                 class="rounded-full p-1 outline outline-green-800 bg-green-800/25 flex flex-row pr-2 pl-2"
                             >
                                 <PersonIcon />
@@ -91,7 +96,7 @@ pub fn InnerGuardianContactDetails(details: GuardianDetails) -> impl IntoView {
                         }
                     })
                     .collect::<Vec<_>>()}
-                <button class="btn self-end" on:click=move |_| set_edit_guardian(true)>
+                <button class="btn justify-self-end" on:click=move |_| set_edit_guardian(true)>
                     <EditIcon />
                 </button>
             </div>

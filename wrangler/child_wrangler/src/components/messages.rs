@@ -53,14 +53,14 @@ pub fn Messages(phone: String) -> impl IntoView {
                             <div class="flex-1 background-2 vertical gap padded rounded overflow-hidden">
                                 <InnerMessages messages />
                             </div>
-                            <div class="horizontal gap">
+                            <div class="flex flex-row gap-2">
                                 <input
-                                    class="padded rounded flex-1"
+                                    class="input flex-1"
                                     autocomplete="off"
                                     bind:value=(msg, set_msg)
                                 />
                                 <button
-                                    class="rounded padded interactive"
+                                    class="bg-gray-900 btn"
                                     disabled=sending_disabled
                                     on:click=move |_| {
                                         send_msg.dispatch(msg());
@@ -91,7 +91,7 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
     }
 
     view! {
-        <div class="overflow-auto flex-1 reverse-vertical gap">
+        <div class="overflow-auto flex-1 flex flex-col-reverse gap-2 card">
             {if sorted_messages.is_empty() {
                 Either::Left(view! { <li class="padded dashed rounded">Brak wiadomości</li> })
             } else {

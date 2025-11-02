@@ -7,4 +7,5 @@ pub mod detail_page;
 pub mod attendance_dashboard;
 pub mod message_dashboard;
 pub mod test_page;
+pub mod faker_page;
 

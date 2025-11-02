@@ -41,28 +41,24 @@ pub fn ModifyGuardianModal(
     };
 
     view! {
-        <h2 class="h2">Edytuj rodzica</h2>
-        <div class="vertical">
-            <label>Nazwa</label>
-            <input class="padded rounded" autocomplete="off" bind:value=(name, set_name) />
+        <h2 class="text-lg text-center">Edytuj rodzica</h2>
+        <div class="flex flex-col">
+            <label>Imię i Nazwisko</label>
+            <input class="input" autocomplete="off" bind:value=(name, set_name) />
         </div>
-        <div class="vertical">
+        <div class="flex flex-col">
             <label>Nr. telefonu</label>
-            <input class="padded rounded" autocomplete="off" bind:value=(phone, set_phone) />
+            <input class="input" autocomplete="off" bind:value=(phone, set_phone) />
         </div>
-        <div class="horizontal gap flex-end">
+        <div class="flex flex-row justify-end gap-2">
             <button
-                class="interactive rounded padded red"
+                class="btn cancel"
                 on:click=move |_| on_close(false)
                 disabled=update_guardian.pending()
             >
                 Anuluj
             </button>
-            <button
-                class="interactive rounded padded green"
-                on:click=on_save
-                disabled=update_guardian.pending()
-            >
+            <button class="btn save" on:click=on_save disabled=update_guardian.pending()>
                 Zapisz
             </button>
         </div>

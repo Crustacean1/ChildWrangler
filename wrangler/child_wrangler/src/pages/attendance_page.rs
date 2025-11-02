@@ -26,7 +26,7 @@ pub fn AttendancePage() -> impl IntoView {
 
     view! {
         <div class="flex flex-row flex-1 gap-2">
-            <div class="flex flex-col gap-2">
+            <div class="flex flex-col gap-4">
                 <InnerTree />
                 <button
                     class="rounded-md bg-gray-800 md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600 p-2"

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["child_wrangler", "message_daemon", "dto"]
+members = ["child_wrangler", "message_daemon", "modem_connector", "dto"]
 
 [profile.wasm-release]
 inherits = "release"

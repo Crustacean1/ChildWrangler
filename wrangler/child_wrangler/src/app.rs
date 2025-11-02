@@ -12,6 +12,7 @@ use crate::{
         attendance_dashboard::AttendanceDashboard,
         attendance_page::{AttendancePage, AttendanceVersion, GroupVersion},
         detail_page::DetailPage,
+        faker_page::FakerPage,
         guardian_contact_details::GuardianContactDetails,
         message_dashboard::MessageDashboard,
         message_page::MessagePage,
@@ -90,6 +91,7 @@ pub fn App() -> impl IntoView {
                         }
                     >
                         <Route path=path!("test") view=TestPage />
+                        <Route path=path!("faker") view=FakerPage />
                         <ParentRoute path=path!("messages") view=MessagePage>
                             <Route path=path!("/") view=MessageDashboard />
                             <Route

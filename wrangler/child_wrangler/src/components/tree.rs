@@ -95,7 +95,7 @@ fn Test(
     });
 
     view! {
-        <div data-testid="group-tree" class="overflow-auto scrollbar-hide md:w-72 flex-1 ">
+        <div data-testid="group-tree" class="overflow-auto scrollbar-hide md:w-72 ">
             <ul class="flex flex-col">
                 {entities
                     .iter()

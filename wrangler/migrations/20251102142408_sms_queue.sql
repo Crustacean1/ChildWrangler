@@ -1,5 +1,4 @@
 DROP TABLE messages;
- 
 CREATE TABLE messages (
 	id uuid primary key default gen_random_uuid(),
 	content text NOT NULL ,
@@ -15,7 +14,7 @@ DECLARE
 BEGIN
   IF NEW.outgoing THEN
     PERFORM pg_notify('sent');
-  ELSE  
+  ELSE 
     PERFORM pg_notify('received');
   END IF;
   RETURN NEW;
