@@ -13,9 +13,9 @@ CREATE OR REPLACE FUNCTION notifymsg() RETURNS trigger AS $$
 DECLARE
 BEGIN
   IF NEW.outgoing THEN
-    PERFORM pg_notify('sent');
+    PERFORM pg_notify('sent', CAST(NEW.id AS text));
   ELSE 
-    PERFORM pg_notify('received');
+    PERFORM pg_notify('received', CAST(NEW.id AS text));
   END IF;
   RETURN NEW;
 END;

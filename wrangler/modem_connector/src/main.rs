@@ -3,7 +3,7 @@ use std::{collections::HashMap, env};
 use futures::stream::{self, StreamExt};
 use serde::{Deserialize, Serialize};
 use simple_logger::SimpleLogger;
-use sqlx::{PgPool, postgres::PgListener};
+use sqlx::{PgPool, postgres::PgListener, types::chrono::DateTime};
 use zbus::{
     Connection, Result,
     fdo::{ObjectManagerProxy, PropertiesProxy},
@@ -12,13 +12,25 @@ use zbus::{
     zvariant::{ObjectPath, OwnedObjectPath, Type},
 };
 
+async fn send_message(phone: String, content: String) -> Result<()> {
+    Ok(())
+}
+
 async fn fetch_and_process(pool: &PgPool) -> Option<()> {
     let mut tr = pool.begin().await.expect("Failed to start transaction");
 
-    let message = sqlx::query!("SELECT * FROM messages WHERE NOT processed LIMIT 1 ")
+    let message = sqlx::query!("SELECT * FROM messages WHERE NOT processed AND outgoing LIMIT 1 ")
         .fetch_optional(&mut *tr)
         .await
         .expect("Failed to retrieve message from db")?;
+
+    sqlx::query!(
+        "UPDATE messages SET processed = true WHERE id = $1",
+        message.id
+    )
+    .execute(&mut *tr)
+    .await
+    .expect("Failed to mark message as processed, rollback");
 
     log::info!(
         "Message {} is to be send: {} to {}",
@@ -63,6 +75,13 @@ trait Sms {
     fn number(&self) -> Result<String>;
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
+struct SmsMessage {
+    pub text: String,
+    pub number: String,
+    pub timestamp: String,
+}
+
 #[proxy(
     default_service = "org.freedesktop.ModemManager1",
     interface = "org.freedesktop.ModemManager1.Modem.Messaging"
@@ -70,10 +89,10 @@ trait Sms {
 trait Messaging {
     fn list(&self) -> Result<Vec<OwnedObjectPath>>;
 
-    fn create(&self, properties: Vec<(String, String)>) -> Result<()>;
-
     #[zbus(signal)]
     fn added(&self, path: OwnedObjectPath, received: bool) -> Result<()>;
+
+    fn create(&self, message: SmsMessage) -> Result<OwnedObjectPath>;
 }
 
 #[proxy(
@@ -90,14 +109,119 @@ async fn main() -> Result<()> {
     SimpleLogger::new().init().unwrap();
     let connection = Connection::system().await?;
 
-    let listener_task = tokio::spawn(async move {
-        let (_, db_url) = env::vars()
-            .find(|(k, v)| k == "DATABASE_URL")
-            .expect("No 'DATABASE_URL' specified");
+    log::info!("Connected to system bus");
+    let object_manager = ObjectManagerProxy::new(
+        &connection,
+        "org.freedesktop.ModemManager1",
+        "/org/freedesktop/ModemManager1",
+    )
+    .await?;
 
-        let pool = PgPool::connect(&db_url)
-            .await
-            .expect("Failed to connect to postgres database");
+    let (_, db_url) = env::vars()
+        .find(|(k, _)| k == "DATABASE_URL")
+        .expect("No 'DATABASE_URL' specified");
+
+    let pool = PgPool::connect(&db_url)
+        .await
+        .expect("Failed to connect to postgres database");
+
+    log::info!("Connected to postgres db with url: {}", db_url);
+
+    let tree = object_manager.get_managed_objects().await?;
+
+    let modem_path = tree
+        .keys()
+        .find(|m| m.contains("/org/freedesktop/ModemManager1/Modem"))
+        .expect("Modem object not exposed by ModemManager, verify that service is enabled and running and modem is plugged in").clone();
+
+    let modem_proxy = ModemProxy::builder(&connection)
+        .path(modem_path.clone())?
+        .build()
+        .await?;
+
+    let unlock_required = modem_proxy.unlock_required().await?;
+    let status = modem_proxy.state().await?;
+
+    log::info!(
+        "current modem status: {:?} unlock required: {:?}",
+        status,
+        unlock_required
+    );
+
+    if unlock_required == 2 {
+        let sim_proxy = SimProxy::new(&connection).await?;
+        sim_proxy.send_pin(String::from("6538")).await?;
+        log::info!("Send pin");
+
+        let status = modem_proxy.state().await?;
+        let unlock_required = modem_proxy.unlock_required().await?;
+
+        log::info!(
+            "current modem status: {:?} unlock required: {:?}",
+            status,
+            unlock_required
+        );
+    }
+    let messaging = MessagingProxy::builder(&connection)
+        .path(modem_path)?
+        .build()
+        .await?;
+
+    let modem_task = tokio::spawn({
+        let messaging = messaging.clone();
+        let pool = pool.clone();
+        async move {
+            let list = messaging.list().await?;
+            let mut sms_stream = stream::iter(list).chain(
+                messaging
+                    .receive_added()
+                    .await?
+                    .map(|s| s.args().expect("Failed to parse sms event").path),
+            );
+
+            while let Some(sms_path) = sms_stream.next().await {
+                let sms_object = SmsProxy::builder(&connection)
+                    .path(sms_path)?
+                    .build()
+                    .await?;
+
+                let phone = sms_object.number().await?;
+                let content = sms_object.text().await?;
+                let timestamp = sms_object.timestamp().await?;
+                log::info!(
+                    "Received SMS: {:?} from: {:?} at: {:?}",
+                    content,
+                    phone,
+                    timestamp
+                );
+
+                if let Ok(timestamp) = DateTime::parse_from_rfc3339(&timestamp) {
+                    let timestamp = timestamp.naive_utc();
+                    let mut tr = pool
+                        .begin()
+                        .await
+                        .expect("Failed to start postgres transaction");
+
+                    let duplicate = sqlx::query!("SELECT id FROM messages WHERE phone = $1 AND sent = $2 AND content = $3 AND outgoing = false", phone,timestamp, content).fetch_optional(&mut *tr).await.expect("Failed to get existing messages from db").map(|row| row.id);
+
+                    if let Some(id) = duplicate {
+                        log::info!("Detected duplicate {}, skipping", id);
+                    } else {
+                        sqlx::query!("INSERT INTO messages (phone, content, outgoing, sent) VALUES ($1, $2, false, $3)", phone,content, timestamp).execute(&mut *tr).await.expect("Failed to save message into db");
+                    }
+
+                    tr.commit().await.expect("Failed to commit transaction");
+                } else {
+                    log::error!("Failed to parse sms, invalid timestamp: {}", timestamp);
+                }
+            }
+
+            Result::Ok(())
+        }
+    });
+
+    let listener_task = tokio::spawn(async move {
+        let messaging = messaging.clone();
 
         let mut listener = PgListener::connect_with(&pool)
             .await
@@ -116,7 +240,10 @@ async fn main() -> Result<()> {
             match listener.recv().await {
                 Ok(event) => {
                     log::info!("Received notification for outgoing message: {:?}", event);
-                    fetch_and_process(&pool).await;
+                    while let Some(_) = fetch_and_process(&pool).await {
+                        log::info!("Processed message");
+                    }
+                    log::info!("Done processing, waiting for next notification");
                 }
                 Err(e) => {
                     log::warn!("Failure while listening for events: {}", e);
@@ -125,113 +252,7 @@ async fn main() -> Result<()> {
         }
     });
 
-    log::info!("Connected to system bus");
-    let object_manager = ObjectManagerProxy::new(
-        &connection,
-        "org.freedesktop.ModemManager1",
-        "/org/freedesktop/ModemManager1",
-    )
-    .await?;
-
-    let modem_properties = PropertiesProxy::new(
-        &connection,
-        "org.freedesktop.ModemManager1",
-        "/org/freedesktop/ModemManager1/Modem/0",
-    )
-    .await?;
-
-    let tree = object_manager.get_managed_objects().await?;
-
-    for (key1, val1) in tree.clone() {
-        log::info!("{:?}", key1);
-        for (key2, val2) in val1 {
-            log::info!("\t{:?}", key2);
-            for (key3, val3) in val2 {
-                log::info!("\t\t{:?} {:?}", key3, val3);
-            }
-        }
-    }
-
-    let modem_path = tree
-        .keys()
-        .find(|m| m.contains("/org/freedesktop/ModemManager1/Modem"));
-
-    if let Some(modem_path) = modem_path {
-        let modem_proxy = ModemProxy::builder(&connection)
-            .path(modem_path.clone())?
-            .build()
-            .await?;
-
-        let status = modem_proxy.state().await?;
-        let unlock_required = modem_proxy.unlock_required().await?;
-        //modem_proxy.enable(true).await?;
-        //log::info!("modem enabled");
-        log::info!(
-            "current modem status: {:?} unlock required: {:?}",
-            status,
-            unlock_required
-        );
-
-        let sim_proxy = SimProxy::new(&connection).await?;
-
-        if unlock_required == 2 {
-            sim_proxy.send_pin(String::from("6538")).await?;
-            log::info!("Send pin");
-
-            let status = modem_proxy.state().await?;
-            let unlock_required = modem_proxy.unlock_required().await?;
-            //modem_proxy.enable(true).await?;
-            //log::info!("modem enabled");
-            log::info!(
-                "current modem status: {:?} unlock required: {:?}",
-                status,
-                unlock_required
-            );
-        } else {
-            let messaging = MessagingProxy::builder(&connection)
-                .path(modem_path)?
-                .build()
-                .await?;
-            let list = messaging.list().await?;
-            let mut sms_stream = stream::iter(list).chain(
-                messaging
-                    .receive_added()
-                    .await?
-                    .map(|s| s.args().expect("Failed to parse sms event").path),
-            );
-
-            while let Some(sms_path) = sms_stream.next().await {
-                let sms_object = SmsProxy::builder(&connection)
-                    .path(sms_path)?
-                    .build()
-                    .await?;
-
-                let phone = sms_object.number().await?;
-                let content = sms_object.text().await?;
-                let timestamp = sms_object.timestamp().await?;
-
-                log::info!("Sms: {:?} {:?} {:?}", phone, content, timestamp);
-            }
-        }
-        tokio::spawn(async move {
-            let mut state_stream = modem_proxy.receive_state_changed().await;
-            while let Some(state) = state_stream.next().await {
-                log::info!("My state keep on changin' {}", 1);
-            }
-        });
-
-        let props = modem_properties
-            .get_all(InterfaceName::try_from("org.freedesktop.ModemManager1.Modem").unwrap())
-            .await?;
-
-        for prop in props {
-            log::info!("Prop: {:?}", prop);
-        }
-    } else {
-        log::error!(
-            "Failed to access Modem. Make sure ModemManager service is running and has modem available"
-        )
-    }
+    tokio::try_join!(listener_task, modem_task).expect("Something failed, stopping");
 
     Ok(())
 }
