@@ -6,17 +6,12 @@ use simple_logger::SimpleLogger;
 use sqlx::{PgPool, postgres::PgListener, types::chrono::DateTime};
 use zbus::{
     Connection, Result,
-    fdo::{ObjectManagerProxy, PropertiesProxy},
-    names::InterfaceName,
+    fdo::ObjectManagerProxy,
     proxy,
-    zvariant::{ObjectPath, OwnedObjectPath, Type},
+    zvariant::{OwnedObjectPath, Type, Value},
 };
 
-async fn send_message(phone: String, content: String) -> Result<()> {
-    Ok(())
-}
-
-async fn fetch_and_process(pool: &PgPool) -> Option<()> {
+async fn fetch_and_process<'a, 'b>(pool: &PgPool, connection: Connection) -> Option<()> {
     let mut tr = pool.begin().await.expect("Failed to start transaction");
 
     let message = sqlx::query!("SELECT * FROM messages WHERE NOT processed AND outgoing LIMIT 1 ")
@@ -38,6 +33,10 @@ async fn fetch_and_process(pool: &PgPool) -> Option<()> {
         message.content,
         message.phone
     );
+
+    send_message(message.phone, message.content, connection)
+        .await
+        .expect("Failed to enqueue message");
 
     tr.commit().await.expect("Failed to commit transaction");
     Some(())
@@ -73,13 +72,44 @@ trait Sms {
 
     #[zbus(property)]
     fn number(&self) -> Result<String>;
+
+    #[zbus(property)]
+    fn state(&self) -> Result<u32>;
+
+    fn send(&self) -> Result<()>;
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 struct SmsMessage {
     pub text: String,
     pub number: String,
-    pub timestamp: String,
+}
+
+async fn send_message<'a, 'b>(
+    phone: String,
+    content: String,
+    connection: Connection,
+) -> Result<()> {
+    let messaging_proxy = MessagingProxy::builder(&connection)
+        .path("/org/freedesktop/ModemManager1/Modem/0")?
+        .build()
+        .await?;
+
+    let mut map = HashMap::new();
+    map.insert("number", Value::Str(phone.into()));
+    map.insert("text", Value::Str(content.into()));
+    let sms_object = messaging_proxy.create(map).await?;
+
+    log::info!("Created sms object: {:?}", sms_object.clone());
+
+    let sms_proxy = SmsProxy::builder(&connection)
+        .path(sms_object)?
+        .build()
+        .await?;
+
+    sms_proxy.send().await?;
+
+    Ok(())
 }
 
 #[proxy(
@@ -92,7 +122,8 @@ trait Messaging {
     #[zbus(signal)]
     fn added(&self, path: OwnedObjectPath, received: bool) -> Result<()>;
 
-    fn create(&self, message: SmsMessage) -> Result<OwnedObjectPath>;
+    //fn create(&self, message: SmsMessage) -> Result<OwnedObjectPath>;
+    fn create<'a>(&self, message: HashMap<&'static str, Value<'a>>) -> Result<OwnedObjectPath>;
 }
 
 #[proxy(
@@ -163,11 +194,12 @@ async fn main() -> Result<()> {
         );
     }
     let messaging = MessagingProxy::builder(&connection)
-        .path(modem_path)?
+        .path("/org/freedesktop/ModemManager1/Modem/0")?
         .build()
         .await?;
 
     let modem_task = tokio::spawn({
+        let connection = connection.clone();
         let messaging = messaging.clone();
         let pool = pool.clone();
         async move {
@@ -187,32 +219,39 @@ async fn main() -> Result<()> {
 
                 let phone = sms_object.number().await?;
                 let content = sms_object.text().await?;
-                let timestamp = sms_object.timestamp().await?;
+                let state = sms_object.state().await?;
+
+                let timestamp = format!("{}:00", sms_object.timestamp().await?);
                 log::info!(
-                    "Received SMS: {:?} from: {:?} at: {:?}",
+                    "Received SMS: {:?} from: {:?} at: {:?} state: {:?}",
                     content,
                     phone,
-                    timestamp
+                    timestamp,
+                    state
                 );
 
-                if let Ok(timestamp) = DateTime::parse_from_rfc3339(&timestamp) {
-                    let timestamp = timestamp.naive_utc();
-                    let mut tr = pool
-                        .begin()
-                        .await
-                        .expect("Failed to start postgres transaction");
+                if state == 3 {
+                    if let Ok(timestamp) = DateTime::parse_from_rfc3339(&timestamp) {
+                        let timestamp = timestamp.naive_utc();
+                        let mut tr = pool
+                            .begin()
+                            .await
+                            .expect("Failed to start postgres transaction");
 
-                    let duplicate = sqlx::query!("SELECT id FROM messages WHERE phone = $1 AND sent = $2 AND content = $3 AND outgoing = false", phone,timestamp, content).fetch_optional(&mut *tr).await.expect("Failed to get existing messages from db").map(|row| row.id);
+                        let duplicate = sqlx::query!("SELECT id FROM messages WHERE phone = $1 AND sent = $2 AND content = $3 AND outgoing = false", phone,timestamp, content).fetch_optional(&mut *tr).await.expect("Failed to get existing messages from db").map(|row| row.id);
 
-                    if let Some(id) = duplicate {
-                        log::info!("Detected duplicate {}, skipping", id);
+                        if let Some(id) = duplicate {
+                            log::info!("Detected duplicate {}, skipping", id);
+                        } else {
+                            sqlx::query!("INSERT INTO messages (phone, content, outgoing, sent) VALUES ($1, $2, false, $3)", phone,content, timestamp).execute(&mut *tr).await.expect("Failed to save message into db");
+                        }
+
+                        tr.commit().await.expect("Failed to commit transaction");
                     } else {
-                        sqlx::query!("INSERT INTO messages (phone, content, outgoing, sent) VALUES ($1, $2, false, $3)", phone,content, timestamp).execute(&mut *tr).await.expect("Failed to save message into db");
+                        log::error!("Failed to parse sms, invalid timestamp: {}", timestamp);
                     }
-
-                    tr.commit().await.expect("Failed to commit transaction");
                 } else {
-                    log::error!("Failed to parse sms, invalid timestamp: {}", timestamp);
+                    log::info!("Skipping message with incompatible state: {:?}", state);
                 }
             }
 
@@ -221,8 +260,6 @@ async fn main() -> Result<()> {
     });
 
     let listener_task = tokio::spawn(async move {
-        let messaging = messaging.clone();
-
         let mut listener = PgListener::connect_with(&pool)
             .await
             .expect("Failed to connect to postgres events");
@@ -232,7 +269,7 @@ async fn main() -> Result<()> {
             .await
             .expect("Failed to start listening on 'sent' channel");
 
-        while let Some(_) = fetch_and_process(&pool).await {
+        while let Some(_) = fetch_and_process(&pool, connection.clone()).await {
             log::info!("Processed stale message");
         }
 
@@ -240,7 +277,7 @@ async fn main() -> Result<()> {
             match listener.recv().await {
                 Ok(event) => {
                     log::info!("Received notification for outgoing message: {:?}", event);
-                    while let Some(_) = fetch_and_process(&pool).await {
+                    while let Some(_) = fetch_and_process(&pool, connection.clone()).await {
                         log::info!("Processed message");
                     }
                     log::info!("Done processing, waiting for next notification");
