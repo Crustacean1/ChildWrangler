@@ -2,15 +2,14 @@ pub mod cancellation;
 pub mod levenshtein;
 pub mod tests;
 
-use std::{env, time::Duration};
+use std::env;
 
 use chrono::{Datelike, Months, NaiveDate, NaiveDateTime};
 use dto::messages::{Meal, MessageProcessing, RequestError, Student, StudentCancellation, Token};
 use itertools::Itertools;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use sqlx::{Connection, Error, Executor, PgPool, Postgres, types::Json};
-use tokio::time::sleep;
+use sqlx::{Connection, Error, Executor, PgPool, Postgres, postgres::PgListener, types::Json};
 use uuid::Uuid;
 
 use crate::{
@@ -18,31 +17,72 @@ use crate::{
     levenshtein::levenshtein,
 };
 
+async fn fetch_and_process<'a, 'b>(pool: &PgPool) -> Option<()> {
+    let mut tr = pool.begin().await.expect("Failed to start transaction");
+
+    let message =
+        sqlx::query!("SELECT * FROM messages WHERE NOT processed AND NOT outgoing LIMIT 1 ")
+            .fetch_optional(&mut *tr)
+            .await
+            .expect("Failed to retrieve message from db")
+            .map(|row| Message {
+                id: row.id,
+                sender: row.phone,
+                content: row.content,
+                arrived: row.sent,
+            })?;
+
+    fetch_message(message.clone(), &mut *tr)
+        .await
+        .expect("Failed to process message")?;
+
+    sqlx::query!(
+        "UPDATE messages SET processed = true WHERE id = $1",
+        message.id
+    )
+    .execute(&mut *tr)
+    .await
+    .expect("Failed to mark message as processed, rollback");
+
+    log::info!(
+        "Message {} received: {} from {}",
+        message.id,
+        message.content,
+        message.sender
+    );
+
+    tr.commit().await.expect("Failed to commit transaction");
+    Some(())
+}
+
 #[tokio::main]
 async fn main() {
     env_logger::init();
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL was not set");
-    let polling_interval = env::var("POLLING_INTERVAL_MS")
-        .ok()
-        .and_then(|interval| interval.parse().ok())
-        .unwrap_or(1000);
 
     let pool = PgPool::connect(&db_url)
         .await
         .expect("Failed to connect to postgres database");
 
+    let mut listener = PgListener::connect_with(&pool)
+        .await
+        .expect("Failed to connect to postgres events");
+
+    while let Some(_) = fetch_and_process(&pool).await {
+        log::info!("Processed stale message");
+    }
+
     loop {
-        match fetch_message(&pool).await {
-            Ok(message) => {
-                if let Some(_) = message {
-                    println!("Message processed")
-                } else {
-                    sleep(Duration::from_millis(polling_interval)).await;
+        match listener.recv().await {
+            Ok(event) => {
+                log::info!("Received notification for incoming message: {:?}", event);
+                while let Some(_) = fetch_and_process(&pool).await {
+                    log::info!("Processed message");
                 }
+                log::info!("Done processing, waiting for next notification");
             }
             Err(e) => {
-                log::error!("Failed to process message: {}", e);
-                sleep(Duration::from_millis(polling_interval)).await;
+                log::warn!("Failure while listening for events: {}", e);
             }
         }
     }
@@ -57,8 +97,9 @@ pub struct OutMsg {
     pub content: String,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Message {
-    pub id: i32,
+    pub id: Uuid,
     pub sender: String,
     pub content: String,
     pub arrived: NaiveDateTime,
@@ -156,7 +197,7 @@ where
     C: Connection<Database = Postgres>,
     for<'a> &'a mut C: Executor<'a, Database = Postgres>,
 {
-    let id = Uuid::new_v4();
+    let id = message.id;
 
     save_state(MessageProcessing::Context(students.clone()), id, conn).await?;
 
@@ -243,36 +284,35 @@ where
     Ok(())
 }
 
-async fn save_trigger<C>(msg_id: i32, cause_id: Uuid, conn: &mut C) -> Result<(), Error>
+async fn save_trigger<C>(msg_id: Uuid, cause_id: Uuid, conn: &mut C) -> Result<(), Error>
 where
     C: Connection<Database = Postgres>,
     for<'a> &'a mut C: Executor<'a, Database = Postgres>,
 {
-    sqlx::query!(
+    /*sqlx::query!(
         "INSERT INTO processing_trigger (message_id, processing_id) VALUES ($1,$2)",
         msg_id,
         cause_id
     )
     .execute(conn)
-    .await?;
+    .await?;*/
     Ok(())
 }
 
-pub async fn fetch_message(pool: &PgPool) -> Result<Option<()>, Error> {
-    let mut tr = pool.begin().await?;
-    let Some((message,guardian_id)) = sqlx::query!(
-        "SELECT inbox.*, guardians.id AS guardian_id FROM inbox 
-            INNER JOIN guardians ON guardians.phone = inbox.\"SenderNumber\"  OR inbox.\"SenderNumber\" = format('+48%s', guardians.phone)
-            WHERE \"Processed\" = false FOR UPDATE SKIP LOCKED LIMIT 1"
+pub async fn fetch_message<C>(message: Message, tr: &mut C) -> Result<Option<()>, Error>
+where
+    C: Connection<Database = Postgres>,
+    for<'a> &'a mut C: Executor<'a, Database = Postgres>,
+{
+    let Some(guardian_id) = sqlx::query!(
+        "SELECT guardians.id FROM guardians WHERE
+    guardians.phone = $1  OR format('+48%s', guardians.phone) = $1
+",
+        message.sender
     )
     .fetch_optional(&mut *tr)
     .await?
-    .map(|row| (Message {
-        id: row.ID,
-        content: row.TextDecoded,
-        sender: row.SenderNumber,
-        arrived: row.ReceivingDateTime,
-    },row.guardian_id)) else {
+    .map(|row| row.id) else {
         return Ok(None);
     };
 
@@ -304,23 +344,21 @@ pub async fn fetch_message(pool: &PgPool) -> Result<Option<()>, Error> {
 
     message_pipeline(&students, &message, &mut *tr).await?;
 
-    sqlx::query!(
-        "UPDATE inbox SET \"Processed\" = true WHERE \"ID\" = $1",
-        message.id
-    )
-    .execute(&mut *tr)
-    .await?;
-
-    tr.commit().await?;
-
     Ok(Some(()))
 }
 
-async fn enqueue_message<C>(message: OutMsg, connection: &mut C) -> Result<i32, Error>
+async fn enqueue_message<C>(message: OutMsg, connection: &mut C) -> Result<Uuid, Error>
 where
     C: Connection<Database = Postgres>,
     for<'a> &'a mut C: Executor<'a, Database = Postgres>,
 {
-    let id = sqlx::query!("INSERT INTO outbox (\"TextDecoded\", \"DestinationNumber\", \"CreatorID\") VALUES ($1,$2, 2137) RETURNING \"ID\"", message.content, message.number).fetch_one(&mut*connection).await?.ID;
+    let id = sqlx::query!(
+        "INSERT INTO messages (phone, content, outgoing) VALUES ($1,$2,true) RETURNING id",
+        message.number,
+        message.content,
+    )
+    .fetch_one(&mut *connection)
+    .await?
+    .id;
     Ok(id)
 }
