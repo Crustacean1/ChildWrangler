@@ -371,7 +371,7 @@ where
     for<'a> &'a mut C: Executor<'a, Database = Postgres>,
 {
     let id = sqlx::query!(
-        "INSERT INTO messages (phone, content, outgoing) VALUES ($1,$2,true) RETURNING id",
+        "INSERT INTO messages (phone, content, outgoing, sent) VALUES ($1,$2,true, NOW()) RETURNING id",
         message.number,
         message.content,
     )
