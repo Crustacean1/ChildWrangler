@@ -6,7 +6,7 @@ CREATE TABLE messages (
 	processed bool NOT NULL default false,
 	outgoing bool NOT NULL,
 	inserted timestamp default LOCALTIMESTAMP(0),
-	sent timestamp
+	sent timestamp NOT NULL
 );
 
 CREATE OR REPLACE FUNCTION notifymsg() RETURNS trigger AS $$
