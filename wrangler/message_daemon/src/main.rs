@@ -9,6 +9,7 @@ use dto::messages::{Meal, MessageProcessing, RequestError, Student, StudentCance
 use itertools::Itertools;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use simple_logger::SimpleLogger;
 use sqlx::{Connection, Error, Executor, PgPool, Postgres, postgres::PgListener, types::Json};
 use uuid::Uuid;
 
@@ -20,22 +21,38 @@ use crate::{
 async fn fetch_and_process<'a, 'b>(pool: &PgPool) -> Option<()> {
     let mut tr = pool.begin().await.expect("Failed to start transaction");
 
-    let message =
-        sqlx::query!("SELECT * FROM messages WHERE NOT processed AND NOT outgoing LIMIT 1 ")
-            .fetch_optional(&mut *tr)
-            .await
-            .expect("Failed to retrieve message from db")
-            .map(|row| Message {
-                id: row.id,
-                sender: row.phone,
-                content: row.content,
-                arrived: row.sent,
-            })?;
+    let message = sqlx::query!(
+        "SELECT id, phone, content, sent FROM messages WHERE NOT processed AND NOT outgoing LIMIT 1 "
+    )
+    .fetch_optional(&mut *tr)
+    .await
+    .expect("Failed to retrieve message from db")
+    .map(|row| Message {
+        id: row.id,
+        sender: row.phone,
+        content: row.content,
+        arrived: row.sent,
+    })?;
 
-    fetch_message(message.clone(), &mut *tr)
+    log::info!(
+        "Received message {}: {} from {}",
+        message.id,
+        message.content,
+        message.sender
+    );
+
+    match fetch_message(message.clone(), &mut *tr)
         .await
-        .expect("Failed to process message")?;
+        .expect("Failed to process message")
+    {
+        Some(_) => log::info!("Message processed"),
+        None => log::info!(
+            "Skipped message, no guardian matches phone: {}",
+            message.sender
+        ),
+    }
 
+    log::info!("Done, marking as processed");
     sqlx::query!(
         "UPDATE messages SET processed = true WHERE id = $1",
         message.id
@@ -44,21 +61,16 @@ async fn fetch_and_process<'a, 'b>(pool: &PgPool) -> Option<()> {
     .await
     .expect("Failed to mark message as processed, rollback");
 
-    log::info!(
-        "Message {} received: {} from {}",
-        message.id,
-        message.content,
-        message.sender
-    );
-
     tr.commit().await.expect("Failed to commit transaction");
     Some(())
 }
 
 #[tokio::main]
 async fn main() {
-    env_logger::init();
+    SimpleLogger::new().init().unwrap();
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL was not set");
+
+    log::info!("Using db connection: {}", db_url);
 
     let pool = PgPool::connect(&db_url)
         .await
@@ -68,10 +80,16 @@ async fn main() {
         .await
         .expect("Failed to connect to postgres events");
 
+    listener
+        .listen("received")
+        .await
+        .expect("Failed to start listening on 'received' channel");
+
     while let Some(_) = fetch_and_process(&pool).await {
         log::info!("Processed stale message");
     }
 
+    log::info!("Caught up to latest messages, starting listening");
     loop {
         match listener.recv().await {
             Ok(event) => {

@@ -1988,11 +1988,11 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "dto",
- "env_logger",
  "itertools",
  "log",
  "regex",
  "serde",
+ "simple_logger",
  "sqlx",
  "tokio",
  "uuid",
