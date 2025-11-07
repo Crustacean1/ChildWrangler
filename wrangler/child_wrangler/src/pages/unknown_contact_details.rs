@@ -24,8 +24,8 @@ pub fn UnknownContactDetails() -> impl IntoView {
     let phone = move || params().as_ref().ok().map(|params| params.phone.clone());
 
     view! {
-        <div class="vertical gap flex-1">
-            <div class="padded rounded background-2 horizontal align-center text-left gap">
+        <div class="flex flex-col flex-1">
+            <div class="card flex flex-row p-2">
                 <h2 class="h2 flex-1">Nieznany numer</h2>
                 <button class="interactive icon-button">
                     <PersonIcon />

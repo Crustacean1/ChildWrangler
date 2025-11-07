@@ -1,8 +1,10 @@
-use dto::catering::{AllergyDto, GuardianDto};
+use dto::catering::AllergyDto;
 use dto::details::{EntityDto, GroupDetailsDto, StudentDetailsDto};
 use dto::group::{CreateGroupDto, GroupDto, GroupInfoDto, ModifyGroupDto, SearchTerm};
+use dto::guardian::GuardianDto;
 use leptos::logging::log;
 use leptos::prelude::*;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[server]
@@ -63,19 +65,16 @@ pub async fn get_groups() -> Result<Vec<GroupDto>, ServerFnError> {
     use sqlx::postgres::PgPool;
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
-    let result = sqlx::query!(
-        "SELECT groups.id, groups.name, group_relations.parent FROM groups 
+
+    let result = sqlx::query_as!(
+        GroupDto,
+        r#"SELECT groups.id AS "id!", groups.name AS "name!", group_relations.parent AS "parent: Option<Uuid>" FROM groups 
         LEFT JOIN group_relations ON group_relations.child = groups.id AND group_relations.level = 1 
-        WHERE NOT groups.removed")
+        WHERE NOT groups.removed
+        "#)
     .fetch_all(&pool)
-    .await?
-    .into_iter()
-    .map(|row| GroupDto {
-        id: row.id,
-        name: row.name,
-        parent: row.parent,
-    })
-    .collect();
+    .await?;
+
     Ok(result)
 }
 
@@ -242,10 +241,10 @@ pub async fn get_search_terms() -> Result<Vec<SearchTerm>, ServerFnError> {
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
     let group_terms = sqlx::query!(
-        "SELECT groups.id, groups.name, parents.name AS parent_name FROM groups
+        r#"SELECT groups.id AS "id!", groups.name AS "name!", parents.name AS parent_name FROM groups
     LEFT JOIN group_relations ON group_relations.child = groups.id AND group_relations.level = 1
     LEFT JOIN groups AS parents ON parents.id = group_relations.parent
-    WHERE groups.removed=false"
+    WHERE groups.removed=false"#
     )
     .fetch_all(&pool)
     .await?
@@ -257,10 +256,10 @@ pub async fn get_search_terms() -> Result<Vec<SearchTerm>, ServerFnError> {
     });
 
     let student_terms = sqlx::query!(
-        "SELECT students.id, students.name, students.surname, parents.name AS parent_name FROM students
+        r#"SELECT students.id AS "id!", students.name AS "name!", students.surname AS "surname!", parents.name AS parent_name FROM students
     LEFT JOIN group_relations ON group_relations.child = students.id AND group_relations.level = 1
     LEFT JOIN groups AS parents ON parents.id = group_relations.parent
-    WHERE students.removed=false")
+    WHERE students.removed=false"#)
     .fetch_all(&pool)
     .await?
     .into_iter().map(|row| SearchTerm {
@@ -307,6 +306,7 @@ pub async fn get_details(id: Uuid) -> Result<EntityDto, ServerFnError> {
             guardians: guardians
                 .into_iter()
                 .map(|g| GuardianDto {
+                    phone: g.phone,
                     id: g.id,
                     fullname: g.fullname,
                 })

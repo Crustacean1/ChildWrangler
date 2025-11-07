@@ -1,5 +1,6 @@
-use dto::catering::{AllergyDto, GuardianDto, MealDto};
+use dto::catering::{AllergyDto, MealDto};
 use dto::details::StudentDetailsDto;
+use dto::guardian::GuardianDto;
 use dto::student::{AllergyCombinationDto, CreateGuardianDto, CreateStudentDto, StudentDto};
 use leptos::logging::log;
 use leptos::prelude::*;
@@ -29,10 +30,10 @@ pub async fn create_student(student: CreateStudentDto) -> Result<Uuid, ServerFnE
     .execute(&mut *tr)
     .await?;
 
-    let allergy_combination_id = sqlx::query!("SELECT ac.id FROM allergy_combinations AS ac
-        WHERE (SELECT COUNT(1) FROM allergy_combinations INNER JOIN allergies ON allergies.id = allergy_combinations.allergy_id WHERE allergy_combinations.id = ac.id) =
-            (SELECT COUNT(1) FROM allergy_combinations INNER JOIN allergies ON allergies.id = allergy_combinations.allergy_id INNER JOIN UNNEST($1::text[]) AS names(name) ON names.name = allergies.name WHERE allergy_combinations.id = ac.id)", &allergies)
-    .fetch_optional(&mut *tr).await?.map(|row| row.id);
+    let allergy_combination_id = sqlx::query!("WITH combinations AS (SELECT allergy_combinations.id, ARRAY_AGG(allergies.name) AS al_id FROM allergy_combinations JOIN allergies ON allergies.id = allergy_id GROUP BY allergy_combinations.id)
+            SELECT id FROM combinations
+            WHERE $1::text[] @> combinations.al_id AND $1::text[] <@ combinations.al_id
+", &allergies).fetch_optional(&mut *tr).await?.map(|row| row.id);
 
     let allergy_combination_id = match allergy_combination_id {
         Some(id) => id,
@@ -147,6 +148,7 @@ pub async fn get_guardians() -> Result<Vec<GuardianDto>, ServerFnError> {
         .into_iter()
         .map(|row| GuardianDto {
             id: row.id,
+            phone: row.phone,
             fullname: row.fullname,
         })
         .collect();

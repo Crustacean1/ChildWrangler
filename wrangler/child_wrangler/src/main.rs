@@ -34,6 +34,7 @@ async fn main() {
         .await
         .expect("Failed to connect to postgres database");
 
+    //TODO: Restore this after development is over
     sqlx::migrate!("../migrations")
         .run(&pool)
         .await

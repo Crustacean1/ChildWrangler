@@ -254,116 +254,130 @@ pub fn AttendanceDashboardInner(
         .collect::<Vec<_>>();
 
     view! {
-        <div class="flex flex-row">
-            {attendance
-                .attendance
-                .into_iter()
-                .map(|(meal_id, attendance)| {
-                    view! {
-                        <div class="flex-1 flex-wrap flex flex-row">
-                            <Chart
-                                name=meals
-                                    .get(&meal_id)
-                                    .map(|m| m.name.clone())
-                                    .unwrap_or(format!("Unknown meal"))
-                                allergies=allergies.clone()
-                                padding=12
-                                series=attendance
-                            />
-                        </div>
-                    }
-                })
-                .collect::<Vec<_>>()}
-        </div>
-        <div class="flex-1 overflow-hidden rounded-md">
-            <table class="w-full border-collapse text-left">
-                <thead>
-                    <tr class="bg-gray-600">
-                        <th class="p-2">Imię</th>
-                        <th class="p-2">Nazwisko</th>
-                        <th class="p-2">Grupa</th>
-                        {available_meals
-                            .iter()
-                            .map(|meal_id| {
+        {if attendance.attendance.is_empty() {
+            Either::Left(
+                view! {
+                    <div class="flex-1 outline outline-dashed outline-gray p-2 m-0.5 rounded-lg text-center">
+                        Brak posiłków na dzisiaj
+                    </div>
+                },
+            )
+        } else {
+            Either::Right(
+                view! {
+                    <div class="flex flex-row">
+                        {attendance
+                            .attendance
+                            .into_iter()
+                            .map(|(meal_id, attendance)| {
                                 view! {
-                                    <th class="p-2">
-                                        {meals
-                                            .get(meal_id)
-                                            .map(|m| m.name.clone())
-                                            .unwrap_or(format!("Unknown meal"))}
-                                    </th>
+                                    <div class="flex-1 flex-wrap flex flex-row">
+                                        <Chart
+                                            name=meals
+                                                .get(&meal_id)
+                                                .map(|m| m.name.clone())
+                                                .unwrap_or(format!("Unknown meal"))
+                                            allergies=allergies.clone()
+                                            padding=12
+                                            series=attendance
+                                        />
+                                    </div>
                                 }
                             })
                             .collect::<Vec<_>>()}
-                    </tr>
-                </thead>
-                <tbody class="background-1">
-                    {attendance
-                        .student_list
-                        .into_iter()
-                        .map(|(student_id, attendance)| {
-                            let student = students.get(&student_id).unwrap();
-                            let group = groups.get(&student.group_id).unwrap();
-                            view! {
-                                <tr class="even:bg-gray-800 odd:bg-gray-900">
-                                    <td class="p-2 r-border">
-                                        <a href=format!(
-                                            "attendance/{}",
-                                            student.id,
-                                        )>{format!("{}", student.name)}</a>
-                                    </td>
-                                    <td class="p-2 ">
-                                        <a href=format!(
-                                            "attendance/{}",
-                                            student.id,
-                                        )>{format!("{}", student.surname)}</a>
-                                    </td>
-                                    <td class="p-2 ">
-                                        <a href=format!(
-                                            "attendance/{}",
-                                            group.id,
-                                        )>{format!("{}", group.name)}</a>
-                                    </td>
-
+                    </div>
+                    <div class="flex-1 overflow-hidden rounded-md">
+                        <table class="w-full border-collapse text-left">
+                            <thead>
+                                <tr class="bg-gray-600">
+                                    <th class="p-2">Imię</th>
+                                    <th class="p-2">Nazwisko</th>
+                                    <th class="p-2">Grupa</th>
                                     {available_meals
                                         .iter()
                                         .map(|meal_id| {
                                             view! {
-                                                <td class="p-2">
-                                                    {match attendance.get(meal_id) {
-                                                        Some(AttendanceStatus::Present) => {
-                                                            Either::Left(
-                                                                Either::Left(
-                                                                    view! { <span class="text-green-800">tak</span> },
-                                                                ),
-                                                            )
-                                                        }
-                                                        Some(AttendanceStatus::Overriden) => {
-                                                            Either::Left(
-                                                                Either::Right(
-                                                                    view! { <span class="text-red-800">nie</span> },
-                                                                ),
-                                                            )
-                                                        }
-                                                        Some(AttendanceStatus::Cancelled) => {
-                                                            Either::Right(
-                                                                Either::Left(
-                                                                    view! { <span class="text-yellow-800">nie</span> },
-                                                                ),
-                                                            )
-                                                        }
-                                                        None => Either::Right(Either::Right(view! {})),
-                                                    }}
-                                                </td>
+                                                <th class="p-2">
+                                                    {meals
+                                                        .get(meal_id)
+                                                        .map(|m| m.name.clone())
+                                                        .unwrap_or(format!("Unknown meal"))}
+                                                </th>
                                             }
                                         })
                                         .collect::<Vec<_>>()}
                                 </tr>
-                            }
-                        })
-                        .collect::<Vec<_>>()}
-                </tbody>
-            </table>
-        </div>
+                            </thead>
+                            <tbody class="background-1">
+                                {attendance
+                                    .student_list
+                                    .into_iter()
+                                    .map(|(student_id, attendance)| {
+                                        let student = students.get(&student_id).unwrap();
+                                        let group = groups.get(&student.group_id).unwrap();
+                                        view! {
+                                            <tr class="even:bg-gray-800 odd:bg-gray-900">
+                                                <td class="p-2 r-border">
+                                                    <a href=format!(
+                                                        "attendance/{}",
+                                                        student.id,
+                                                    )>{format!("{}", student.name)}</a>
+                                                </td>
+                                                <td class="p-2 ">
+                                                    <a href=format!(
+                                                        "attendance/{}",
+                                                        student.id,
+                                                    )>{format!("{}", student.surname)}</a>
+                                                </td>
+                                                <td class="p-2 ">
+                                                    <a href=format!(
+                                                        "attendance/{}",
+                                                        group.id,
+                                                    )>{format!("{}", group.name)}</a>
+                                                </td>
+
+                                                {available_meals
+                                                    .iter()
+                                                    .map(|meal_id| {
+                                                        view! {
+                                                            <td class="p-2">
+                                                                {match attendance.get(meal_id) {
+                                                                    Some(AttendanceStatus::Present) => {
+                                                                        Either::Left(
+                                                                            Either::Left(
+                                                                                view! { <span class="text-green-800">tak</span> },
+                                                                            ),
+                                                                        )
+                                                                    }
+                                                                    Some(AttendanceStatus::Overriden) => {
+                                                                        Either::Left(
+                                                                            Either::Right(
+                                                                                view! { <span class="text-red-800">nie</span> },
+                                                                            ),
+                                                                        )
+                                                                    }
+                                                                    Some(AttendanceStatus::Cancelled) => {
+                                                                        Either::Right(
+                                                                            Either::Left(
+                                                                                view! { <span class="text-yellow-800">nie</span> },
+                                                                            ),
+                                                                        )
+                                                                    }
+                                                                    None => Either::Right(Either::Right(view! {})),
+                                                                }}
+                                                            </td>
+                                                        }
+                                                    })
+                                                    .collect::<Vec<_>>()}
+                                            </tr>
+                                        }
+                                    })
+                                    .collect::<Vec<_>>()}
+                            </tbody>
+                        </table>
+                    </div>
+                },
+            )
+        }}
     }
 }

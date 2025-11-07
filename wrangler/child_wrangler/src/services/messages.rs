@@ -1,14 +1,18 @@
 use std::collections::HashMap;
 
+use chrono::TimeDelta;
 use dto::{
-    catering::GuardianDetailDto,
+    guardian::{GuardianDetailDto, GuardianDto},
     messages::{
-        ContactDto, GeneralMessageDto, GuardianDetails, GuardianDto, GuardianStudent, Message,
-        MessageProcessing, MessageState, MessageType, PhoneStatusDto,
+        ContactDto, DbMessage, GeneralMessageDto, Message, MessageProcessing, MessageType,
+        PhoneStatusDto,
     },
+    student::StudentDto,
 };
 use leptos::prelude::*;
 use uuid::Uuid;
+
+use crate::components::snackbar::MsgType;
 
 #[server]
 pub async fn get_contacts() -> Result<Vec<ContactDto>, ServerFnError> {
@@ -27,7 +31,7 @@ pub async fn get_contacts() -> Result<Vec<ContactDto>, ServerFnError> {
                 GuardianDto{
                     id: row.id,
                     fullname: row.fullname,
-                phone: row.phone
+                phone: row.phone,
                 }
             )
         })
@@ -50,7 +54,7 @@ pub async fn get_contacts() -> Result<Vec<ContactDto>, ServerFnError> {
 }
 
 #[server]
-pub async fn get_guardian_details(id: Uuid) -> Result<GuardianDetails, ServerFnError> {
+pub async fn get_guardian_details(id: Uuid) -> Result<GuardianDetailDto, ServerFnError> {
     use sqlx::postgres::PgPool;
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
@@ -64,26 +68,28 @@ pub async fn get_guardian_details(id: Uuid) -> Result<GuardianDetails, ServerFnE
     .await?;
 
     let students = sqlx::query!(
-        "SELECT students.id, students.name, students.surname FROM guardians 
+        "SELECT students.id, students.name, students.surname, group_relations.parent AS group_id FROM guardians 
         INNER JOIN student_guardians ON student_guardians.guardian_id = guardians.id
         INNER JOIN students ON students.id = student_guardians.student_id
+        INNER JOIN group_relations ON group_relations.child = students.id
         WHERE guardians.id=$1",
         id
     )
     .fetch_all(&pool)
     .await?;
 
-    let mut result = GuardianDetails {
+    let mut result = GuardianDetailDto {
         id: guardian.id,
         phone: guardian.phone,
         fullname: guardian.fullname,
         students: students
             .into_iter()
             .map(
-                (|row| GuardianStudent {
+                (|row| StudentDto {
                     id: row.id,
                     name: row.name,
                     surname: row.surname,
+                    group_id: row.group_id,
                 }),
             )
             .collect(),
@@ -119,9 +125,32 @@ pub async fn send_message(phone: String, content: String) -> Result<i32, ServerF
     use sqlx::postgres::PgPool;
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
-    let id = sqlx::query!("INSERT INTO outbox (\"TextDecoded\", \"DestinationNumber\", \"CreatorID\") VALUES ($1,$2, 2137) RETURNING \"ID\"", content, phone).fetch_one(&pool).await?.ID;
+    let id = sqlx::query!(
+        "INSERT INTO messages (phone, content, outgoing) VALUES ($1,$2,true) RETURNING id",
+        phone,
+        content
+    )
+    .fetch_one(&pool)
+    .await?
+    .id;
 
     Ok(id)
+}
+
+pub fn parse_message(msg: DbMessage) -> Message {
+    let msg_type = match (msg.sent, msg.outgoing) {
+        (Some(sent), true) => MessageType::Received(sent, true),
+        (Some(sent), false) => MessageType::Sent(sent),
+        (None, false) => MessageType::Pending,
+        _ => panic!("Invalid message combination"),
+    };
+    Message {
+        id: msg.id,
+        phone: msg.phone,
+        content: msg.content,
+        inserted: msg.inserted,
+        msg_type,
+    }
 }
 
 #[server]
@@ -130,60 +159,23 @@ pub async fn get_messages(phone: String) -> Result<Vec<Message>, ServerFnError> 
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
-    let inbox = sqlx::query!(
-        "SELECT * FROM inbox WHERE \"SenderNumber\" LIKE $1",
-        &format!("%{}", &phone)
-    )
-    .fetch_all(&pool)
-    .await?
-    .into_iter()
-    .map(|row| Message {
-        id: row.ID,
-        sent: row.ReceivingDateTime,
-        content: row.TextDecoded,
-        msg_type: MessageType::Received(row.Processed),
-    });
+    let messages = sqlx::query_as!(DbMessage, "SELECT * FROM messages WHERE phone = $1", phone)
+        .fetch_all(&pool)
+        .await?;
+    let messages = messages.into_iter().map(parse_message);
 
-    let sent = sqlx::query!(
-        "SELECT * FROM sentitems WHERE \"DestinationNumber\" LIKE $1",
-        &format!("%{}", &phone)
-    )
-    .fetch_all(&pool)
-    .await?
-    .into_iter()
-    .map(|row| Message {
-        id: row.ID,
-        sent: row.SendingDateTime,
-        content: row.TextDecoded,
-        msg_type: MessageType::Sent,
-    });
-
-    let pending = sqlx::query!(
-        "SELECT * FROM outbox WHERE \"DestinationNumber\" LIKE $1",
-        &format!("%{}", &phone)
-    )
-    .fetch_all(&pool)
-    .await?
-    .into_iter()
-    .map(|row| Message {
-        id: row.ID,
-        sent: row.SendingDateTime,
-        content: row.TextDecoded,
-        msg_type: MessageType::Pending,
-    });
-
-    Ok(inbox.chain(sent).chain(pending).collect())
+    Ok(messages.collect())
 }
 
 #[server]
-pub async fn requeue_message(msg_id: i32) -> Result<(), ServerFnError> {
+pub async fn requeue_message(msg_id: Uuid) -> Result<(), ServerFnError> {
     use sqlx::postgres::PgPool;
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
     let mut tr = pool.begin().await?;
 
     sqlx::query!(
-        "UPDATE inbox SET \"Processed\" = false WHERE \"ID\" = $1",
+        "UPDATE messages SET processed = false WHERE id = $1",
         msg_id
     )
     .execute(&mut *tr)
@@ -195,15 +187,15 @@ pub async fn requeue_message(msg_id: i32) -> Result<(), ServerFnError> {
 
 #[server]
 pub async fn get_message_processing_info(
-    msg: i32,
+    msg: Uuid,
 ) -> Result<HashMap<Uuid, Vec<MessageProcessing>>, ServerFnError> {
     use sqlx::postgres::PgPool;
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
     let processing_info = sqlx::query!(
-        "SELECT processing_info.* FROM processing_trigger 
-    INNER JOIN processing_info ON processing_info.cause_id = processing_trigger.processing_id
+        "SELECT processing_info.* FROM msg_trigger 
+    INNER JOIN processing_info ON processing_info.cause_id = msg_trigger.id
     WHERE message_id = $1
     ORDER BY id",
         msg
@@ -242,29 +234,41 @@ pub async fn get_phone_status() -> Result<Option<PhoneStatusDto>, ServerFnError>
 }
 
 #[server]
-pub async fn get_latest_messages() -> Result<(Vec<GeneralMessageDto>), ServerFnError> {
+pub async fn get_latest_messages(
+    time_span: TimeDelta,
+) -> Result<Vec<GeneralMessageDto>, ServerFnError> {
+    use sqlx::postgres::types::PgInterval;
+    use sqlx::postgres::PgPool;
+
+    let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
+    let interval: PgInterval = time_span.try_into().unwrap();
+
+    let messages = sqlx::query_as!(
+        DbMessage,
+        "SELECT * FROM messages WHERE NOW() - inserted < $1",
+        interval
+    )
+    .fetch_all(&pool)
+    .await?;
+
+    let messages = messages.into_iter().map(parse_message);
+
+    Ok(messages.collect())
+}
+
+#[server]
+pub async fn simulate_message(from: String, content: String) -> Result<(), ServerFnError> {
     use sqlx::postgres::PgPool;
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
-    let received =
-        sqlx::query!(r#"SELECT "ID", "TextDecoded", "SenderNumber" ,"Processed","ReceivingDateTime", "UpdatedInDB"  FROM inbox
-    WHERE "ReceivingDateTime" > NOW() - INTERVAL '10 DAY'"#)
-            .fetch_all(&pool)
-            .await?.into_iter().map(|row| GeneralMessageDto{ message_id: row.ID, sent: row.ReceivingDateTime, received: row.UpdatedInDB, sender_id: None, sender: row.SenderNumber, content: row.TextDecoded, msg_type: MessageState::Received
-        });
+    sqlx::query!(
+        "INSERT INTO messages (phone,content,outgoing,sent) VALUES ($1,$2,false,NOW())",
+        from,
+        content
+    )
+    .execute(&pool)
+    .await?;
 
-    let outgoing =
-        sqlx::query!(r#"SELECT "ID", "TextDecoded", "DestinationNumber" ,"SendingDateTime", "InsertIntoDB"  FROM outbox
-    WHERE "SendingDateTime" > NOW() - INTERVAL '10 DAY'"#)
-            .fetch_all(&pool)
-            .await?.into_iter().map(|row| GeneralMessageDto{ message_id: row.ID, sent: row.InsertIntoDB, received: row.SendingDateTime, sender_id: None, sender: row.DestinationNumber, content: row.TextDecoded, msg_type: MessageState::Outgoing});
-
-    let sent =
-        sqlx::query!(r#"SELECT "ID", "TextDecoded", "DestinationNumber" ,"SendingDateTime", "InsertIntoDB"  FROM sentitems
-    WHERE "SendingDateTime" > NOW() - INTERVAL '10 DAY'"#)
-            .fetch_all(&pool)
-            .await?.into_iter().map(|row| GeneralMessageDto{ message_id: row.ID, sent: row.InsertIntoDB, received: row.SendingDateTime, sender_id: None, sender: row.DestinationNumber, content: row.TextDecoded, msg_type: MessageState::Sent});
-
-    Ok(received.chain(outgoing).chain(sent).collect())
+    Ok(())
 }

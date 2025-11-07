@@ -1,6 +1,5 @@
 use dto::{
-    catering::{AllergyDto, GuardianDto},
-    details::StudentDetailsDto,
+    catering::AllergyDto, details::StudentDetailsDto, guardian::GuardianDto,
     student::CreateStudentDto,
 };
 use leptos::{either::Either, logging::log, prelude::*};
@@ -8,7 +7,9 @@ use uuid::Uuid;
 
 use crate::{
     components::{
-        dropdown::Dropdown, general_provider::StudentVersion, snackbar::{SnackbarContext, use_snackbar}
+        dropdown::Dropdown,
+        general_provider::StudentVersion,
+        snackbar::{use_snackbar, SnackbarContext},
     },
     icons::close::CloseIcon,
     services::student::{create_student, get_allergies, get_guardians, update_student},
@@ -118,6 +119,7 @@ fn InnerAddStudentModal(
             Ok(guardian) => set_selected_guardians.write().push(guardian),
             Err(fullname) => set_selected_guardians.write().push(GuardianDto {
                 id: Uuid::new_v4(),
+                phone: None,
                 fullname,
             }),
         };

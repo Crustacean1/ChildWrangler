@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::catering::{AllergyDto, GuardianDto};
+use crate::{catering::AllergyDto, guardian::GuardianDto};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CreateStudentDto {

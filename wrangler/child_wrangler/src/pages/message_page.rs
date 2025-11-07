@@ -48,51 +48,61 @@ pub fn InnerMessagePage(contacts: Vec<ContactDto>) -> impl IntoView {
     };
 
     view! {
-        <div class="flex flex-row gap-2 flex-1">
-            <div class="flex flex-col gap-2">
-                <div class="flex-1">
-                    <div class="overflow-auto">
-                        <ul class="flex-1 flex flex-col md:w-72 gap-0.5">
-                            {move || {
-                                searched_contacts()
-                                    .iter()
-                                    .map(|g| {
-                                        match g {
-                                            ContactDto::Unknown(u) => {
-                                                Either::Left(
-                                                    view! {
-                                                        <li class="bg-gray-800 rounded-md overflow-hidden text-left w-full">
+        <div class="flex-1 flex flex-row gap-2 p-0.5">
+            <div class="flex flex-col gap-2 p-0.5">
+                <div class="flex-1 overflow-auto">
+                    <ul class="flex-1 flex flex-col md:w-72 gap-0.5">
+                        {move || {
+                            searched_contacts()
+                                .into_iter()
+                                .map(|g| {
+                                    view! {
+                                        <li class="bg-gray-800 rounded-md overflow-hidden text-left w-full flex">
+                                            {match g {
+                                                ContactDto::Unknown(u) => {
+                                                    Either::Left(
+                                                        view! {
                                                             <a
-                                                                class="md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600 p-2"
+                                                                class="md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600 flex-1 p-2 flex place-content-between"
                                                                 href=format!("/messages/unknown/{}", u)
                                                             >
-                                                                <span>Nieznany</span>
-                                                                <span>{format!("{}", u)}</span>
+                                                                <span class="text-red-800">Nieznany</span>
+                                                                <span class="">{format!("{}", u)}</span>
                                                             </a>
-                                                        </li>
-                                                    },
-                                                )
-                                            }
-                                            ContactDto::GuardianWithPhone(guardian) => {
-                                                Either::Right(
-                                                    view! {
-                                                        <li class="bg-gray-800 rounded-md overflow-hidden text-left w-full flex">
+                                                        },
+                                                    )
+                                                }
+                                                ContactDto::GuardianWithPhone(guardian) => {
+                                                    Either::Right(
+                                                        view! {
                                                             <a
-                                                                class="md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600 flex-1 p-2"
+                                                                class="md:cursor-pointer md:hover:bg-gray-700 md:active:bg-gray-600 flex-1 p-2 flex place-content-between"
                                                                 href=format!("/messages/guardian/{}", guardian.id)
                                                             >
-                                                                {format!("{}", guardian.fullname)}
+                                                                <span>{format!("{}", guardian.fullname)}</span>
+                                                                {match guardian.phone {
+                                                                    Some(phone) => {
+                                                                        Either::Left(
+                                                                            view! { <span class="">{format!("{}", phone)}</span> },
+                                                                        )
+                                                                    }
+                                                                    None => {
+                                                                        Either::Right(
+                                                                            view! { <span class="text-red-800">Brak numeru</span> },
+                                                                        )
+                                                                    }
+                                                                }}
                                                             </a>
-                                                        </li>
-                                                    },
-                                                )
-                                            }
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()
-                            }}
-                        </ul>
-                    </div>
+                                                        },
+                                                    )
+                                                }
+                                            }}
+                                        </li>
+                                    }
+                                })
+                                .collect::<Vec<_>>()
+                        }}
+                    </ul>
                 </div>
                 <input
                     autocomplete="off"

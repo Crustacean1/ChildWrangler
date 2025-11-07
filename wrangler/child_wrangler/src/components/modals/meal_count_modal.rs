@@ -17,7 +17,6 @@ pub fn MealCountModal(target: Uuid, date: NaiveDate) -> impl IntoView {
 
     view! {
         <div class="flex flex-col gap-2">
-            <h3 class="text-center text-lg">{format!("Obecność dla grupy {}", target)}</h3>
             <Loader>
                 {Suspend::new(async move {
                     let attendance = attendance.await?;
@@ -35,30 +34,32 @@ pub fn MealCountModalInner(
     attendance: AttendanceBreakdownDto,
 ) -> impl IntoView {
     view! {
-        <table class="table-auto text-center border-collapse rounded-md w-full">
-            <thead class="bg-gray-600">
+        <table class="table-auto text-center border border-gray-300 border-collapse w-full">
+            <thead class="bg-gray-700 font-normal">
                 <tr>
-                    <th class="p-2 border border-gray-300/50">Grupa</th>
+                    <th class="font-normal p-4 border border-gray-300/25">Grupa</th>
                     {attendance
                         .meals
                         .iter()
                         .map(|meal| {
                             view! {
-                                <th class="p-2 border border-gray-300/50">{meal.name.clone()}</th>
+                                <th class="font-normal p-4 border border-gray-300/25">
+                                    {meal.name.clone()}
+                                </th>
                             }
                         })
                         .collect::<Vec<_>>()}
-                    <th class="p-2 border border-gray-300/50">Total</th>
+                    <th class="font-normal p-4 border border-gray-300/25">Total</th>
                 </tr>
             </thead>
-            <tbody class="bg-gray-700">
+            <tbody class="bg-gray-800 text-gray-400">
                 {attendance
                     .groups
                     .into_iter()
                     .map(|group| {
                         view! {
                             <tr class="text-sm">
-                                <td class="p-2 border border-gray-300/50">
+                                <td class="p-4 border border-gray-300/25">
                                     <a href=format!(
                                         "/attendance/{}/{}/{}",
                                         group.id,
@@ -71,7 +72,7 @@ pub fn MealCountModalInner(
                                     .iter()
                                     .map(|meal| {
                                         view! {
-                                            <td class="p-2 border border-gray-300/50">
+                                            <td class="p-4 border border-gray-300/25">
                                                 {if let Some((total, present)) = attendance
                                                     .attendance
                                                     .get(&group.id)
@@ -79,19 +80,20 @@ pub fn MealCountModalInner(
                                                 {
                                                     format!("{}", present)
                                                 } else {
-                                                    format!("Unknown meal")
+                                                    format!("0")
                                                 }}
                                             </td>
                                         }
                                     })
                                     .collect::<Vec<_>>()}
-                                <td class="p-2 border border-gray-300/50">
+                                <td class="p-4 border border-gray-300/25">
                                     {attendance
                                         .attendance
                                         .get(&group.id)
                                         .and_then(|meals| {
                                             meals.iter().next().map(|meal| format!("{}", meal.1.0))
-                                        })}
+                                        })
+                                        .unwrap_or(format!("0"))}
                                 </td>
                             </tr>
                         }

@@ -1,5 +1,5 @@
 use chrono::{Datelike, Utc};
-use dto::messages::GuardianDetails;
+use dto::guardian::GuardianDetailDto;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos_router::hooks::use_params;
@@ -51,7 +51,7 @@ pub fn GuardianContactDetails() -> impl IntoView {
 }
 
 #[component]
-pub fn InnerGuardianContactDetails(details: GuardianDetails) -> impl IntoView {
+pub fn InnerGuardianContactDetails(details: GuardianDetailDto) -> impl IntoView {
     let (edit_guardian, set_edit_guardian) = signal(false);
     let now = Utc::now();
 

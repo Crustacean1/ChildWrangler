@@ -1,4 +1,4 @@
-use dto::{catering::GuardianDetailDto, messages::GuardianDetails};
+use dto::guardian::GuardianDetailDto;
 use leptos::prelude::*;
 
 use crate::{
@@ -8,7 +8,7 @@ use crate::{
 
 #[component]
 pub fn ModifyGuardianModal(
-    details: GuardianDetails,
+    details: GuardianDetailDto,
     on_close: impl Fn(bool) + Send + Sync + Copy + 'static,
 ) -> impl IntoView {
     let snackbar = use_snackbar();
@@ -32,10 +32,13 @@ pub fn ModifyGuardianModal(
     });
 
     let on_save = move |_| {
+        let phone = String::from(phone().trim());
+        let phone = if phone.is_empty() { None } else { Some(phone) };
         let dto = GuardianDetailDto {
             id: details.id,
             fullname: name(),
-            phone: phone(),
+            phone,
+            students: details.students.clone(),
         };
         update_guardian.dispatch(dto);
     };

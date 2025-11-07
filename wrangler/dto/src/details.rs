@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{
-    catering::{AllergyDto, GuardianDto},
-    group::GroupDto,
-};
+use crate::{catering::AllergyDto, group::GroupDto, guardian::GuardianDto};
 
 #[derive(Serialize, Debug, Clone, Deserialize)]
 pub struct Breadcrumb {

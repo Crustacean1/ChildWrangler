@@ -68,7 +68,7 @@ pub struct GetAttendanceHistoryDto {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum AttendanceItemDto {
-    Cancellation(i32, String, String),
+    Cancellation(Uuid, String, String),
     Override(Uuid, String),
     Init,
 }

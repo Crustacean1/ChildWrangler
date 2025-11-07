@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[component]
-pub fn MessageDetailsModal(msg_id: i32) -> impl IntoView {
+pub fn MessageDetailsModal(msg_id: Uuid) -> impl IntoView {
     let details = Resource::new(
         || (),
         move |_| async move { get_message_processing_info(msg_id).await },
@@ -33,7 +33,7 @@ pub fn MessageDetailsModal(msg_id: i32) -> impl IntoView {
 
 #[component]
 fn MessageDetailsModalInner(
-    msg_id: i32,
+    msg_id: Uuid,
     details: HashMap<Uuid, Vec<MessageProcessing>>,
 ) -> impl IntoView {
     let snackbar = use_snackbar();

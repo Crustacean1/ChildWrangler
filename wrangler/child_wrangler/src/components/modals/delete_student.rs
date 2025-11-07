@@ -26,24 +26,26 @@ pub fn DeleteStudentModal(
     });
 
     view! {
-        <h2 class="h2">Usunąć ucznia?</h2>
-        <div class="horizontal gap flex-end">
-            <button
-                class="interactive rounded padded red"
-                on:click=move |_| on_close(false)
-                disabled=delete_student.pending()
-            >
-                Anuluj
-            </button>
-            <button
-                class="interactive rounded padded green"
-                on:click=move |_| {
-                    delete_student.dispatch(());
-                }
-                disabled=delete_student.pending()
-            >
-                Usuń
-            </button>
+        <div class="flex flex-col gap-2">
+            <h2 class="text-center">Usunąć ucznia?</h2>
+            <div class="flex flex-row gap-2">
+                <button
+                    class="btn cancel"
+                    on:click=move |_| on_close(false)
+                    disabled=delete_student.pending()
+                >
+                    Anuluj
+                </button>
+                <button
+                    class="btn save"
+                    on:click=move |_| {
+                        delete_student.dispatch(());
+                    }
+                    disabled=delete_student.pending()
+                >
+                    Usuń
+                </button>
+            </div>
         </div>
     }
 }

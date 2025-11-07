@@ -5,12 +5,7 @@ use uuid::Uuid;
 
 use chrono::NaiveTime;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GuardianDto {
-    pub id: Uuid,
-    pub fullname: String,
-    pub phone: Option<String>,
-}
+use crate::guardian::GuardianDto;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ContactDto {
@@ -19,33 +14,30 @@ pub enum ContactDto {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GuardianStudent {
+pub struct DbMessage {
     pub id: Uuid,
-    pub name: String,
-    pub surname: String,
+    pub phone: String,
+    pub content: String,
+    pub sent: Option<NaiveDateTime>,
+    pub inserted: NaiveDateTime,
+    pub outgoing: bool,
+    pub processed: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Message {
-    pub id: i32,
-    pub sent: NaiveDateTime,
+    pub id: Uuid,
+    pub phone: String,
     pub content: String,
+    pub inserted: NaiveDateTime,
     pub msg_type: MessageType,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum MessageType {
-    Sent,
-    Received(bool),
+    Sent(NaiveDateTime),
+    Received(NaiveDateTime, bool),
     Pending,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GuardianDetails {
-    pub id: Uuid,
-    pub fullname: String,
-    pub phone: Option<String>,
-    pub students: Vec<GuardianStudent>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -136,19 +128,11 @@ pub struct PhoneStatusDto {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum MessageState {
-    Received,
-    Outgoing,
-    Sent,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GeneralMessageDto {
-    pub msg_type: MessageState,
-    pub message_id: i32,
-    pub sent: NaiveDateTime,
-    pub received: NaiveDateTime,
-    pub sender_id: Option<Uuid>,
+    pub msg_type: MessageType,
+    pub message_id: Uuid,
+    pub sent: Option<NaiveDateTime>,
+    pub inserted: NaiveDateTime,
     pub sender: String,
     pub content: String,
 }

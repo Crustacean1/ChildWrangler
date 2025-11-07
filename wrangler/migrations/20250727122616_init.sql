@@ -10,7 +10,7 @@ CREATE TABLE guardians(
 
 CREATE TABLE groups(
 	id uuid primary key not null default gen_random_uuid(),
-	removed bool default false,
+	removed bool default false not null,
 	name text not null
 );
 
@@ -69,15 +69,16 @@ CREATE TABLE catering_meals(
 	meal_order integer not null
 );
 
-CREATE TABLE processing_info (
-	id int primary key generated always as identity,
-	cause_id uuid not null,
-	value jsonb not null
+CREATE TABLE msg_trigger (
+	message_id uuid,
+	id uuid primary key default gen_random_uuid(),
+	started timestamp
 );
 
-CREATE TABLE processing_trigger (
-	message_id integer,
-	processing_id uuid
+CREATE TABLE processing_info (
+	id int primary key generated always as identity,
+	cause_id uuid not null references msg_trigger(id),
+	value jsonb not null
 );
 
 CREATE TABLE attendance_override (

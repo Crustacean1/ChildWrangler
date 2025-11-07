@@ -1,4 +1,4 @@
-use chrono::{Duration, Utc};
+use chrono::{Duration, TimeDelta, Utc};
 use dto::messages::{GeneralMessageDto, PhoneStatusDto};
 use leptos::{either::Either, prelude::*};
 
@@ -10,10 +10,13 @@ use crate::{
 #[component]
 pub fn MessageDashboard() -> impl IntoView {
     let phone = Resource::new(|| (), move |_| async move { get_phone_status().await });
-    let messages = Resource::new(|| (), move |_| async move { get_latest_messages().await });
+    let messages = Resource::new(
+        || (),
+        move |_| async move { get_latest_messages(TimeDelta::days(10)).await },
+    );
 
     view! {
-        <div class="flex-1 flex flex-col gap-2">
+        <div class="overflow-hidden flex-1 flex flex-col gap-2">
             <Loader>
                 {move || Suspend::new(async move {
                     let phone = phone.await?;
@@ -28,34 +31,37 @@ pub fn MessageDashboard() -> impl IntoView {
 #[component]
 pub fn MessageView(message: GeneralMessageDto) -> impl IntoView {
     match message.msg_type {
-        dto::messages::MessageState::Received => Either::Left(Either::Left(view! {
-            <div class="rounded background-3 self-start fit-content text-left vertical">
+        dto::messages::MessageType::Received(_) => Either::Left(Either::Left(view! {
+            <div class="card p-2 self-start">
                 <div class="padded">{format!("Od: {}", message.sender)}</div>
                 <span class="spacer"></span>
                 <div class="background-4 padded">{message.content}</div>
                 <span class="spacer"></span>
                 <div class="grid-2 gap padded">
                     <small class="gray">Wysłano</small>
-                    <small class="gray">{format!("{}", message.sent)}</small>
+                    <small class="gray">{format!("{:?}", message.sent)}</small>
                     <small class="gray">Otrzymano</small>
-                    <small class="gray">{format!("{}", message.received)}</small>
+                    <small class="gray">{format!("{}", message.inserted)}</small>
                 </div>
             </div>
+            <div></div>
         })),
-        dto::messages::MessageState::Outgoing => Either::Left(Either::Right(
-            view! { <div class="rounded background-3 padded self-end fit-content ">{message.content}</div> },
-        )),
-        dto::messages::MessageState::Sent => Either::Right(view! {
-            <div class="rounded background-3 self-end fit-content text-left vertical">
+        dto::messages::MessageType::Pending => Either::Left(Either::Right(view! {
+            <div class="card self-end p-2">{message.content}</div>
+            <div></div>
+        })),
+        dto::messages::MessageType::Sent => Either::Right(view! {
+            <div></div>
+            <div class="card self-end p-2">
                 <div class="padded">{format!("Do: {}", message.sender)}</div>
                 <span class="spacer"></span>
                 <div class="background-4 padded">{format!("{}", message.content)}</div>
                 <span class="spacer"></span>
                 <div class="grid-2 gap padded">
                     <small class="gray">Zakolejkowano</small>
-                    <small class="gray">{format!("{}", message.sent)}</small>
+                    <small class="gray">{format!("{:?}", message.sent)}</small>
                     <small class="gray">Wysłano</small>
-                    <small class="gray">{format!("{}", message.received)}</small>
+                    <small class="gray">{format!("{}", message.inserted)}</small>
                 </div>
             </div>
         }),
@@ -67,7 +73,7 @@ pub fn MessageDashboardInner(
     phone: Option<PhoneStatusDto>,
     mut messages: Vec<GeneralMessageDto>,
 ) -> impl IntoView {
-    messages.sort_by_key(|m| m.received);
+    messages.sort_by_key(|m| m.inserted);
 
     view! {
         <div class="card">
@@ -100,7 +106,10 @@ pub fn MessageDashboardInner(
                 })
                 .unwrap_or(Either::Right(view! { <span>Nie wykryto modemu</span> }))}
         </div>
-        <div class="card flex-1">
+        <div class="grid grid-cols-3 gap-2">
+            <div></div>
+            <div style="grid-row: 1/9999; grid-column:2/3"></div>
+            <div></div>
             {messages
                 .into_iter()
                 .rev()
@@ -108,4 +117,19 @@ pub fn MessageDashboardInner(
                 .collect::<Vec<_>>()}
         </div>
     }
+}
+
+#[component]
+pub fn IncomingMessage() -> impl IntoView {
+    view! {}
+}
+
+#[component]
+pub fn PendingMessage() -> impl IntoView {
+    view! {}
+}
+
+#[component]
+pub fn OutgoingMessage() -> impl IntoView {
+    view! {}
 }

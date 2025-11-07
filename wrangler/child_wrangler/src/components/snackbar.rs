@@ -71,8 +71,8 @@ pub fn Snackbar(children: ChildrenFn) -> impl IntoView {
     view! {
         {children()}
         <div
-            class="snackbar-root absolute z-2 w-0"
-            style:bottom="0"
+            class="snackbar-root fixed z-2 w-0"
+            style:bottom="1em"
             style:left="50%"
             data-testid="snackbar-root"
         >
@@ -87,7 +87,7 @@ pub fn Snackbar(children: ChildrenFn) -> impl IntoView {
                     let:child
                 >
                     <div
-                        class="snackbar-msg rounded-md p-2 outline-2 select-none w-fit"
+                        class="snackbar-msg rounded-md p-2 outline-1 select-none w-fit"
                         class:bg-red-600=child.msg_type == MsgType::Error
                         class:bg-green-600=child.msg_type == MsgType::Success
                         on:click=move |_| set_messages.write().retain(|msg| msg.id != child.id)

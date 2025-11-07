@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use dto::messages::{Message, MessageType};
 use leptos::{either::Either, logging::log, prelude::*};
+use uuid::Uuid;
 
 use crate::{
     components::{
@@ -80,18 +81,20 @@ pub fn Messages(phone: String) -> impl IntoView {
 
 #[component]
 pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
-    let (show_details, set_show_details) = signal(None::<i32>);
+    let (show_details, set_show_details) = signal(None::<Uuid>);
 
     let mut sorted_messages = BTreeMap::new();
 
     for message in messages {
-        let day = sorted_messages.entry(message.sent.date()).or_insert(vec![]);
+        let day = sorted_messages
+            .entry(message.inserted.date())
+            .or_insert(vec![]);
         day.push(message);
-        day.sort_by_key(|m| m.sent);
+        day.sort_by_key(|m| m.inserted);
     }
 
     view! {
-        <div class="overflow-auto flex-1 flex flex-col-reverse gap-2 card">
+        <div class="overflow-auto flex-1 flex flex-col-reverse gap-2">
             {if sorted_messages.is_empty() {
                 Either::Left(view! { <li class="padded dashed rounded">Brak wiadomości</li> })
             } else {
@@ -106,21 +109,32 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
                             .into_iter()
                             .rev()
                             .map(|message| {
+                                match {
+                        MessageType::Received(sent,processed) => view!{<Received message sent processed/>},
+                        MessageType::Sent(sent) => view!{<SentMessage message sent/>},
+                        MessageType::Pending => view!{<PendingMessage message/>}
+                    }
                                 view! {
+
                                     <div
-                                        on:click=move |_| set_show_details(Some(message.id))
-                                        class="rounded padded fit-content background-3 vertical"
-                                        class:self-start=if let MessageType::Received(_) = message
+                                        class="flex flex-col gap-1"
+
+                                        class:self-start=if let MessageType::Received(_,_) = message
                                             .msg_type
                                         {
                                             true
                                         } else {
                                             false
                                         }
-                                        class:self-end=message.msg_type == MessageType::Sent
+                                        class:self-end=message.msg_type == MessageType::Sent(_)
                                             || message.msg_type == MessageType::Pending
                                     >
-                                        <span>{format!("{}", message.content)}</span>
+                                        <div
+                                            on:click=move |_| set_show_details(Some(message.id))
+                                            class="card row row-col p-2"
+                                        >
+                                            <span>{format!("{}", message.content)}</span>
+                                        </div>
                                         <small class="self-end gray">
                                             {format!("Odebrano: {}", message.sent.format("%H:%M:%S"))}
                                         </small>
@@ -150,3 +164,5 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
         </Modal>
     }
 }
+
+#[c]

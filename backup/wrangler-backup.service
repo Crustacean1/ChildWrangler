@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily pg backup
+
+[Service]
+Environment=PGPASSWORD="${PASSWORD}"
+Environment=USER="admin"
+Environment=HOST="127.0.0.1"
+Environment=DB="wrangler"
+
+ExecStart=pg_dump -U "${USER}"  -h "${HOST}" "${DB}"
+

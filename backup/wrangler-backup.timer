@@ -1,0 +1,10 @@
+[Unit]
+Description=Run daily pg backup
+
+[Timer]
+OnCalendar=daily 
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+
