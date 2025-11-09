@@ -36,11 +36,16 @@ pub async fn create_student(student: CreateStudentDto) -> Result<Uuid, ServerFnE
 ", &allergies).fetch_optional(&mut *tr).await?.map(|row| row.id);
 
     let allergy_combination_id = match allergy_combination_id {
-        Some(id) => id,
+        Some(id) => Some(id),
         None => {
             let id = Uuid::new_v4();
-            sqlx::query!("INSERT INTO allergy_combinations (allergy_id,id) SELECT allergies.id, $2 FROM allergies INNER JOIN UNNEST($1::text[]) AS names(name) on allergies.name = names.name", &allergies, id).execute(&mut *tr).await?;
-            id
+            log!("Creating new allergy");
+            let rows = sqlx::query!("INSERT INTO allergy_combinations (allergy_id,id) SELECT allergies.id, $2 FROM allergies INNER JOIN UNNEST($1::text[]) AS names(name) on allergies.name = names.name", &allergies, id).execute(&mut *tr).await?.rows_affected();
+            if rows == 0 {
+                None
+            } else {
+                Some(id)
+            }
         }
     };
 

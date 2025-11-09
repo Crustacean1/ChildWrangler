@@ -1,19 +1,4 @@
-use std::collections::HashSet;
-
-use chrono::{Days, NaiveTime, Utc};
-use dto::catering::{CateringDto, CreateCateringDto};
-use dto::group::CreateGroupDto;
-use dto::guardian::GuardianDetailDto;
-use dto::student::CreateStudentDto;
-use leptos::logging::log;
 use leptos::prelude::*;
-use uuid::Uuid;
-
-use crate::components::modals::modify_guardian_phone;
-use crate::services::catering::create_catering;
-use crate::services::group::{create_group, get_details, get_groups};
-use crate::services::messages::update_guardian;
-use crate::services::student::create_student;
 
 #[server]
 pub async fn generate_random_data(
@@ -22,6 +7,21 @@ pub async fn generate_random_data(
     student_count: i32,
     guardian_count: i32,
 ) -> Result<(), ServerFnError> {
+    use std::collections::HashSet;
+
+    use chrono::{Days, NaiveTime, Utc};
+    use dto::catering::{CateringDto, CreateCateringDto};
+    use dto::group::CreateGroupDto;
+    use dto::guardian::GuardianDetailDto;
+    use dto::student::CreateStudentDto;
+    use leptos::logging::log;
+    use uuid::Uuid;
+
+    use crate::components::modals::modify_guardian_phone;
+    use crate::services::catering::create_catering;
+    use crate::services::group::{create_group, get_details, get_groups};
+    use crate::services::messages::update_guardian;
+    use crate::services::student::create_student;
     use fake::faker::company::raw::{CompanyName, Industry};
     use fake::faker::name::raw::{FirstName, LastName, Name};
     use fake::faker::phone_number::raw::PhoneNumber;

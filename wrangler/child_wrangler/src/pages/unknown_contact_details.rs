@@ -25,12 +25,12 @@ pub fn UnknownContactDetails() -> impl IntoView {
 
     view! {
         <div class="flex flex-col flex-1">
-            <div class="card flex flex-row p-2">
-                <h2 class="h2 flex-1">Nieznany numer</h2>
-                <button class="interactive icon-button">
+            <div class="card flex flex-row align-center p-1">
+                <h2 class="flex-1">Nieznany numer</h2>
+                <button class="btn">
                     <PersonIcon />
                 </button>
-                <button class="interactive icon-button" on:click=move |_| set_new_guardian(true)>
+                <button class="btn" on:click=move |_| set_new_guardian(true)>
                     <AddIcon />
                 </button>
             </div>

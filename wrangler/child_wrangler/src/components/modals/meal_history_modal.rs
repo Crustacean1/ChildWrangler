@@ -15,6 +15,7 @@ use crate::{
         dropdown::Dropdown,
         general_provider::{GroupResource, MealResource, StudentResource},
     },
+    icons::phone::PhoneIcon,
     services::attendance::get_attendance_history,
 };
 
@@ -68,8 +69,48 @@ pub fn MealHistoryModalInner(
                                 {format!("{}", att.time.format("%Y %B %d %H:%M:%S"))}
                             </h4>
                             {match att.item {
-                                dto::attendance::AttendanceItemDto::Cancellation(_, _, _) => {
-                                    Either::Left(Either::Left(view! {}))
+                                dto::attendance::AttendanceItemDto::Cancellation(
+                                    msg_id,
+                                    phone,
+                                    reason,
+                                ) => {
+                                    Either::Left(
+                                        Either::Left(
+                                            view! {
+                                                <div class="flex flex-col gap-2">
+                                                    <h2 class="flex gap-2">
+                                                    <span class="text-lg">
+                                                        Odmówiono obecność
+                                                    </span>
+                                                        <span class="rounded-md flex align-center pl-2 pr-2 bg-violet-500/50 outline outline-violet-500 flex gap-2">
+                                                            <PhoneIcon />
+                                                            {format!("{}", phone)}
+                                                        </span>
+                                                    </h2>
+                                                    <div class="flex flex-col gap-2">
+                                                        <span class="rounded-md flex align-center p-1 pl-2 pr-2 bg-orange-500/50 outline outline-orange-500 flex gap-2">{format!("{}", reason)}</span>
+                                                    </div>
+
+                                                    <ul class="flex flex-row gap-2">
+                                                        {att
+                                                            .meals
+                                                            .iter()
+                                                            .map(|meal| {
+                                                                view! {
+                                                                    <li class="w-fit p-1 outline rounded-md gap-2 outline-yellow-800 bg-yellow-800/50">
+                                                                        {meals
+                                                                            .get(&meal.0)
+                                                                            .map(|meal| format!("{}", meal.name))
+                                                                            .unwrap_or(format!("Nieprawidłówy posiłek"))}
+                                                                    </li>
+                                                                }
+                                                            })
+                                                            .collect::<Vec<_>>()}
+                                                    </ul>
+                                                </div>
+                                            },
+                                        ),
+                                    )
                                 }
                                 dto::attendance::AttendanceItemDto::Override(id, reason) => {
                                     Either::Left(
@@ -79,7 +120,7 @@ pub fn MealHistoryModalInner(
                                                     <h2 class="text-lg">
                                                         Nadpisano obecność dla
                                                         <a
-                                                            class="rounded-md p-1 bg-gray-600 outline outline-gray-400"
+                                                            class="rounded-md p-1 bg-gray-600/50 outline outline-gray-600"
                                                             href=format!("/attendance/{}", id)
                                                         >
                                                             {groups

@@ -1,14 +1,3 @@
-DROP TABLE messages;
-CREATE TABLE messages (
-	id uuid primary key default gen_random_uuid(),
-	content text NOT NULL ,
-	phone text NOT NULL,
-	processed bool NOT NULL default false,
-	outgoing bool NOT NULL,
-	inserted timestamp default LOCALTIMESTAMP(0) NOT NULL,
-	sent timestamp
-);
-
 CREATE OR REPLACE FUNCTION notifymsg() RETURNS trigger AS $$
 DECLARE
 BEGIN

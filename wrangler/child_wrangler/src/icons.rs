@@ -17,4 +17,6 @@ pub mod history;
 pub mod list_icon;
 pub mod range;
 pub mod meal;
+pub mod calendar;
+pub mod question;
 

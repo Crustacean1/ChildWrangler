@@ -69,15 +69,21 @@ CREATE TABLE catering_meals(
 	meal_order integer not null
 );
 
-CREATE TABLE msg_trigger (
-	message_id uuid,
-	id uuid primary key default gen_random_uuid(),
-	started timestamp
+CREATE TABLE messages (
+	id uuid primary key default gen_random_uuid() NOT NULL,
+	content text NOT NULL,
+	phone text NOT NULL,
+	outgoing bool NOT NULL,
+	inserted timestamp default NOW() NOT NULL,
+	processed bool default false NOT NULL,
+	cause_id uuid references messages(id),
+	sent timestamp
 );
 
-CREATE TABLE processing_info (
+CREATE TABLE processing_step (
 	id int primary key generated always as identity,
-	cause_id uuid not null references msg_trigger(id),
+	completed timestamp,
+	cause_id uuid not null references messages(id),
 	value jsonb not null
 );
 
@@ -99,14 +105,6 @@ CREATE TABLE attendance (
 CREATE INDEX attendance_composite ON attendance (day, meal_id, target, originated) INCLUDE (value);
 CREATE INDEX attendance_day ON attendance (day);
 CREATE INDEX attendance_target ON attendance (target);
-
-CREATE TABLE messages (
-	id uuid primary key default gen_random_uuid(),
-	received timestamptz not null,
-	sender text not null,
-	content text not null
-);
-
 
 CREATE VIEW effective_attendance AS SELECT DISTINCT ON (day, meal_id, target) day, meal_id, target, value, cause_id FROM attendance ORDER BY day, meal_id, target, originated DESC, cause_id;
 CREATE VIEW rooted_attendance AS SELECT bool_and(effective_attendance.value) AS present, effective_attendance.day, effective_attendance.meal_id, student_relation.child as student_id, group_relations.parent AS root FROM group_relations

@@ -68,7 +68,7 @@ pub async fn get_groups() -> Result<Vec<GroupDto>, ServerFnError> {
 
     let result = sqlx::query_as!(
         GroupDto,
-        r#"SELECT groups.id AS "id!", groups.name AS "name!", group_relations.parent AS "parent: Option<Uuid>" FROM groups 
+        r#"SELECT groups.id AS "id!",  group_relations.parent AS "parent?", groups.name AS "name!" FROM groups 
         LEFT JOIN group_relations ON group_relations.child = groups.id AND group_relations.level = 1 
         WHERE NOT groups.removed
         "#)

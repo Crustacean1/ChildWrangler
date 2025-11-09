@@ -1,9 +1,9 @@
 use chrono::{Duration, TimeDelta, Utc};
-use dto::messages::{GeneralMessageDto, PhoneStatusDto};
+use dto::messages::{Message, PhoneStatusDto};
 use leptos::{either::Either, prelude::*};
 
 use crate::{
-    components::loader::Loader,
+    components::{loader::Loader, messages::InnerMessages},
     services::messages::{get_latest_messages, get_phone_status},
 };
 
@@ -29,52 +29,10 @@ pub fn MessageDashboard() -> impl IntoView {
 }
 
 #[component]
-pub fn MessageView(message: GeneralMessageDto) -> impl IntoView {
-    match message.msg_type {
-        dto::messages::MessageType::Received(_) => Either::Left(Either::Left(view! {
-            <div class="card p-2 self-start">
-                <div class="padded">{format!("Od: {}", message.sender)}</div>
-                <span class="spacer"></span>
-                <div class="background-4 padded">{message.content}</div>
-                <span class="spacer"></span>
-                <div class="grid-2 gap padded">
-                    <small class="gray">Wysłano</small>
-                    <small class="gray">{format!("{:?}", message.sent)}</small>
-                    <small class="gray">Otrzymano</small>
-                    <small class="gray">{format!("{}", message.inserted)}</small>
-                </div>
-            </div>
-            <div></div>
-        })),
-        dto::messages::MessageType::Pending => Either::Left(Either::Right(view! {
-            <div class="card self-end p-2">{message.content}</div>
-            <div></div>
-        })),
-        dto::messages::MessageType::Sent => Either::Right(view! {
-            <div></div>
-            <div class="card self-end p-2">
-                <div class="padded">{format!("Do: {}", message.sender)}</div>
-                <span class="spacer"></span>
-                <div class="background-4 padded">{format!("{}", message.content)}</div>
-                <span class="spacer"></span>
-                <div class="grid-2 gap padded">
-                    <small class="gray">Zakolejkowano</small>
-                    <small class="gray">{format!("{:?}", message.sent)}</small>
-                    <small class="gray">Wysłano</small>
-                    <small class="gray">{format!("{}", message.inserted)}</small>
-                </div>
-            </div>
-        }),
-    }
-}
-
-#[component]
 pub fn MessageDashboardInner(
     phone: Option<PhoneStatusDto>,
-    mut messages: Vec<GeneralMessageDto>,
+    messages: Vec<Message>,
 ) -> impl IntoView {
-    messages.sort_by_key(|m| m.inserted);
-
     view! {
         <div class="card">
             <h2 class="h2">Phone status</h2>
@@ -106,16 +64,7 @@ pub fn MessageDashboardInner(
                 })
                 .unwrap_or(Either::Right(view! { <span>Nie wykryto modemu</span> }))}
         </div>
-        <div class="grid grid-cols-3 gap-2">
-            <div></div>
-            <div style="grid-row: 1/9999; grid-column:2/3"></div>
-            <div></div>
-            {messages
-                .into_iter()
-                .rev()
-                .map(|message| view! { <MessageView message /> })
-                .collect::<Vec<_>>()}
-        </div>
+        <InnerMessages messages />
     }
 }
 

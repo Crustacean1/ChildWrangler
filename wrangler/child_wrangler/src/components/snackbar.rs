@@ -60,23 +60,13 @@ pub fn Snackbar(children: ChildrenFn) -> impl IntoView {
 
     let div_ref = NodeRef::new();
 
-    Effect::new(move || {
-        let div: HtmlDivElement = div_ref.get().expect("sdfa");
-        div.style(format!(
-            "left: 0; transition-duration: 0.25s; transform: translate(-50%,100%);bottom: {}em",
-            messages().len() as f32 * 3.5
-        ));
-    });
-
     view! {
         {children()}
         <div
-            class="snackbar-root fixed z-2 w-0"
-            style:bottom="1em"
-            style:left="50%"
+            class="snackbar-root fixed z-2 left-2 bottom-2"
             data-testid="snackbar-root"
         >
-            <div node_ref=div_ref class="relative gap reverse-vertical align-center">
+            <div node_ref=div_ref class="relative gap-2 flex flex-col-reverse align-center">
                 <For
                     each=move || {
                         let mut messages = messages();
@@ -87,7 +77,7 @@ pub fn Snackbar(children: ChildrenFn) -> impl IntoView {
                     let:child
                 >
                     <div
-                        class="snackbar-msg rounded-md p-2 outline-1 select-none w-fit"
+                        class="snackbar-msg rounded-md p-2 outline-1 select-none"
                         class:bg-red-600=child.msg_type == MsgType::Error
                         class:bg-green-600=child.msg_type == MsgType::Success
                         on:click=move |_| set_messages.write().retain(|msg| msg.id != child.id)

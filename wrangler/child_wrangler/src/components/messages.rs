@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 
-use dto::messages::{Message, MessageType};
+use chrono::NaiveDateTime;
+use dto::messages::{Message, PendingMessage, ReceivedMessage, SentMessage};
 use leptos::{either::Either, logging::log, prelude::*};
 use uuid::Uuid;
 
@@ -51,7 +52,7 @@ pub fn Messages(phone: String) -> impl IntoView {
                         ServerFnError,
                     >(
                         view! {
-                            <div class="flex-1 background-2 vertical gap padded rounded overflow-hidden">
+                            <div class="flex-1 background-2 vertical gap padded rounded overflow-auto">
                                 <InnerMessages messages />
                             </div>
                             <div class="flex flex-row gap-2">
@@ -87,14 +88,17 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
 
     for message in messages {
         let day = sorted_messages
-            .entry(message.inserted.date())
+            .entry(message.metadata().inserted.date())
             .or_insert(vec![]);
         day.push(message);
-        day.sort_by_key(|m| m.inserted);
+    }
+
+    for (day, messages) in sorted_messages.iter_mut() {
+        messages.sort_by_key(|m| m.metadata().inserted);
     }
 
     view! {
-        <div class="overflow-auto flex-1 flex flex-col-reverse gap-2">
+        <div class="overflow-auto flex-1 gap-2 grid grid-cols-3">
             {if sorted_messages.is_empty() {
                 Either::Left(view! { <li class="padded dashed rounded">Brak wiadomości</li> })
             } else {
@@ -102,49 +106,40 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
             }}
             {sorted_messages
                 .into_iter()
-                .rev()
                 .map(|(day, messages)| {
                     view! {
+                        <div class="text-center before:w-full before:absolute before:top-2 before:left-0 before:rounded-full before:bg-gray-300/25 before:h-0.5 before:content-[''] col-span-3 relative">
+                            <span class="z-index-2 bg-gray-950">
+                                {format!("{}", day.format("%d %B %Y"))}
+                            </span>
+                        </div>
                         {messages
                             .into_iter()
-                            .rev()
                             .map(|message| {
-                                match {
-                        MessageType::Received(sent,processed) => view!{<Received message sent processed/>},
-                        MessageType::Sent(sent) => view!{<SentMessage message sent/>},
-                        MessageType::Pending => view!{<PendingMessage message/>}
-                    }
-                                view! {
-
-                                    <div
-                                        class="flex flex-col gap-1"
-
-                                        class:self-start=if let MessageType::Received(_,_) = message
-                                            .msg_type
-                                        {
-                                            true
-                                        } else {
-                                            false
-                                        }
-                                        class:self-end=message.msg_type == MessageType::Sent(_)
-                                            || message.msg_type == MessageType::Pending
-                                    >
-                                        <div
-                                            on:click=move |_| set_show_details(Some(message.id))
-                                            class="card row row-col p-2"
-                                        >
-                                            <span>{format!("{}", message.content)}</span>
-                                        </div>
-                                        <small class="self-end gray">
-                                            {format!("Odebrano: {}", message.sent.format("%H:%M:%S"))}
-                                        </small>
-                                    </div>
+                                match message {
+                                    Message::Received(message) => {
+                                        Either::Left(
+                                            Either::Left(
+                                                view! {
+                                                    <ReceivedMessageView
+                                                        on_click=move |id| set_show_details(Some(id))
+                                                        message
+                                                    />
+                                                },
+                                            ),
+                                        )
+                                    }
+                                    Message::Sent(message) => {
+                                        Either::Left(
+                                            Either::Right(view! { <SentMessageView message /> }),
+                                        )
+                                    }
+                                    Message::Pending(message) => {
+                                        Either::Right(view! { <PendingMessageView message /> })
+                                    }
                                 }
                             })
                             .collect::<Vec<_>>()}
-                        <div class="date-break">
-                            <span>{format!("{}", day.format("%d-%m-%Y"))}</span>
-                        </div>
                     }
                 })
                 .collect::<Vec<_>>()}
@@ -165,4 +160,53 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
     }
 }
 
-#[c]
+#[component]
+pub fn PendingMessageView(message: PendingMessage) -> impl IntoView {
+    view! {
+        <div></div>
+        <div></div>
+        <div class="flex flex-col gap-1 ">
+            <div class="card row row-col p-2">
+                <span>{format!("{}", message.data.content)}</span>
+            </div>
+            <small class="self-end gray">
+                {format!("Zakolejkowano: {}", message.metadata.inserted.format("%H:%M:%S"))}
+            </small>
+        </div>
+    }
+}
+
+#[component]
+pub fn SentMessageView(message: SentMessage) -> impl IntoView {
+    view! {
+        <div></div>
+        <div></div>
+        <div class="flex flex-col gap-1 ">
+            <div on:click=move |_| {} class="card row row-col p-2">
+                <span>{format!("{}", message.data.content)}</span>
+            </div>
+            <small class="self-end gray">
+                {format!("Wysłano: {}", message.sent.format("%H:%M:%S"))}
+            </small>
+        </div>
+    }
+}
+
+#[component]
+pub fn ReceivedMessageView(
+    message: ReceivedMessage,
+    on_click: impl Fn(Uuid) + Copy + 'static,
+) -> impl IntoView {
+    view! {
+        <div class="flex flex-col gap-1 ">
+            <div on:click=move |_| on_click(message.metadata.id) class="card row row-col p-2">
+                <span>{format!("{}", message.data.content)}</span>
+            </div>
+            <small class="self-end gray">
+                {format!("Odebrano: {}", message.received.format("%H:%M:%S"))}
+            </small>
+        </div>
+        <div></div>
+        <div></div>
+    }
+}

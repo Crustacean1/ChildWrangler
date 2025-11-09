@@ -117,12 +117,12 @@ pub async fn get_effective_attendance(
     .is_some();
 
     let attendance = sqlx::query!(
-        "SELECT DISTINCT ON (day,meal_id) day, meal_id, value, target, cause_id, 
+        "SELECT DISTINCT ON (day,meal_id) day, meal_id, value, target, effective_attendance.cause_id, 
     (attendance_override.id IS NOT NULL) AS is_override,
-    (msg_trigger.id IS NOT NULL) AS is_cancellation FROM effective_attendance 
+    (messages.id IS NOT NULL) AS is_cancellation FROM effective_attendance 
     INNER JOIN group_relations ON group_relations.parent = effective_attendance.target
     LEFT JOIN attendance_override ON attendance_override.id = effective_attendance.cause_id
-    LEFT JOIN msg_trigger ON msg_trigger.id = cause_id
+    LEFT JOIN messages ON messages.id = effective_attendance.cause_id
     WHERE group_relations.child=$1 AND day >= $2 AND day < $3
     ORDER BY day, meal_id, value, level DESC",
         dto.target,
@@ -197,13 +197,13 @@ pub async fn get_attendance_history(
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
     let history = sqlx::query!(
-        "SELECT attendance.target, attendance.cause_id, originated, ARRAY_AGG((meal_id, value)) AS \"meals: Vec<(Uuid,bool)>\", note, msg_trigger.message_id AS msg_id FROM group_relations
+        r#"SELECT attendance.target, attendance.cause_id, messages.phone AS "phone?", messages.content AS "content?", originated, ARRAY_AGG((meal_id, value)) AS "meals: Vec<(Uuid,bool)>", note, messages.id AS "msg_id?" FROM group_relations
     INNER JOIN attendance ON attendance.target = group_relations.parent
     LEFT JOIN attendance_override ON attendance_override.id = attendance.cause_id
-    LEFT JOIN msg_trigger ON msg_trigger.id = attendance.cause_id
+    LEFT JOIN messages ON messages.id = attendance.cause_id
     WHERE group_relations.child = $1 AND attendance.day = $2 
-    GROUP BY cause_id, originated, attendance_override.id, msg_trigger.message_id , target
-    ORDER BY originated",
+    GROUP BY attendance.cause_id, attendance.originated, attendance_override.id, messages.id , target
+    ORDER BY originated"#,
         dto.target,
         dto.date
     )
@@ -217,7 +217,7 @@ pub async fn get_attendance_history(
                 AttendanceHistoryItemDto {
                     time: row.originated,
                     meals: row.meals.unwrap_or_default(),
-                    item: AttendanceItemDto::Cancellation(msg_id, String::new(), String::new()),
+                    item: AttendanceItemDto::Cancellation(msg_id, row.phone.unwrap_or_default(), row.content.unwrap_or_default()),
                 }
             } else if let Some(note) = row.note {
                 AttendanceHistoryItemDto {
@@ -235,10 +235,10 @@ pub async fn get_attendance_history(
         })
         .collect::<Vec<_>>();
 
-    let events = sqlx::query!(r#"SELECT note, msg_trigger.id AS "trigger_id?", target, level FROM group_relations
+    let events = sqlx::query!(r#"SELECT note, messages.id AS "trigger_id?", target, level FROM group_relations
     INNER JOIN effective_attendance ON effective_attendance.target = group_relations.parent
     LEFT JOIN attendance_override ON attendance_override.id = effective_attendance.cause_id
-    LEFT JOIN msg_trigger ON msg_trigger.id = effective_attendance.cause_id
+    LEFT JOIN messages ON messages.id = effective_attendance.cause_id
     WHERE group_relations.child = $1 AND effective_attendance.day = $2 AND effective_attendance.meal_id = $3 AND ((level > 0 AND value = false) OR level = 0)
     ORDER BY level DESC LIMIT 1"#, dto.target, dto.date, Uuid::nil())
     .fetch_optional(&pool)
@@ -407,12 +407,12 @@ pub async fn get_attendance_overview(
     use sqlx::postgres::PgPool;
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
-    let students = sqlx::query!("SELECT bool_and(value) AS value, meal_id,  (attendance_override.id IS NOT NULL) AS is_override, students.id AS id, (msg_trigger.id IS NOT NULL) AS is_cancellation, students.allergy_combination_id AS allergies_id FROM caterings
+    let students = sqlx::query!("SELECT bool_and(value) AS value, meal_id,  (attendance_override.id IS NOT NULL) AS is_override, students.id AS id, (messages.id IS NOT NULL) AS is_cancellation, students.allergy_combination_id AS allergies_id FROM caterings
     INNER JOIN group_relations ON group_relations.parent = caterings.group_id
     INNER JOIN students ON students.id = group_relations.child
     INNER JOIN total_attendance ON total_attendance.student_id = students.id
     LEFT JOIN attendance_override ON attendance_override.id = total_attendance.cause_id
-    LEFT JOIN msg_trigger ON msg_trigger.id = total_attendance.cause_id
+    LEFT JOIN messages ON messages.id = total_attendance.cause_id
     WHERE total_attendance.day = $1 AND caterings.id = $2
     GROUP BY students.id, meal_id, is_override, is_cancellation
 ",  date, catering_id)

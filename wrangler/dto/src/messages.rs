@@ -20,24 +20,92 @@ pub struct DbMessage {
     pub content: String,
     pub sent: Option<NaiveDateTime>,
     pub inserted: NaiveDateTime,
+    pub cause_id: Option<Uuid>,
     pub outgoing: bool,
     pub processed: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Message {
-    pub id: Uuid,
-    pub phone: String,
-    pub content: String,
-    pub inserted: NaiveDateTime,
-    pub msg_type: MessageType,
+pub fn parse_message(msg: DbMessage) -> Message {
+    let metadata = MessageMetadata {
+        id: msg.id,
+        inserted: msg.inserted,
+    };
+    let data = MessageData {
+        phone: msg.phone,
+        content: msg.content,
+    };
+
+    match (msg.sent, msg.outgoing) {
+        (Some(sent), true) => Message::Sent(SentMessage {
+            metadata,
+            data,
+            sent,
+        }),
+        (Some(received), false) => Message::Received(ReceivedMessage {
+            data,
+            metadata,
+            received,
+            processed: msg.processed,
+        }),
+        (None, true) => Message::Pending(PendingMessage { data, metadata }),
+        _ => panic!("Invalid message combination"),
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum MessageType {
-    Sent(NaiveDateTime),
-    Received(NaiveDateTime, bool),
-    Pending,
+pub struct MessageMetadata {
+    pub id: Uuid,
+    pub inserted: NaiveDateTime,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct MessageData {
+    pub phone: String,
+    pub content: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct SentMessage {
+    pub metadata: MessageMetadata,
+    pub data: MessageData,
+    pub sent: NaiveDateTime,
+}
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ReceivedMessage {
+    pub metadata: MessageMetadata,
+    pub data: MessageData,
+    pub received: NaiveDateTime,
+    pub processed: bool,
+}
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct PendingMessage {
+    pub metadata: MessageMetadata,
+    pub data: MessageData,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum Message {
+    Sent(SentMessage),
+    Received(ReceivedMessage),
+    Pending(PendingMessage),
+}
+
+impl Message {
+    pub fn metadata(&self) -> &MessageMetadata {
+        match self {
+            Message::Sent(sent_message) => &sent_message.metadata,
+            Message::Received(received_message) => &received_message.metadata,
+            Message::Pending(pending_message) => &pending_message.metadata,
+        }
+    }
+
+    pub fn data(&self) -> &MessageData {
+        match self {
+            Message::Sent(sent_message) => &sent_message.data,
+            Message::Received(received_message) => &received_message.data,
+            Message::Pending(pending_message) => &pending_message.data,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -100,8 +168,8 @@ pub enum RequestError {
     InvalidTimeRange,
     TooManyDates,
     NoDateSpecified,
-    UnknownTerm,
-    AmbiguousTerm,
+    UnknownTerm(String),
+    AmbiguousTerm(String),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -125,14 +193,4 @@ pub struct PhoneStatusDto {
     pub total_sent: i32,
     pub total_received: i32,
     pub signal: i32,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GeneralMessageDto {
-    pub msg_type: MessageType,
-    pub message_id: Uuid,
-    pub sent: Option<NaiveDateTime>,
-    pub inserted: NaiveDateTime,
-    pub sender: String,
-    pub content: String,
 }

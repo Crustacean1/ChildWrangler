@@ -4,8 +4,11 @@ pub mod tests;
 
 use std::env;
 
-use chrono::{Datelike, Months, NaiveDate, NaiveDateTime};
-use dto::messages::{Meal, MessageProcessing, RequestError, Student, StudentCancellation, Token};
+use chrono::{Datelike, Months, NaiveDate};
+use dto::messages::{
+    DbMessage, Meal, Message, MessageData, MessageProcessing, ReceivedMessage, RequestError,
+    Student, StudentCancellation, Token, parse_message,
+};
 use itertools::Itertools;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -21,41 +24,45 @@ use crate::{
 async fn fetch_and_process<'a, 'b>(pool: &PgPool) -> Option<()> {
     let mut tr = pool.begin().await.expect("Failed to start transaction");
 
-    let message = sqlx::query!(
-        "SELECT id, phone, content, sent FROM messages WHERE NOT processed AND NOT outgoing LIMIT 1 "
+    let message = sqlx::query_as!(
+        DbMessage,
+        r#"SELECT messages.* FROM messages 
+        WHERE NOT outgoing AND NOT processed 
+        LIMIT 1 FOR UPDATE SKIP LOCKED"#
     )
     .fetch_optional(&mut *tr)
     .await
-    .expect("Failed to retrieve message from db")
-    .map(|row| Message {
-        id: row.id,
-        sender: row.phone,
-        content: row.content,
-        arrived: row.sent,
-    })?;
+    .expect("Failed to retrieve message from db")?;
 
-    log::info!(
-        "Received message {}: {} from {}",
-        message.id,
-        message.content,
-        message.sender
-    );
+    let message = parse_message(message);
 
-    match fetch_message(message.clone(), &mut *tr)
-        .await
-        .expect("Failed to process message")
-    {
-        Some(_) => log::info!("Message processed"),
-        None => log::info!(
-            "Skipped message, no guardian matches phone: {}",
-            message.sender
-        ),
+    log::info!("Received message notification: {:?}", message);
+
+    match &message {
+        Message::Received(message) => {
+            match fetch_message(message.clone(), &mut *tr)
+                .await
+                .expect("Failed to process message")
+            {
+                Some(_) => log::info!("Message processed"),
+                None => log::info!(
+                    "Skipped message, no guardian matches phone: {}",
+                    message.data.phone
+                ),
+            }
+        }
+        _ => {
+            log::warn!(
+                "Message is not recognized as incoming, skipping processing (this shouldn't have happened, msg_id: {})",
+                message.metadata().id
+            )
+        }
     }
 
     log::info!("Done, marking as processed");
     sqlx::query!(
         "UPDATE messages SET processed = true WHERE id = $1",
-        message.id
+        message.metadata().id
     )
     .execute(&mut *tr)
     .await
@@ -115,20 +122,12 @@ pub struct OutMsg {
     pub content: String,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Message {
-    pub id: Uuid,
-    pub sender: String,
-    pub content: String,
-    pub arrived: NaiveDateTime,
-}
-
 pub enum Cancellation {
     FullCancellation(AttendanceCancellation),
     PartialCancellation(AttendanceCancellation),
 }
 
-pub fn into_token(word: &str, message: &Message, students: &[Student]) -> Token {
+pub fn into_token(word: &str, message: &ReceivedMessage, students: &[Student]) -> Token {
     let long_date_regex = Regex::new(r"^((\d{1,2})(-|\.|\/)(\d{1,2})(-|\.|\/)(\d{4}))$").unwrap();
     let middle_date_regex = Regex::new(r"^((\d{1,2})(-|\.|\/)(\d{1,2})(-|\.|\/)(\d{2}))$").unwrap();
     let short_date_regex = Regex::new(r"^((\d{1,2})(-|\.|\/)(\d{1,2}))$").unwrap();
@@ -155,7 +154,7 @@ pub fn into_token(word: &str, message: &Message, students: &[Student]) -> Token 
         let year: Result<i32, _> = date[6].parse();
 
         if let (Ok(year), Ok(month), Ok(day)) = (year, month, day) {
-            let current_year = (message.arrived.year() / 10) * 10;
+            let current_year = (message.received.year() / 10) * 10;
             if let Some(date) = NaiveDate::from_ymd_opt(current_year + year, month, day) {
                 Token::Date(date)
             } else {
@@ -168,10 +167,10 @@ pub fn into_token(word: &str, message: &Message, students: &[Student]) -> Token 
         let day = date[2].parse();
         let month = date[4].parse();
 
-        let current_year = message.arrived.year();
+        let current_year = message.received.year();
         if let (Ok(month), Ok(day)) = (month, day) {
             if let Some(date) = NaiveDate::from_ymd_opt(current_year, month, day) {
-                if date < message.arrived.date() {
+                if date < message.received.date() {
                     if let Some(next_date) = date.checked_add_months(Months::new(12)) {
                         Token::Date(next_date)
                     } else {
@@ -208,25 +207,23 @@ pub fn into_token(word: &str, message: &Message, students: &[Student]) -> Token 
 
 pub async fn message_pipeline<C>(
     students: &Vec<Student>,
-    message: &Message,
+    message: &ReceivedMessage,
     conn: &mut C,
 ) -> Result<(), Error>
 where
     C: Connection<Database = Postgres>,
     for<'a> &'a mut C: Executor<'a, Database = Postgres>,
 {
-    let id = message.id;
+    let id = message.metadata.id;
 
     save_state(MessageProcessing::Context(students.clone()), id, conn).await?;
-
-    save_trigger(message.id, id, conn).await?;
 
     let tokens = into_tokens(message, students);
     save_state(MessageProcessing::Tokens(tokens.clone()), id, conn).await?;
 
     let request = into_request(&tokens);
 
-    let message = match request {
+    let response = match request {
         Ok(request) => {
             save_state(MessageProcessing::Cancellation(request.clone()), id, conn).await?;
 
@@ -249,13 +246,12 @@ where
         }
     };
 
-    let out_msg_id = enqueue_message(message, conn).await?;
-    //save_trigger(out_msg_id, id, conn).await?;
+    enqueue_message(response, id, conn).await?;
 
     Ok(())
 }
 
-fn into_err_msg(err: &RequestError, message: &Message) -> OutMsg {
+fn into_err_msg(err: &RequestError, message: &ReceivedMessage) -> MessageData {
     let content = match err {
         RequestError::InvalidTimeRange => format!("Podano nieprawidłowy zakres dat"),
         RequestError::TooManyDates => format!(
@@ -264,21 +260,28 @@ fn into_err_msg(err: &RequestError, message: &Message) -> OutMsg {
         RequestError::NoDateSpecified => format!(
             "Nie podano żadnej daty - należy podać pojedyńczą date nieobecności, lub okres pomiędzy 2 datami odseparowane spacją"
         ),
-        RequestError::UnknownTerm => {
-            format!("Termin '' nie jest prawidłowym określeniem na posiłek / ucznia")
+        RequestError::UnknownTerm(term) => {
+            format!(
+                "Termin '{}' nie jest prawidłowym określeniem na posiłek / ucznia",
+                term
+            )
         }
-        RequestError::AmbiguousTerm => {
-            format!("Termin '' może odnosić się do więcej niż jednego posiłku / ucznia")
+        RequestError::AmbiguousTerm(term) => {
+            format!(
+                "Termin '{}' może odnosić się do więcej niż jednego posiłku / ucznia",
+                term
+            )
         }
     };
-    OutMsg {
+    MessageData {
+        phone: message.data.phone.clone(),
         content,
-        number: message.sender.clone(),
     }
 }
 
-fn into_tokens(message: &Message, students: &[Student]) -> Vec<Token> {
+fn into_tokens(message: &ReceivedMessage, students: &[Student]) -> Vec<Token> {
     message
+        .data
         .content
         .to_lowercase()
         .trim()
@@ -293,7 +296,7 @@ where
     for<'a> &'a mut C: Executor<'a, Database = Postgres>,
 {
     sqlx::query!(
-        "INSERT INTO processing_info (cause_id, value) VALUES ($1,$2)",
+        "INSERT INTO processing_step (cause_id, value) VALUES ($1,$2)",
         context,
         Json(state) as _
     )
@@ -302,22 +305,7 @@ where
     Ok(())
 }
 
-async fn save_trigger<C>(msg_id: Uuid, cause_id: Uuid, conn: &mut C) -> Result<(), Error>
-where
-    C: Connection<Database = Postgres>,
-    for<'a> &'a mut C: Executor<'a, Database = Postgres>,
-{
-    /*sqlx::query!(
-        "INSERT INTO processing_trigger (message_id, processing_id) VALUES ($1,$2)",
-        msg_id,
-        cause_id
-    )
-    .execute(conn)
-    .await?;*/
-    Ok(())
-}
-
-pub async fn fetch_message<C>(message: Message, tr: &mut C) -> Result<Option<()>, Error>
+pub async fn fetch_message<C>(message: ReceivedMessage, tr: &mut C) -> Result<Option<()>, Error>
 where
     C: Connection<Database = Postgres>,
     for<'a> &'a mut C: Executor<'a, Database = Postgres>,
@@ -326,7 +314,7 @@ where
         "SELECT guardians.id FROM guardians WHERE
     guardians.phone = $1  OR format('+48%s', guardians.phone) = $1
 ",
-        message.sender
+        message.data.phone
     )
     .fetch_optional(&mut *tr)
     .await?
@@ -365,15 +353,20 @@ where
     Ok(Some(()))
 }
 
-async fn enqueue_message<C>(message: OutMsg, connection: &mut C) -> Result<Uuid, Error>
+async fn enqueue_message<C>(
+    message: MessageData,
+    cause_id: Uuid,
+    connection: &mut C,
+) -> Result<Uuid, Error>
 where
     C: Connection<Database = Postgres>,
     for<'a> &'a mut C: Executor<'a, Database = Postgres>,
 {
     let id = sqlx::query!(
-        "INSERT INTO messages (phone, content, outgoing, sent) VALUES ($1,$2,true, NOW()) RETURNING id",
-        message.number,
+        "INSERT INTO messages (phone, content, outgoing, cause_id) VALUES ($1, $2, true, $3) RETURNING id",
+        message.phone,
         message.content,
+        cause_id
     )
     .fetch_one(&mut *connection)
     .await?

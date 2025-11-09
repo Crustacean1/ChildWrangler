@@ -3,13 +3,15 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-use dto::messages::{CancellationRequest, CancellationResult, RequestError};
 use chrono::{Days, NaiveTime};
+use dto::messages::{
+    CancellationRequest, CancellationResult, MessageData, ReceivedMessage, RequestError,
+};
 use itertools::Itertools;
 use sqlx::{Connection, Error, Executor, Postgres};
 use uuid::Uuid;
 
-use crate::{AttendanceCancellation, Message, OutMsg, Student, StudentCancellation, Token};
+use crate::{AttendanceCancellation, Student, StudentCancellation, Token};
 
 pub async fn save_attendance<C>(
     request: AttendanceCancellation,
@@ -57,11 +59,14 @@ where
         .collect())
 }
 
-pub fn construct_response(changes: &[CancellationResult], message: &Message) -> OutMsg {
+pub fn construct_response(
+    changes: &[CancellationResult],
+    message: &ReceivedMessage,
+) -> MessageData {
     if !changes.iter().any(|s| s.meals.iter().any(|(_, m)| *m != 0)) {
-        OutMsg {
+        MessageData {
             content: format!("Nie odwołano żadnej obecności"),
-            number: message.sender.clone(),
+            phone: message.data.phone.clone(),
         }
     } else {
         let info = changes
@@ -83,24 +88,24 @@ pub fn construct_response(changes: &[CancellationResult], message: &Message) -> 
                 )
             })
             .join("\n");
-        OutMsg {
+        MessageData {
             content: format!("Odwołano: \n{}", info),
-            number: message.sender.clone(),
+            phone: message.data.phone.clone(),
         }
     }
 }
 
 pub fn into_request(tokens: &[Token]) -> Result<CancellationRequest, RequestError> {
-    if tokens.iter().any(|token| match token {
-        Token::Unknown(_) => true,
-        _ => false,
+    if let Some(unknown) = tokens.iter().find_map(|token| match token {
+        Token::Unknown(unk) => Some(unk),
+        _ => None,
     }) {
-        Err(RequestError::UnknownTerm)
-    } else if tokens.iter().any(|token| match token {
-        Token::Ambiguous(_) => true,
-        _ => false,
+        Err(RequestError::UnknownTerm(unknown.clone()))
+    } else if let Some(ambiguous) = tokens.iter().find_map(|token| match token {
+        Token::Ambiguous(amb) => Some(amb),
+        _ => None,
     }) {
-        Err(RequestError::AmbiguousTerm)
+        Err(RequestError::AmbiguousTerm(ambiguous.clone()))
     } else {
         let dates = tokens
             .iter()
@@ -152,7 +157,7 @@ pub fn into_request(tokens: &[Token]) -> Result<CancellationRequest, RequestErro
 pub fn into_cancellations(
     request: &CancellationRequest,
     students: &[Student],
-    message: &Message,
+    message: &ReceivedMessage,
 ) -> AttendanceCancellation {
     let request_meals: HashSet<_> = request.meals.iter().collect();
 
@@ -174,7 +179,7 @@ pub fn into_cancellations(
                 let since = max(student.starts, min(student.ends, request.since));
                 let until = max(student.starts, min(student.ends, request.until));
 
-                let min_allowed = (message.arrived
+                let min_allowed = (message.received
                     - student
                         .grace_period
                         .signed_duration_since(NaiveTime::default()))
