@@ -62,10 +62,7 @@ pub fn Snackbar(children: ChildrenFn) -> impl IntoView {
 
     view! {
         {children()}
-        <div
-            class="snackbar-root fixed z-2 left-2 bottom-2"
-            data-testid="snackbar-root"
-        >
+        <div class="snackbar-root fixed z-2 left-2 bottom-2" data-testid="snackbar-root">
             <div node_ref=div_ref class="relative gap-2 flex flex-col-reverse align-center">
                 <For
                     each=move || {

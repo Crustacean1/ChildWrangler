@@ -3,15 +3,16 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-use chrono::{Days, NaiveTime};
+use chrono::{Days, NaiveDateTime, NaiveTime};
 use dto::messages::{
-    CancellationRequest, CancellationResult, MessageData, ReceivedMessage, RequestError,
+    AttendanceCancellation, CancellationRequest, CancellationResult, MessageData, MessageMetadata,
+    MessageProcessing, ReceivedMessage, RequestError,
 };
 use itertools::Itertools;
 use sqlx::{Connection, Error, Executor, Postgres};
 use uuid::Uuid;
 
-use crate::{AttendanceCancellation, Student, StudentCancellation, Token};
+use crate::{Student, StudentCancellation, Token};
 
 pub async fn save_attendance<C>(
     request: AttendanceCancellation,
@@ -27,15 +28,18 @@ where
         INNER JOIN group_relations ON group_relations.child = $1
         INNER JOIN caterings ON caterings.group_id = group_relations.parent
         INNER JOIN catering_meals ON catering_meals.meal_id = meals.id AND catering_meals.catering_id = caterings.id
-        INNER JOIN generate_series(LEAST(GREATEST($3::date,caterings.since),caterings.until),LEAST(GREATEST($4::date,caterings.since),caterings.until), '1 DAY') AS days(day) ON (caterings.dow >> (EXTRACT(DOW FROM day)::integer + 6) % 7)&1 = 1
-", student.id, &student.meals, student.since, student.until, cause_id).execute(&mut *connection).await?;
+        INNER JOIN generate_series(LEAST(GREATEST($3::date,caterings.since),caterings.until),LEAST(GREATEST($4::date,caterings.since),caterings.until), '1 DAY') AS days(day) ON (caterings.dow >> (EXTRACT(DOW FROM day)::integer + 6) % 7)&1 = 1",
+            student.id, &student.meals, student.since, student.until, cause_id)
+            .execute(&mut *connection)
+            .await?;
     }
 
     let effective_attendance = sqlx::query!(
-        "WITH affected_attendance AS (SELECT DISTINCT ON (ea.day,ea.meal_id,ea.target) ea.day, ea.meal_id, ea.target,group_relations.level FROM attendance AS src
+        "WITH exclusive_attendance AS (SELECT DISTINCT ON (day, meal_id, target) day, meal_id, target, value FROM attendance WHERE cause_id != $1 ORDER BY day, meal_id, target, originated DESC),
+        affected_attendance AS (SELECT DISTINCT ON (ea.day,ea.meal_id,ea.target) ea.day, ea.meal_id, ea.target,group_relations.level FROM attendance AS src
         INNER JOIN group_relations ON group_relations.child = src.target
-        INNER JOIN effective_attendance AS ea ON ea.day = src.day AND ea.meal_id = src.meal_id AND ea.target= group_relations.parent
-        WHERE src.cause_id  = $1 AND ea.value = false
+        INNER JOIN exclusive_attendance AS ea ON ea.day = src.day AND ea.meal_id = src.meal_id AND ea.target= group_relations.parent
+        WHERE src.cause_id = $1 AND ea.value = true
         ORDER BY ea.day, ea.meal_id, ea.target, group_relations.level)
         SELECT students.name AS student_name, meals.name AS meal_name, COUNT(*) AS cancelled FROM affected_attendance 
         INNER JOIN students ON students.id = affected_attendance.target
@@ -95,110 +99,98 @@ pub fn construct_response(
     }
 }
 
-pub fn into_request(tokens: &[Token]) -> Result<CancellationRequest, RequestError> {
-    if let Some(unknown) = tokens.iter().find_map(|token| match token {
-        Token::Unknown(unk) => Some(unk),
-        _ => None,
-    }) {
-        Err(RequestError::UnknownTerm(unknown.clone()))
-    } else if let Some(ambiguous) = tokens.iter().find_map(|token| match token {
-        Token::Ambiguous(amb) => Some(amb),
-        _ => None,
-    }) {
-        Err(RequestError::AmbiguousTerm(ambiguous.clone()))
-    } else {
-        let dates = tokens
-            .iter()
-            .filter_map(|token| match token {
-                Token::Date(date) => Some(date),
-                _ => None,
-            })
-            .collect::<Vec<_>>();
+pub fn into_request(tokens: &[Token]) -> MessageProcessing {
+    let mut dates = vec![];
+    let mut student_ids = vec![];
+    let mut meals = vec![];
 
-        let students = tokens
-            .iter()
-            .filter_map(|token| match token {
-                Token::Student(id) => Some(*id),
-                _ => None,
-            })
-            .collect::<Vec<_>>();
-
-        let meals = tokens
-            .iter()
-            .filter_map(|token| match token {
-                Token::Meal(id) => Some(*id),
-                _ => None,
-            })
-            .collect::<Vec<_>>();
-
-        let (since, until) = match dates.len() {
-            0 => Err(RequestError::NoDateSpecified),
-            1 => Ok((*dates[0], *dates[0])),
-            2 => {
-                let (since, until) = (*dates[0], *dates[1]);
-                if until < since {
-                    Err(RequestError::InvalidTimeRange)
-                } else {
-                    Ok((since, until))
-                }
+    for token in tokens {
+        match token {
+            Token::Student(uuid) => student_ids.push(*uuid),
+            Token::Date(naive_date) => dates.push(*naive_date),
+            Token::Meal(uuid) => meals.push(*uuid),
+            Token::Unknown(unknown) => {
+                return MessageProcessing::RequestError(RequestError::UnknownTerm(unknown.clone()));
             }
-            _ => Err(RequestError::TooManyDates),
-        }?;
+            Token::Ambiguous(ambiguous) => {
+                return MessageProcessing::RequestError(RequestError::AmbiguousTerm(
+                    ambiguous.clone(),
+                ));
+            }
+        }
+    }
 
-        Ok(CancellationRequest {
+    let range = match dates.len() {
+        0 => Err(RequestError::NoDateSpecified),
+        1 => Ok((dates[0], dates[0])),
+        2 => {
+            let (since, until) = (dates[0], dates[1]);
+            if until < since {
+                Err(RequestError::InvalidTimeRange)
+            } else {
+                Ok((since, until))
+            }
+        }
+        _ => Err(RequestError::TooManyDates),
+    };
+
+    match range {
+        Ok((since, until)) => MessageProcessing::Cancellation(CancellationRequest {
             since,
             until,
-            students,
+            students: student_ids,
             meals,
-        })
+        }),
+        Err(error) => MessageProcessing::RequestError(error),
     }
 }
 
 pub fn into_cancellations(
     request: &CancellationRequest,
     students: &[Student],
-    message: &ReceivedMessage,
+    received: NaiveDateTime,
 ) -> AttendanceCancellation {
     let request_meals: HashSet<_> = request.meals.iter().collect();
 
-    AttendanceCancellation {
-        students: students
-            .into_iter()
-            .filter(|s| request.students.iter().any(|s2| *s2 == s.id))
-            .filter_map(|student| {
-                let student_meals: Vec<_> = student.meals.iter().map(|m| m.id).collect();
-                let meals = if request_meals.iter().any(|_| true) {
-                    student_meals
-                        .into_iter()
-                        .filter(|m| request_meals.contains(&m))
-                        .collect()
-                } else {
-                    student_meals
-                };
+    let default_student = request.students.is_empty() && students.len() == 1;
 
-                let since = max(student.starts, min(student.ends, request.since));
-                let until = max(student.starts, min(student.ends, request.until));
+    let students = students
+        .into_iter()
+        .filter(|s| default_student || request.students.iter().any(|s2| *s2 == s.id))
+        .filter_map(|student| {
+            let student_meals: Vec<_> = student.meals.iter().map(|m| m.id).collect();
+            let meals = if request_meals.iter().any(|_| true) {
+                student_meals
+                    .into_iter()
+                    .filter(|m| request_meals.contains(&m))
+                    .collect()
+            } else {
+                student_meals
+            };
 
-                let min_allowed = (message.received
-                    - student
-                        .grace_period
-                        .signed_duration_since(NaiveTime::default()))
-                .date()
-                .checked_add_days(Days::new(1))?;
+            let min_grace_period = (received
+                - student
+                    .grace_period
+                    .signed_duration_since(NaiveTime::default()))
+            .date()
+            .checked_add_days(Days::new(1))?;
+            let min_allowed = max(min_grace_period, student.starts);
 
-                let since = max(min_allowed, since);
+            let since = max(min_allowed, min(student.ends, request.since));
+            let until = max(min_allowed, min(student.ends, request.until));
 
-                if since > until {
-                    None
-                } else {
-                    Some(StudentCancellation {
-                        id: student.id,
-                        meals,
-                        since,
-                        until,
-                    })
-                }
-            })
-            .collect(),
-    }
+            if since > until {
+                None
+            } else {
+                Some(StudentCancellation {
+                    id: student.id,
+                    meals,
+                    since,
+                    until,
+                })
+            }
+        })
+        .collect();
+
+    AttendanceCancellation { students }
 }

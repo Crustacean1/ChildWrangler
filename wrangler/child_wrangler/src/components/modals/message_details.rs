@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use dto::{
     catering::MealDto,
-    messages::{CancellationRequest, MessageProcessing, RequestError, Student, Token},
+    messages::{
+        AttendanceCancellation, CancellationRequest, CancellationResult, MessageProcessing, RequestError, Student, Token
+    },
     student::StudentDto,
 };
 use leptos::{either::Either, prelude::*};
@@ -74,10 +76,10 @@ fn MessageDetailsModalInner(
                             {details
                                 .into_iter()
                                 .map(|stage| match stage {
-                                    MessageProcessing::Context(students) => {
+                                    MessageProcessing::Init => {
                                         Either::Left(
                                             Either::Left(
-                                                Either::Left(view! { <ContextInfo students /> }),
+                                                Either::Left(view! { <ContextInfo /> }),
                                             ),
                                         )
                                     }
@@ -127,7 +129,10 @@ fn MessageDetailsModalInner(
                                         )
                                     }
                                     MessageProcessing::RequestError(error) => {
-                                        Either::Right(view! { <ComponentError error /> })
+                                        Either::Right(Either::Left(view! { <ComponentError error /> }))
+                                    },
+                                    MessageProcessing::CancellationResult(result) => {
+                                        Either::Right(Either::Right(view!{<CancellationResultView result/>}))
                                     }
                                 })
                                 .collect::<Vec<_>>()}
@@ -140,7 +145,15 @@ fn MessageDetailsModalInner(
 }
 
 #[component]
-pub fn ContextInfo(students: Vec<Student>) -> impl IntoView {
+pub fn CancellationResultView(result: Vec<CancellationResult>) -> impl IntoView {
+    view! {
+        <div>Cancellation result</div>
+    }
+}
+
+#[component]
+pub fn ContextInfo() -> impl IntoView {
+    /*
     view! {
         <div class="flex flex-col gap-2 bg-green-500/15 outline outline-green-500/50 rounded-md p-2">
             <h2 class="text-center">Kontekst wiadomości</h2>
@@ -175,6 +188,9 @@ pub fn ContextInfo(students: Vec<Student>) -> impl IntoView {
                     .collect::<Vec<_>>()}
             </ul>
         </div>
+    }*/
+    view! {
+        <div>Context goes here</div>
     }
 }
 
@@ -326,7 +342,7 @@ pub fn CancellationInfo(
 
 #[component]
 pub fn StudentCancellation(
-    cancellation: Vec<dto::messages::StudentCancellation>,
+    cancellation: AttendanceCancellation,
     students: HashMap<Uuid, StudentDto>,
     meals: HashMap<Uuid, MealDto>,
 ) -> impl IntoView {
@@ -334,6 +350,7 @@ pub fn StudentCancellation(
         <div class="flex flex-col gap-2 bg-green-500/15 outline outline-green-500/50 rounded-md p-2">
             <span>Odwołania</span>
             {cancellation
+                .students
                 .into_iter()
                 .map(|cancellation| {
                     view! {

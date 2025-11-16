@@ -168,6 +168,7 @@ pub enum RequestError {
     InvalidTimeRange,
     TooManyDates,
     NoDateSpecified,
+    NoStudentSpecified,
     UnknownTerm(String),
     AmbiguousTerm(String),
 }
@@ -180,10 +181,11 @@ pub struct CancellationResult {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum MessageProcessing {
-    Context(Vec<Student>),
+    Init,
     Tokens(Vec<Token>),
     Cancellation(CancellationRequest),
-    StudentCancellation(Vec<StudentCancellation>),
+    StudentCancellation(AttendanceCancellation),
+    CancellationResult(Vec<CancellationResult>),
     RequestError(RequestError),
 }
 

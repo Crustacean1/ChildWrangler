@@ -4,14 +4,13 @@ pub mod tests;
 
 use std::env;
 
-use chrono::{Datelike, Months, NaiveDate};
+use chrono::{Datelike, NaiveDate, NaiveDateTime};
 use dto::messages::{
     DbMessage, Meal, Message, MessageData, MessageProcessing, ReceivedMessage, RequestError,
     Student, StudentCancellation, Token, parse_message,
 };
 use itertools::Itertools;
-use regex::Regex;
-use serde::{Deserialize, Serialize};
+use regex::{Match, Regex};
 use simple_logger::SimpleLogger;
 use sqlx::{Connection, Error, Executor, PgPool, Postgres, postgres::PgListener, types::Json};
 use uuid::Uuid;
@@ -112,19 +111,27 @@ async fn main() {
         }
     }
 }
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct AttendanceCancellation {
-    pub students: Vec<StudentCancellation>,
-}
 
-pub struct OutMsg {
-    pub number: String,
-    pub content: String,
-}
-
-pub enum Cancellation {
-    FullCancellation(AttendanceCancellation),
-    PartialCancellation(AttendanceCancellation),
+fn into_date(
+    current: NaiveDateTime,
+    day: Option<Match>,
+    month: Option<Match>,
+    year: Option<Match>,
+) -> Option<NaiveDate> {
+    let day: u32 = day?.as_str().parse().ok()?;
+    let month: u32 = month?.as_str().parse().ok()?;
+    if let Some(year) = year {
+        let year: i32 = year.as_str().parse().ok()?;
+        NaiveDate::from_ymd_opt(year, month, day)
+    } else {
+        let current_date = NaiveDate::from_ymd_opt(current.year(), month, day)?;
+        let next_date = NaiveDate::from_ymd_opt(current.year() + 1, month, day)?;
+        if (current_date - current.date()) < (next_date - current.date()) {
+            Some(current_date)
+        } else {
+            Some(next_date)
+        }
+    }
 }
 
 pub fn into_token(word: &str, message: &ReceivedMessage, students: &[Student]) -> Token {
@@ -132,131 +139,94 @@ pub fn into_token(word: &str, message: &ReceivedMessage, students: &[Student]) -
     let middle_date_regex = Regex::new(r"^((\d{1,2})(-|\.|\/)(\d{1,2})(-|\.|\/)(\d{2}))$").unwrap();
     let short_date_regex = Regex::new(r"^((\d{1,2})(-|\.|\/)(\d{1,2}))$").unwrap();
 
-    let meals = students.iter().map(|s| s.meals.iter()).flatten();
+    let regexes = [long_date_regex, middle_date_regex, short_date_regex];
 
-    if let Some(date) = long_date_regex.captures(word) {
-        let day = date[2].parse();
-        let month = date[4].parse();
-        let year = date[6].parse();
-
-        if let (Ok(year), Ok(month), Ok(day)) = (year, month, day) {
-            if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
-                Token::Date(date)
+    for date_regex in regexes {
+        if let Some(date) = date_regex.captures(word) {
+            if let Some(date) = into_date(message.received, date.get(2), date.get(4), date.get(6)) {
+                return Token::Date(date);
             } else {
-                Token::Unknown(word.into())
+                return Token::Unknown(word.into());
             }
-        } else {
-            Token::Unknown(word.into())
         }
-    } else if let Some(date) = middle_date_regex.captures(word) {
-        let day = date[2].parse();
-        let month = date[4].parse();
-        let year: Result<i32, _> = date[6].parse();
+    }
 
-        if let (Ok(year), Ok(month), Ok(day)) = (year, month, day) {
-            let current_year = (message.received.year() / 10) * 10;
-            if let Some(date) = NaiveDate::from_ymd_opt(current_year + year, month, day) {
-                Token::Date(date)
-            } else {
-                Token::Unknown(word.into())
-            }
-        } else {
-            Token::Unknown(word.into())
-        }
-    } else if let Some(date) = short_date_regex.captures(word) {
-        let day = date[2].parse();
-        let month = date[4].parse();
+    let meals = students
+        .iter()
+        .map(|s| s.meals.iter())
+        .flatten()
+        .map(|meal| (meal.name.clone(), Token::Meal(meal.id)));
 
-        let current_year = message.received.year();
-        if let (Ok(month), Ok(day)) = (month, day) {
-            if let Some(date) = NaiveDate::from_ymd_opt(current_year, month, day) {
-                if date < message.received.date() {
-                    if let Some(next_date) = date.checked_add_months(Months::new(12)) {
-                        Token::Date(next_date)
-                    } else {
-                        Token::Unknown(word.into())
-                    }
-                } else {
-                    Token::Date(date)
-                }
-            } else {
-                Token::Unknown(word.into())
-            }
-        } else {
-            Token::Unknown(word.into())
-        }
-    } else {
-        let meals = meals.map(|meal| (meal.name.clone(), Token::Meal(meal.id)));
+    let students = students
+        .iter()
+        .map(|student| (student.name.clone(), Token::Student(student.id)));
 
-        let students = students
-            .iter()
-            .map(|student| (student.name.clone(), Token::Student(student.id)));
+    let target = meals
+        .chain(students)
+        .filter(|(name, _)| levenshtein(&name, word) <= 3)
+        .min_set_by_key(|(name, _)| levenshtein(&name, word));
 
-        let target = meals
-            .chain(students)
-            .filter(|(name, _)| levenshtein(&name, word) <= 3)
-            .min_set_by_key(|(name, _)| levenshtein(&name, word));
-
-        match target.len() {
-            0 => Token::Unknown(word.into()),
-            1 => target[0].1.clone(),
-            _ => Token::Ambiguous(word.into()),
-        }
+    match target.len() {
+        0 => Token::Unknown(word.into()),
+        1 => target[0].1.clone(),
+        _ => Token::Ambiguous(word.into()),
     }
 }
 
-pub async fn message_pipeline<C>(
-    students: &Vec<Student>,
-    message: &ReceivedMessage,
+pub async fn pipeline<C>(
+    context: (ReceivedMessage, Vec<Student>, MessageProcessing),
     conn: &mut C,
-) -> Result<(), Error>
+) -> Result<Option<(ReceivedMessage, Vec<Student>, MessageProcessing)>, Error>
 where
     C: Connection<Database = Postgres>,
     for<'a> &'a mut C: Executor<'a, Database = Postgres>,
 {
-    let id = message.metadata.id;
+    let (message, students, processing) = context;
 
-    save_state(MessageProcessing::Context(students.clone()), id, conn).await?;
-
-    let tokens = into_tokens(message, students);
-    save_state(MessageProcessing::Tokens(tokens.clone()), id, conn).await?;
-
-    let request = into_request(&tokens);
-
-    let response = match request {
-        Ok(request) => {
-            save_state(MessageProcessing::Cancellation(request.clone()), id, conn).await?;
-
-            let cancellations = into_cancellations(&request, students, message);
-
-            save_state(
-                MessageProcessing::StudentCancellation(cancellations.students.clone()),
-                id,
-                conn,
-            )
-            .await?;
-
-            let change = save_attendance(cancellations, id, &mut *conn).await?;
-
-            construct_response(&change, &message)
+    let new = match processing {
+        MessageProcessing::Init => {
+            Some(MessageProcessing::Tokens(into_tokens(&message, &students)))
         }
-        Err(error) => {
-            save_state(MessageProcessing::RequestError(error.clone()), id, conn).await?;
-            into_err_msg(&error, &message)
+        MessageProcessing::Tokens(tokens) => Some(into_request(&tokens)),
+        MessageProcessing::Cancellation(cancellation_request) => {
+            Some(MessageProcessing::StudentCancellation(into_cancellations(
+                &cancellation_request,
+                &students,
+                message.received,
+            )))
+        }
+        MessageProcessing::StudentCancellation(student_cancellations) => {
+            Some(MessageProcessing::CancellationResult(
+                save_attendance(student_cancellations, message.metadata.id, conn).await?,
+            ))
+        }
+        MessageProcessing::CancellationResult(results) => {
+            let response = construct_response(&results, &message);
+            enqueue_message(response, message.metadata.id, conn).await?;
+            None
+        }
+        MessageProcessing::RequestError(request_error) => {
+            let response = construct_err_response(&request_error, &message);
+            enqueue_message(response, message.metadata.id, conn).await?;
+            None
         }
     };
 
-    enqueue_message(response, id, conn).await?;
-
-    Ok(())
+    if let Some(new) = new {
+        save_state(&new, message.metadata.id, conn).await?;
+        return Ok(Some((message, students, new)));
+    } else {
+        Ok(None)
+    }
 }
 
-fn into_err_msg(err: &RequestError, message: &ReceivedMessage) -> MessageData {
+fn construct_err_response(err: &RequestError, message: &ReceivedMessage) -> MessageData {
     let content = match err {
         RequestError::InvalidTimeRange => format!("Podano nieprawidłowy zakres dat"),
         RequestError::TooManyDates => format!(
             "Podano zbyt wiele dat - należy podać pojedyńczą date nieobecności, lub okres pomiędzy 2 datami odseparowane spacją"
         ),
+        RequestError::NoStudentSpecified => format!("Nie podano ucznia"),
         RequestError::NoDateSpecified => format!(
             "Nie podano żadnej daty - należy podać pojedyńczą date nieobecności, lub okres pomiędzy 2 datami odseparowane spacją"
         ),
@@ -290,7 +260,7 @@ fn into_tokens(message: &ReceivedMessage, students: &[Student]) -> Vec<Token> {
         .collect::<Vec<_>>()
 }
 
-async fn save_state<C>(state: MessageProcessing, context: Uuid, conn: &mut C) -> Result<(), Error>
+async fn save_state<C>(state: &MessageProcessing, context: Uuid, conn: &mut C) -> Result<(), Error>
 where
     C: Connection<Database = Postgres>,
     for<'a> &'a mut C: Executor<'a, Database = Postgres>,
@@ -330,7 +300,7 @@ where
         INNER JOIN caterings ON caterings.group_id = group_relations.parent
         INNER JOIN catering_meals ON catering_meals.catering_id = caterings.id
         INNER JOIN meals ON meals.id = catering_meals.meal_id
-        WHERE guardians.id = $1
+        WHERE guardians.id = $1 AND NOT students.removed
         GROUP BY students.id,caterings.id",
         guardian_id
     )
@@ -348,7 +318,15 @@ where
     })
     .collect::<Vec<_>>();
 
-    message_pipeline(&students, &message, &mut *tr).await?;
+    let mut context = (message, students, MessageProcessing::Init);
+
+    loop {
+        if let Some(new_context) = pipeline(context, tr).await? {
+            context = new_context;
+        } else {
+            break;
+        }
+    }
 
     Ok(Some(()))
 }

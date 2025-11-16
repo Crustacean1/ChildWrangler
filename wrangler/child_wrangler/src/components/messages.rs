@@ -98,7 +98,7 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
     }
 
     view! {
-        <div class="overflow-auto flex-1 gap-2 grid grid-cols-3">
+        <div class="overflow-auto flex-1 gap-2 flex flex-col-reverse">
             {if sorted_messages.is_empty() {
                 Either::Left(view! { <li class="padded dashed rounded">Brak wiadomości</li> })
             } else {
@@ -106,15 +106,12 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
             }}
             {sorted_messages
                 .into_iter()
+                .rev()
                 .map(|(day, messages)| {
                     view! {
-                        <div class="text-center before:w-full before:absolute before:top-2 before:left-0 before:rounded-full before:bg-gray-300/25 before:h-0.5 before:content-[''] col-span-3 relative">
-                            <span class="z-index-2 bg-gray-950">
-                                {format!("{}", day.format("%d %B %Y"))}
-                            </span>
-                        </div>
                         {messages
                             .into_iter()
+                            .rev()
                             .map(|message| {
                                 match message {
                                     Message::Received(message) => {
@@ -140,6 +137,11 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
                                 }
                             })
                             .collect::<Vec<_>>()}
+                        <div class="text-center before:w-full before:absolute before:top-2 before:left-0 before:rounded-full before:bg-gray-300/25 before:h-0.5 before:content-[''] relative">
+                            <span class="z-index-2 bg-gray-950">
+                                {format!("{}", day.format("%d %B %Y"))}
+                            </span>
+                        </div>
                     }
                 })
                 .collect::<Vec<_>>()}
@@ -163,10 +165,8 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
 #[component]
 pub fn PendingMessageView(message: PendingMessage) -> impl IntoView {
     view! {
-        <div></div>
-        <div></div>
-        <div class="flex flex-col gap-1 ">
-            <div class="card row row-col p-2">
+        <div class="flex flex-col gap-1 w-fit self-end">
+            <div class="card row row-col p-2 w-fit">
                 <span>{format!("{}", message.data.content)}</span>
             </div>
             <small class="self-end gray">
@@ -179,10 +179,8 @@ pub fn PendingMessageView(message: PendingMessage) -> impl IntoView {
 #[component]
 pub fn SentMessageView(message: SentMessage) -> impl IntoView {
     view! {
-        <div></div>
-        <div></div>
-        <div class="flex flex-col gap-1 ">
-            <div on:click=move |_| {} class="card row row-col p-2">
+        <div class="flex flex-col gap-1 w-fit self-end">
+            <div on:click=move |_| {} class="card row row-col p-2 w-fit">
                 <span>{format!("{}", message.data.content)}</span>
             </div>
             <small class="self-end gray">
@@ -198,15 +196,13 @@ pub fn ReceivedMessageView(
     on_click: impl Fn(Uuid) + Copy + 'static,
 ) -> impl IntoView {
     view! {
-        <div class="flex flex-col gap-1 ">
-            <div on:click=move |_| on_click(message.metadata.id) class="card row row-col p-2">
+        <div class="flex flex-col gap-1 w-fit self-start ">
+            <div on:click=move |_| on_click(message.metadata.id) class="card row row-col p-2 w-fit">
                 <span>{format!("{}", message.data.content)}</span>
             </div>
             <small class="self-end gray">
                 {format!("Odebrano: {}", message.received.format("%H:%M:%S"))}
             </small>
         </div>
-        <div></div>
-        <div></div>
     }
 }

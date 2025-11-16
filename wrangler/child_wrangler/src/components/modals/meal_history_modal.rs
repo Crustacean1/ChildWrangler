@@ -79,16 +79,16 @@ pub fn MealHistoryModalInner(
                                             view! {
                                                 <div class="flex flex-col gap-2">
                                                     <h2 class="flex gap-2">
-                                                    <span class="text-lg">
-                                                        Odmówiono obecność
-                                                    </span>
+                                                        <span class="text-lg">Odmówiono obecność</span>
                                                         <span class="rounded-md flex align-center pl-2 pr-2 bg-violet-500/50 outline outline-violet-500 flex gap-2">
                                                             <PhoneIcon />
                                                             {format!("{}", phone)}
                                                         </span>
                                                     </h2>
                                                     <div class="flex flex-col gap-2">
-                                                        <span class="rounded-md flex align-center p-1 pl-2 pr-2 bg-orange-500/50 outline outline-orange-500 flex gap-2">{format!("{}", reason)}</span>
+                                                        <span class="rounded-md flex align-center p-1 pl-2 pr-2 bg-orange-500/50 outline outline-orange-500 flex gap-2">
+                                                            {format!("{}", reason)}
+                                                        </span>
                                                     </div>
 
                                                     <ul class="flex flex-row gap-2">

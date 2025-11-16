@@ -1,4 +1,5 @@
 use leptos::either::Either;
+use leptos::logging::log;
 use leptos::wasm_bindgen::JsCast;
 use leptos::web_sys::HtmlLiElement;
 use leptos::{prelude::*, tachys::renderer::dom::Node};
@@ -51,16 +52,11 @@ where
                                 list_ref.get().and_then(|node| node.first_element_child()),
                                 |x| { x.next_element_sibling() },
                             )
-                            .filter(|x| {
-                                x.dyn_ref::<HtmlLiElement>()
-                                    .map(|e| e.class_list().contains("active"))
-                                    .unwrap_or(false)
-                            })
                             .next()
                             .map(|next| {
                                 next.dyn_ref::<HtmlLiElement>()
                                     .map(|e| {
-                                        e.scroll_into_view_with_bool(true);
+                                        //e.scroll_into_view_with_bool(true);
                                         e.focus().ok()
                                     })
                             });
@@ -69,16 +65,11 @@ where
                                 active_element.and_then(|e| e.next_element_sibling()),
                                 |x| { x.next_element_sibling() },
                             )
-                            .filter(|x| {
-                                x.dyn_ref::<HtmlLiElement>()
-                                    .map(|e| e.class_list().contains("active"))
-                                    .unwrap_or(false)
-                            })
                             .next()
                             .map(|next| {
                                 next.dyn_ref::<HtmlLiElement>()
                                     .map(|e| {
-                                        e.scroll_into_view_with_bool(true);
+                                        //e.scroll_into_view_with_bool(true);
                                         e.focus().ok()
                                     })
                             });
@@ -91,16 +82,11 @@ where
                             active_element.and_then(|e| e.previous_element_sibling()),
                             |x| { x.previous_element_sibling() },
                         )
-                        .filter(|x| {
-                            x.dyn_ref::<HtmlLiElement>()
-                                .map(|e| e.class_list().contains("active"))
-                                .unwrap_or(false)
-                        })
                         .next()
                         .map(|next| {
                             next.dyn_ref::<HtmlLiElement>()
                                 .map(|e| {
-                                    e.scroll_into_view_with_bool(true);
+                                    //e.scroll_into_view_with_bool(true);
                                     e.focus().ok()
                                 })
                         });
@@ -144,7 +130,7 @@ where
                                             <li
                                                 tabindex="-1"
                                                 role="option"
-                                                class="md:hover:bg-gray-600 md:active:bg-gray-700"
+                                                class="md:hover:bg-gray-600 md:active:bg-gray-700 focus:bg-gray-500 outline-none"
                                                 on:mouseover=move |e| {
                                                     e.current_target()
                                                         .and_then(|e| {
