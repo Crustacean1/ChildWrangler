@@ -80,6 +80,12 @@ CREATE TABLE messages (
 	sent timestamp
 );
 
+CREATE TABLE phones (
+	number text,
+	signal integer,
+	state integer
+);
+
 CREATE TABLE processing_step (
 	id int primary key generated always as identity,
 	completed timestamp,
@@ -112,3 +118,4 @@ CREATE VIEW rooted_attendance AS SELECT bool_and(effective_attendance.value) AS 
                         INNER JOIN students ON students.id = student_relation.child AND students.removed = false
                         INNER JOIN effective_attendance ON effective_attendance.target = student_relation.parent
                         GROUP BY effective_attendance.day, effective_attendance.meal_id, student_relation.child, group_relations.parent;
+

@@ -102,7 +102,7 @@ pub fn Breadcrumb(trail: Vec<GroupDto>) -> impl IntoView {
     };
 
     view! {
-        <nav class="flex" aria-label="Breadcrumb">
+        <nav class="flex flex-1" aria-label="Breadcrumb">
             <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                 <For each=move || trail.clone() key=|g| g.id let:item>
                     <li>
@@ -285,7 +285,7 @@ pub fn NonemptyGroup(group: GroupDetailsDto, trail: Vec<GroupDto>) -> impl IntoV
     view! {
         <div class="flex flex-row space-between">
             <Breadcrumb trail />
-            <div class="flex flex-row gap-1">
+            <div class="flex flex-row gap-1 self-end">
                 <button class="btn" on:click=move |_| { set_add_group(true) }>
                     <AddGroupIcon />
                 </button>
@@ -439,7 +439,7 @@ pub fn Student(student: StudentDetailsDto, trail: Vec<GroupDto>) -> impl IntoVie
                     })
                     .collect::<Vec<_>>()}
             </div>
-            <div class="flex-1 justify-end flex flex-row gap-1">
+            <div class="justify-end flex flex-row gap-1">
                 <button class="btn" on:click=move |_| set_edit_student(true)>
                     <EditIcon />
                 </button>

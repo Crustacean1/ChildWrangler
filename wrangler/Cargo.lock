@@ -2029,12 +2029,15 @@ dependencies = [
 name = "modem_connector"
 version = "0.1.0"
 dependencies = [
+ "chrono",
+ "dto",
  "futures",
  "log",
  "serde",
  "simple_logger",
  "sqlx",
  "tokio",
+ "uuid",
  "zbus",
 ]
 

@@ -253,8 +253,11 @@ pub fn AttendanceDashboardInner(
         .map(|(meal_id, _)| *meal_id)
         .collect::<Vec<_>>();
 
+    let student_list = attendance.student_list;
+    let attendance = attendance.attendance;
+
     view! {
-        {if attendance.attendance.is_empty() {
+        {if attendance.is_empty() {
             Either::Left(
                 view! {
                     <div class="flex-1 outline outline-dashed outline-gray p-2 m-0.5 rounded-lg text-center">
@@ -267,7 +270,6 @@ pub fn AttendanceDashboardInner(
                 view! {
                     <div class="flex flex-row">
                         {attendance
-                            .attendance
                             .into_iter()
                             .map(|(meal_id, attendance)| {
                                 view! {
@@ -278,7 +280,7 @@ pub fn AttendanceDashboardInner(
                                                 .map(|m| m.name.clone())
                                                 .unwrap_or(format!("Unknown meal"))
                                             allergies=allergies.clone()
-                                            padding=12
+                                            padding=5
                                             series=attendance
                                         />
                                     </div>
@@ -286,18 +288,18 @@ pub fn AttendanceDashboardInner(
                             })
                             .collect::<Vec<_>>()}
                     </div>
-                    <div class="flex-1 overflow-hidden rounded-md">
+                    <div class="flex-1 overflow-auto rounded-md">
                         <table class="w-full border-collapse text-left">
                             <thead>
-                                <tr class="bg-gray-600">
-                                    <th class="p-2">Imię</th>
-                                    <th class="p-2">Nazwisko</th>
-                                    <th class="p-2">Grupa</th>
+                                <tr class="">
+                                    <th class="bg-gray-600 p-4 sticky top-0">Imię</th>
+                                    <th class="bg-gray-600 p-4 sticky top-0">Nazwisko</th>
+                                    <th class="bg-gray-600 p-4 sticky top-0">Grupa</th>
                                     {available_meals
                                         .iter()
                                         .map(|meal_id| {
                                             view! {
-                                                <th class="p-2">
+                                                <th class="bg-gray-600 p-4 sticky top-0">
                                                     {meals
                                                         .get(meal_id)
                                                         .map(|m| m.name.clone())
@@ -309,27 +311,26 @@ pub fn AttendanceDashboardInner(
                                 </tr>
                             </thead>
                             <tbody class="background-1">
-                                {attendance
-                                    .student_list
+                                {student_list
                                     .into_iter()
                                     .map(|(student_id, attendance)| {
                                         let student = students.get(&student_id).unwrap();
                                         let group = groups.get(&student.group_id).unwrap();
                                         view! {
                                             <tr class="even:bg-gray-800 odd:bg-gray-900">
-                                                <td class="p-2 r-border">
+                                                <td class="p-4 r-border">
                                                     <a href=format!(
                                                         "attendance/{}",
                                                         student.id,
                                                     )>{format!("{}", student.name)}</a>
                                                 </td>
-                                                <td class="p-2 ">
+                                                <td class="p-4 ">
                                                     <a href=format!(
                                                         "attendance/{}",
                                                         student.id,
                                                     )>{format!("{}", student.surname)}</a>
                                                 </td>
-                                                <td class="p-2 ">
+                                                <td class="p-4 ">
                                                     <a href=format!(
                                                         "attendance/{}",
                                                         group.id,
@@ -340,7 +341,7 @@ pub fn AttendanceDashboardInner(
                                                     .iter()
                                                     .map(|meal_id| {
                                                         view! {
-                                                            <td class="p-2">
+                                                            <td class="p-4">
                                                                 {match attendance.get(meal_id) {
                                                                     Some(AttendanceStatus::Present) => {
                                                                         Either::Left(
