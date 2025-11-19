@@ -81,7 +81,7 @@ CREATE TABLE messages (
 );
 
 CREATE TABLE phones (
-	number text,
+	number text primary key not null,
 	signal integer,
 	state integer
 );
