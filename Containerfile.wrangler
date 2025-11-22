@@ -1,0 +1,33 @@
+FROM --platform=$BUILDPLATFORM docker.io/tonistiigi/xx AS xx
+FROM --platform=$BUILDPLATFORM docker.io/rustlang/rust:nightly-alpine AS builder
+COPY --from=xx / /
+RUN apk add clang lld perl build-base
+
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
+RUN LEPTOS_BIN_TARGET_TRIPLE=$(xx-cargo --print-target-triple) CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL=/usr/bin/aarch64-unknown-linux-musl-clang \
+	rustup target add wasm32-unknown-unknown && \
+	cargo install cargo-leptos
+
+WORKDIR /wrangler
+COPY ./wrangler ./
+
+RUN LEPTOS_BIN_TARGET_TRIPLE=$(xx-cargo --print-target-triple) CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL=/usr/bin/aarch64-unknown-linux-musl-clang \
+	cargo test && \
+	cargo leptos build --release
+
+RUN cp $(find / -name child_wrangler -type f) /child_wrangler
+RUN cp -r $(find / -name site -type d) /site
+
+FROM --platform=$TARGETPLATFORM gcr.io/distroless/static-debian12 
+
+WORKDIR /wrangler
+
+COPY --from=builder /child_wrangler /wrangler/
+COPY --from=builder /site /wrangler/
+
+ENTRYPOINT ["/wrangler/modem_connector"]
+
+
+

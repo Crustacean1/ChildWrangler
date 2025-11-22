@@ -19,7 +19,7 @@ async fn main() {
     // Generate the list of routes in your Leptos App
     let routes = generate_route_list(App);
 
-    let db_url = env::var("DATABASE_URL").expect("No 'DATABASE_URL' specified");
+    let db_url = std::env::var("DATABASE_URL").expect("No 'DATABASE_URL' specified");
 
     let pool = PgPool::connect(&db_url)
         .await

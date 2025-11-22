@@ -1,0 +1,24 @@
+FROM --platform=$BUILDPLATFORM docker.io/tonistiigi/xx AS xx
+FROM --platform=$BUILDPLATFORM rust:alpine AS builder
+COPY --from=xx / /
+RUN apk add clang lld
+
+WORKDIR /wrangler
+COPY ./wrangler ./
+
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
+RUN xx-cargo build -vv --release --target-dir /build --bin message_daemon && \
+	xx-verify /build/$(xx-cargo --print-target-triple)/release/message_daemon	
+RUN mv /build/$(xx-cargo --print-target-triple)/release /
+
+FROM --platform=$TARGETPLATFORM gcr.io/distroless/static-debian12 
+
+WORKDIR /wrangler
+
+COPY --from=builder /release/message_daemon /wrangler/
+
+ENTRYPOINT ["/wrangler/message_daemon"]
+
+

@@ -1,29 +1,23 @@
-FROM --platform=$BUILDPLATFORM alpine AS builder
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
-
-RUN apk add curl gcc build-base
-ENV PATH="$PATH:/root/.cargo/bin" 
-ENV CARGO_TARGET_DIR=/output
-ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=/usr/bin/aarch64-linux-musl-gcc
-
-RUN curl https://sh.rustup.rs -sSf -o ./rustinstall 
-RUN chmod +x ./rustinstall
-RUN ./rustinstall -y 
+FROM --platform=$BUILDPLATFORM docker.io/tonistiigi/xx AS xx
+FROM --platform=$BUILDPLATFORM rust:alpine AS builder
+COPY --from=xx / /
+RUN apk add clang lld
 
 WORKDIR /wrangler
 COPY ./wrangler ./
 
-RUN rustup target add wasm32-unknown-unknown
-RUN rustup target add aarch64-unknown-linux-musl
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
 
-RUN CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=/usr/bin/aarch64-alpine-linux-musl-gcc CARGO_TARGET_DIR=/release cargo build -vv --release --target aarch64-unknown-linux-musl --bin modem_connector
+RUN xx-cargo build -vv --release --target-dir /build --bin modem_connector && \
+	xx-verify /build/$(xx-cargo --print-target-triple)/release/modem_connector	
+RUN mv /build/$(xx-cargo --print-target-triple)/release /
 
 FROM --platform=$TARGETPLATFORM gcr.io/distroless/static-debian12 
 
 WORKDIR /wrangler
 
-COPY --from=builder /release/aarch64-unknown-linux-musl/release/modem_connector /wrangler/
+COPY --from=builder /release/modem_connector /wrangler/
 
 ENTRYPOINT ["/wrangler/modem_connector"]
 

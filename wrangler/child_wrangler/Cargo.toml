@@ -14,7 +14,7 @@ console_error_panic_hook = { version = "0.1", optional = true }
 leptos_axum = { version = "0.8.5", optional = true }
 leptos_meta = { version = "0.8.5" }
 tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
-wasm-bindgen = { version = "=0.2.105", optional = true }
+wasm-bindgen = { version = "=0.2.104", optional = true }
 web-sys = {version = "0.3.77", features=["DataTransfer", "HtmlDialogElement", "Window", "SaveFilePickerOptions", "FileSystem", "FileSystemFileHandle", "FileSystemWritableFileStream", "MouseEvent"]}
 chrono = {version = "0.4.42", features=["serde"]}
 uuid = {version = "1.18.1", features=["serde", "v4", "js"]}
@@ -62,7 +62,7 @@ site-root = "target/site"
 site-pkg-dir = "pkg"
 
 # [Optional] The source CSS file. If it ends with .sass or .scss then it will be compiled by dart-sass into CSS. The CSS is optimized by Lightning CSS before being written to <site-root>/<site-pkg>/app.css
-style-file = "style/main.scss"
+#style-file = "style/main.css"
 # Assets source dir. All files found here will be copied and synchronized to site-root.
 # The assets-dir cannot have a sub directory with the same name/path as site-pkg-dir.
 #

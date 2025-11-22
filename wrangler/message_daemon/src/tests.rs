@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod test {
     use chrono::NaiveTime;
-    use dto::messages::CancellationRequest;
+    use dto::messages::{CancellationRequest, MessageMetadata};
 
     use crate::*;
 
@@ -16,6 +16,7 @@ mod test {
             students: vec![student_id],
             meals: vec![meal_1_id],
         };
+
         let students = vec![Student {
             id: student_id,
             name: String::new(),
@@ -28,15 +29,22 @@ mod test {
             starts: NaiveDate::from_ymd_opt(2024, 12, 01).unwrap(),
             ends: NaiveDate::from_ymd_opt(2025, 12, 01).unwrap(),
         }];
-        let message = Message {
-            id: 0,
-            sender: String::new(),
-            content: String::new(),
-            arrived: NaiveDateTime::parse_from_str("2025-01-01 07:01:00", "%Y-%m-%d %H:%M:%S")
+
+        let message = ReceivedMessage {
+            metadata: MessageMetadata {
+                id: Uuid::new_v4(),
+                inserted: NaiveDateTime::default(),
+            },
+            data: MessageData {
+                phone: String::new(),
+                content: String::new(),
+            },
+            processed: false,
+            received: NaiveDateTime::parse_from_str("2025-01-01 07:01:00", "%Y-%m-%d %H:%M:%S")
                 .unwrap(),
         };
 
-        let cancellation = into_cancellations(&request, &students, &message);
+        let cancellation = into_cancellations(&request, &students, message.received);
 
         assert!(cancellation.students.len() == 1);
         assert!(cancellation.students[0].since == NaiveDate::from_ymd_opt(2025, 01, 02).unwrap());
