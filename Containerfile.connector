@@ -1,0 +1,30 @@
+FROM --platform=$BUILDPLATFORM alpine AS builder
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
+RUN apk add curl gcc build-base
+ENV PATH="$PATH:/root/.cargo/bin" 
+ENV CARGO_TARGET_DIR=/output
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=/usr/bin/aarch64-linux-musl-gcc
+
+RUN curl https://sh.rustup.rs -sSf -o ./rustinstall 
+RUN chmod +x ./rustinstall
+RUN ./rustinstall -y 
+
+WORKDIR /wrangler
+COPY ./wrangler ./
+
+RUN rustup target add wasm32-unknown-unknown
+RUN rustup target add aarch64-unknown-linux-musl
+
+RUN CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=/usr/bin/aarch64-alpine-linux-musl-gcc CARGO_TARGET_DIR=/release cargo build -vv --release --target aarch64-unknown-linux-musl --bin modem_connector
+
+FROM --platform=$TARGETPLATFORM gcr.io/distroless/static-debian12 
+
+WORKDIR /wrangler
+
+COPY --from=builder /release/aarch64-unknown-linux-musl/release/modem_connector /wrangler/
+
+ENTRYPOINT ["/wrangler/modem_connector"]
+
+

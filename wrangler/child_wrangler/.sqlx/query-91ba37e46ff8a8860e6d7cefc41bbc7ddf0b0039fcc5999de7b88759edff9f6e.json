@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT processing_step.* FROM processing_step \n    WHERE cause_id = $1\n    ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "completed",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 2,
+        "name": "cause_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "value",
+        "type_info": "Jsonb"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "91ba37e46ff8a8860e6d7cefc41bbc7ddf0b0039fcc5999de7b88759edff9f6e"
+}

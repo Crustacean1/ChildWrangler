@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE phones SET signal = $2 WHERE number = $1 ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fa5ac0b0e8e30eb4096c329859dbee402ffcbbe924e3700d6a5463780e380f4a"
+}

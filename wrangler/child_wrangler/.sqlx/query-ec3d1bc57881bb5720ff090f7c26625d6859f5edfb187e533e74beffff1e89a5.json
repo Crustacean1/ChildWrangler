@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO messages (phone, content, outgoing, sent) VALUES ($1,$2,false,NOW())",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ec3d1bc57881bb5720ff090f7c26625d6859f5edfb187e533e74beffff1e89a5"
+}

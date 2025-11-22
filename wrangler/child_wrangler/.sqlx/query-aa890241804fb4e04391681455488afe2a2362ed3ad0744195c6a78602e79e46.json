@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH randomz AS (SELECT DISTINCT phone FROM messages)\n        SELECT fullname, randomz.phone AS phone, id FROM randomz \n        LEFT JOIN guardians ON randomz.phone = guardians.phone OR randomz.phone = format('+48%s', guardians.phone)\n        WHERE guardians.phone IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "fullname",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "phone",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "aa890241804fb4e04391681455488afe2a2362ed3ad0744195c6a78602e79e46"
+}

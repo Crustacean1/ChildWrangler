@@ -1,13 +1,14 @@
 use std::{collections::HashMap, env};
 
-use chrono::{NaiveDateTime, Utc};
+use chrono::{NaiveDateTime, NaiveTime, Utc};
 use dto::messages::MessageData;
-use futures::stream::StreamExt;
+use futures::stream::{self, StreamExt};
 use simple_logger::SimpleLogger;
 use sqlx::PgPool;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 use zbus::proxy;
+use zbus::zvariant::NoneValue;
 use zbus::{
     Connection, Result,
     fdo::ObjectManagerProxy,
@@ -60,6 +61,15 @@ trait Sms {
     fn send(&self) -> Result<()>;
 }
 
+enum SmsState {
+    Unknown = 0,
+    Stored = 1,
+    Receiving = 2,
+    Received = 3,
+    Sending = 4,
+    Sent = 5,
+}
+
 #[proxy(
     default_service = "org.freedesktop.ModemManager1",
     interface = "org.freedesktop.ModemManager1.Modem.Messaging"
@@ -86,14 +96,15 @@ enum ModemEvent {
     StateChanged(i32, i32),
     SignalQualityChanged(u32),
     RequiresUnlock(bool),
-    MessageEnqueued(Uuid, MessageData),
-    MessageAdded(NaiveDateTime, MessageData),
+    MessageEnqueued(Uuid),
+    MessageAdded(OwnedObjectPath),
 }
 
 async fn handle_modem(
     pool: &PgPool,
     connection: &Connection,
     modem_path: OwnedObjectPath,
+    pin: &str,
 ) -> Result<()> {
     let modem_proxy = ModemProxy::builder(connection)
         .path(modem_path.clone())?
@@ -135,7 +146,7 @@ async fn handle_modem(
         .expect("Failed to send unlock data into channel");
 
     let mut unlock_stream = modem_proxy.receive_unlock_required_changed().await;
-    tokio::spawn({
+    let unlock_task = tokio::spawn({
         let tx = tx.clone();
         async move {
             while let Some(unlock) = unlock_stream.next().await {
@@ -154,7 +165,7 @@ async fn handle_modem(
     tx.send(ModemEvent::StateChanged(state, state))
         .expect("Failed to send state into channel");
 
-    tokio::spawn({
+    let state_task = tokio::spawn({
         let tx = tx.clone();
         async move {
             while let Some(state) = state_stream.next().await {
@@ -169,7 +180,7 @@ async fn handle_modem(
 
     let mut quality_stream = modem_proxy.receive_signal_quality_changed().await;
 
-    tokio::spawn({
+    let quality_task = tokio::spawn({
         let tx = tx.clone();
         async move {
             while let Some(quality) = quality_stream.next().await {
@@ -187,6 +198,25 @@ async fn handle_modem(
 
     let mut current_state = state;
 
+    let message_list_stream = messaging_proxy.receive_added().await?;
+    let mut message_stream = message_list_stream.map(|element| {
+        element
+            .args()
+            .expect("Failed to parse incoming message")
+            .path
+    });
+
+    let msg_task = tokio::spawn({
+        let tx = tx.clone();
+        async move {
+            while let Some(msg) = message_stream.next().await {
+                log::info!("Processing message");
+                tx.send(ModemEvent::MessageAdded(msg))
+                    .expect("Failed to send new message notification on the channel");
+            }
+        }
+    });
+
     while let Some(event) = rx.recv().await {
         match event {
             ModemEvent::StateChanged(old, new) => {
@@ -195,6 +225,14 @@ async fn handle_modem(
                     3 => {
                         log::info!("Enabling modem");
                         modem_proxy.enable(true).await?;
+                    }
+                    7 => {
+                        log::info!("Modem ready for work, getting message list");
+                        let message_list = messaging_proxy.list().await?;
+                        for message in message_list {
+                            tx.send(ModemEvent::MessageAdded(message))
+                                .expect("Failed to add messages to channel");
+                        }
                     }
                     state => {
                         log::info!("Unknown state: {}, ignoring", state);
@@ -241,73 +279,97 @@ async fn handle_modem(
                 }
                 is_locked = locked;
             }
-            ModemEvent::MessageEnqueued(id, message_data) => {
-                let msg = [
-                    ("number", Value::Str(message_data.phone.into())),
-                    ("text", Value::Str(message_data.content.into())),
-                ]
-                .into_iter()
-                .collect();
+            ModemEvent::MessageEnqueued(id) => {
+                let mut tr = pool.begin().await.expect("Failed to start transaction");
 
-                let sms_path = messaging_proxy.create(msg).await?;
-                let sms = SmsProxy::builder(connection)
-                    .path(sms_path)?
-                    .build()
-                    .await?;
+                let message = sqlx::query!("SELECT * FROM messages WHERE NOT processed AND outgoing AND id = $1 FOR UPDATE SKIP LOCKED", id).fetch_optional(&mut *tr).await.expect("Failed to fetch message from db");
 
-                sms.send().await?;
+                if let Some(message) = message {
+                    let msg = [
+                        ("number", Value::Str(message.phone.into())),
+                        ("text", Value::Str(message.content.into())),
+                    ]
+                    .into_iter()
+                    .collect();
 
-                sqlx::query!("UPDATE messages SET processed = true WHERE id = $1", id)
-                    .execute(pool)
-                    .await
-                    .expect("Failed to mark message as processed");
+                    let sms_path = messaging_proxy.create(msg).await?;
+                    let sms = SmsProxy::builder(connection)
+                        .path(sms_path)?
+                        .build()
+                        .await?;
 
-                tokio::spawn({
-                    let pool = pool.clone();
-                    async move {
-                        let mut state_stream = sms.receive_state_changed().await;
-                        while let Some(state) = state_stream.next().await {
-                            let state = state.get().await;
-                            if state == Ok(5) {
-                                sqlx::query!(
-                                    "UPDATE messages SET sent = $2 WHERE id = $1",
-                                    id,
-                                    Utc::now().naive_local()
-                                )
-                                .execute(&pool)
-                                .await
-                                .expect("Failed to set message delivery time");
+                    sms.send().await?;
+
+                    sqlx::query!("UPDATE messages SET processed = true WHERE id = $1", id)
+                        .execute(pool)
+                        .await
+                        .expect("Failed to mark message as processed");
+
+                    tokio::spawn({
+                        let pool = pool.clone();
+                        async move {
+                            let mut state_stream = sms.receive_state_changed().await;
+                            while let Some(state) = state_stream.next().await {
+                                let state = state.get().await;
+                                if state == Ok(5) {
+                                    sqlx::query!(
+                                        "UPDATE messages SET sent = $2 WHERE id = $1",
+                                        id,
+                                        Utc::now().naive_local()
+                                    )
+                                    .execute(&pool)
+                                    .await
+                                    .expect("Failed to set message delivery time");
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }
+
+                tr.commit().await.expect("Failed to commit transaction");
             }
-            ModemEvent::MessageAdded(sent, message_data) => {
-                let duplicate = sqlx::query!(
-                    "SELECT * FROM messages WHERE sent = $1 AND phone = $2 AND content = $3",
-                    sent,
-                    message_data.phone,
-                    message_data.content
-                )
-                .fetch_optional(pool)
-                .await
-                .expect("Failed to get existing messages from db");
-                if let Some(duplicate) = duplicate {
+            ModemEvent::MessageAdded(path) => {
+                let sms_proxy = SmsProxy::builder(connection).path(path)?.build().await?;
+                let content = sms_proxy.text().await?;
+                let phone = sms_proxy.number().await?;
+                let state = sms_proxy.state().await?;
+
+                if state == SmsState::Received as u32 {
+                    let sent = sms_proxy.timestamp().await?;
+                    if let Ok(sent) = NaiveDateTime::parse_from_str(&sent, "%Y-%m-%dT%H:%M:%S%z") {
+                        let db_message = sqlx::query!("SELECT * FROM messages WHERE sent = $1 AND phone = $2 AND content = $3",sent,phone,content)
+                            .fetch_optional(pool)
+                            .await
+                            .expect("Failed to get existing messages from db");
+
+                        if let Some(duplicate) = db_message {
+                            log::info!(
+                                "Message {} is duplicate of {}, ignoring",
+                                content,
+                                duplicate.id
+                            );
+                        } else {
+                            sqlx::query!(
+                                "INSERT INTO messages (phone, content, sent) VALUES ($1,$2,$3)",
+                                phone,
+                                content,
+                                sent
+                            )
+                            .execute(pool)
+                            .await
+                            .expect("Failed to insert message into db");
+                        }
+                    } else {
+                        log::error!("Failed to parse message date: {}", sent);
+                    }
+                } else if state == SmsState::Sent as u32 {
                     log::info!(
-                        "Message {} is duplicate of {}, ignoring",
-                        message_data.content,
-                        duplicate.id
+                        "Message is recognized as already sent to: '{}' content: '{}'",
+                        phone,
+                        content
                     );
                 } else {
-                    sqlx::query!(
-                        "INSERT INTO messages (phone, content, sent) VALUES ($1,$2,$3)",
-                        message_data.phone,
-                        message_data.content,
-                        sent
-                    )
-                    .execute(pool)
-                    .await
-                    .expect("Failed to insert message into db");
+                    log::info!("Unknown sms state: {:?}", state);
                 }
             }
         }
@@ -322,6 +384,8 @@ async fn main() -> Result<()> {
     log::info!("Connected to system bus");
 
     let modem_manager_interface = "org.freedesktop.ModemManager1";
+    let db_url = std::env::var("DATABASE_URL").expect("No 'DATABASE_URL' specified");
+    let pin = std::env::var("MODEM_PIN").expect("No 'MODEM_PIN' specified");
 
     let object_manager = ObjectManagerProxy::new(
         &connection,
@@ -329,10 +393,6 @@ async fn main() -> Result<()> {
         "/org/freedesktop/ModemManager1",
     )
     .await?;
-
-    let (_, db_url) = env::vars()
-        .find(|(k, _)| k == "DATABASE_URL")
-        .expect("No 'DATABASE_URL' specified");
 
     let pool = PgPool::connect(&db_url)
         .await
@@ -347,7 +407,7 @@ async fn main() -> Result<()> {
         .find(|m| m.contains("/org/freedesktop/ModemManager1/Modem"))
         .expect("Modem object not exposed by ModemManager, verify that service is enabled and running and modem is plugged in").clone();
 
-    handle_modem(&pool, &connection, modem_path)
+    handle_modem(&pool, &connection, modem_path, &pin)
         .await
         .expect("Modem handling failed");
 

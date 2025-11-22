@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO phones (number, signal, state) VALUES ($1,$2,$3) ON CONFLICT (number) DO UPDATE SET number = $1, signal = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7856edf761c1e7adf438b8589743368c50b834f21685c94047a1fe2d0190a481"
+}

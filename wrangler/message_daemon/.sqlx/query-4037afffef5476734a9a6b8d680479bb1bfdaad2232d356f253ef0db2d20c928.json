@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT guardians.id FROM guardians WHERE\n    guardians.phone = $1  OR format('+48%s', guardians.phone) = $1\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4037afffef5476734a9a6b8d680479bb1bfdaad2232d356f253ef0db2d20c928"
+}

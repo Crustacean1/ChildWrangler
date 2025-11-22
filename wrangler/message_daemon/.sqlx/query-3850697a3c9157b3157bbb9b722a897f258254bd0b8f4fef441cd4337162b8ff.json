@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH exclusive_attendance AS (SELECT DISTINCT ON (day, meal_id, target) day, meal_id, target, value FROM attendance WHERE cause_id != $1 ORDER BY day, meal_id, target, originated DESC),\n        affected_attendance AS (SELECT DISTINCT ON (ea.day,ea.meal_id,ea.target) ea.day, ea.meal_id, ea.target,group_relations.level FROM attendance AS src\n        INNER JOIN group_relations ON group_relations.child = src.target\n        INNER JOIN exclusive_attendance AS ea ON ea.day = src.day AND ea.meal_id = src.meal_id AND ea.target= group_relations.parent\n        WHERE src.cause_id = $1 AND ea.value = true\n        ORDER BY ea.day, ea.meal_id, ea.target, group_relations.level)\n        SELECT students.name AS student_name, meals.name AS meal_name, COUNT(*) AS cancelled FROM affected_attendance \n        INNER JOIN students ON students.id = affected_attendance.target\n        INNER JOIN meals ON meals.id = affected_attendance.meal_id\n        WHERE level = 0\n        GROUP BY students.id, meals.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "student_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "meal_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "cancelled",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "3850697a3c9157b3157bbb9b722a897f258254bd0b8f4fef441cd4337162b8ff"
+}

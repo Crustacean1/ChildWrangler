@@ -19,16 +19,7 @@ async fn main() {
     // Generate the list of routes in your Leptos App
     let routes = generate_route_list(App);
 
-    let settings = Config::builder()
-        .add_source(config::Environment::default())
-        .build()
-        .expect("Failed to build config")
-        .try_deserialize::<HashMap<String, String>>()
-        .expect("Failed to deserialize config");
-
-    let db_url = settings
-        .get("connection_string")
-        .expect("No CONNECTION_STRING specified");
+    let db_url = env::var("DATABASE_URL").expect("No 'DATABASE_URL' specified");
 
     let pool = PgPool::connect(&db_url)
         .await

@@ -150,7 +150,8 @@ pub async fn get_effective_attendance(
                     } else if entry.is_cancellation.unwrap_or(false) {
                         EffectiveAttendance::Cancelled
                     } else {
-                        panic!("Wtf? Invalid attendance record, consult administrator")
+                        log::warn!("Invalid attendance record, defaulting to cancelled");
+                        EffectiveAttendance::Cancelled
                     }
                 },
             );
@@ -217,7 +218,11 @@ pub async fn get_attendance_history(
                 AttendanceHistoryItemDto {
                     time: row.originated,
                     meals: row.meals.unwrap_or_default(),
-                    item: AttendanceItemDto::Cancellation(msg_id, row.phone.unwrap_or_default(), row.content.unwrap_or_default()),
+                    item: AttendanceItemDto::Cancellation(
+                        msg_id,
+                        row.phone.unwrap_or_default(),
+                        row.content.unwrap_or_default(),
+                    ),
                 }
             } else if let Some(note) = row.note {
                 AttendanceHistoryItemDto {

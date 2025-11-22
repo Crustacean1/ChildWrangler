@@ -74,7 +74,7 @@ async fn fetch_and_process<'a, 'b>(pool: &PgPool) -> Option<()> {
 #[tokio::main]
 async fn main() {
     SimpleLogger::new().init().unwrap();
-    let db_url = env::var("DATABASE_URL").expect("DATABASE_URL was not set");
+    let db_url = env::var("DATABASE_URL").expect("No 'DATABASE_URL' specified");
 
     log::info!("Using db connection: {}", db_url);
 

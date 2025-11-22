@@ -54,11 +54,7 @@ where
                             )
                             .next()
                             .map(|next| {
-                                next.dyn_ref::<HtmlLiElement>()
-                                    .map(|e| {
-                                        //e.scroll_into_view_with_bool(true);
-                                        e.focus().ok()
-                                    })
+                                next.dyn_ref::<HtmlLiElement>().map(|e| { e.focus().ok() })
                             });
                     } else {
                         std::iter::successors(
@@ -67,11 +63,7 @@ where
                             )
                             .next()
                             .map(|next| {
-                                next.dyn_ref::<HtmlLiElement>()
-                                    .map(|e| {
-                                        //e.scroll_into_view_with_bool(true);
-                                        e.focus().ok()
-                                    })
+                                next.dyn_ref::<HtmlLiElement>().map(|e| { e.focus().ok() })
                             });
                     }
                 }
@@ -84,11 +76,7 @@ where
                         )
                         .next()
                         .map(|next| {
-                            next.dyn_ref::<HtmlLiElement>()
-                                .map(|e| {
-                                    //e.scroll_into_view_with_bool(true);
-                                    e.focus().ok()
-                                })
+                            next.dyn_ref::<HtmlLiElement>().map(|e| { e.focus().ok() })
                         });
                 }
             }

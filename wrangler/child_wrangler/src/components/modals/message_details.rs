@@ -78,9 +78,7 @@ fn MessageDetailsModalInner(
                                 .map(|stage| match stage {
                                     MessageProcessing::Init => {
                                         Either::Left(
-                                            Either::Left(
-                                                Either::Left(view! { <ContextInfo /> }),
-                                            ),
+                                            Either::Left(Either::Left(view! { <ContextInfo /> })),
                                         )
                                     }
                                     MessageProcessing::Tokens(tokens) => {
@@ -129,10 +127,14 @@ fn MessageDetailsModalInner(
                                         )
                                     }
                                     MessageProcessing::RequestError(error) => {
-                                        Either::Right(Either::Left(view! { <ComponentError error /> }))
-                                    },
+                                        Either::Right(
+                                            Either::Left(view! { <ComponentError error /> }),
+                                        )
+                                    }
                                     MessageProcessing::CancellationResult(result) => {
-                                        Either::Right(Either::Right(view!{<CancellationResultView result/>}))
+                                        Either::Right(
+                                            Either::Right(view! { <CancellationResultView result /> }),
+                                        )
                                     }
                                 })
                                 .collect::<Vec<_>>()}
@@ -146,9 +148,7 @@ fn MessageDetailsModalInner(
 
 #[component]
 pub fn CancellationResultView(result: Vec<CancellationResult>) -> impl IntoView {
-    view! {
-        <div>Cancellation result</div>
-    }
+    view! { <div>Cancellation result</div> }
 }
 
 #[component]
@@ -189,9 +189,7 @@ pub fn ContextInfo() -> impl IntoView {
             </ul>
         </div>
     }*/
-    view! {
-        <div>Context goes here</div>
-    }
+    view! { <div>Context goes here</div> }
 }
 
 #[component]

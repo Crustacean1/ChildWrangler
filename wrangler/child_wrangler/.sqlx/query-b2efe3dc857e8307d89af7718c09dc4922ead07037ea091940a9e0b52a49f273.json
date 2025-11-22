@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM messages WHERE NOW() - inserted < $1 ORDER BY inserted",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "phone",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "outgoing",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "inserted",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 5,
+        "name": "processed",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "cause_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "sent",
+        "type_info": "Timestamp"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Interval"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "b2efe3dc857e8307d89af7718c09dc4922ead07037ea091940a9e0b52a49f273"
+}

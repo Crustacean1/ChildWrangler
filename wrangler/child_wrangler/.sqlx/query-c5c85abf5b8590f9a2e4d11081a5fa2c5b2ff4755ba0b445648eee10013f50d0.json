@@ -1,0 +1,60 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT ON (day,meal_id) day, meal_id, value, target, effective_attendance.cause_id, \n    (attendance_override.id IS NOT NULL) AS is_override,\n    (messages.id IS NOT NULL) AS is_cancellation FROM effective_attendance \n    INNER JOIN group_relations ON group_relations.parent = effective_attendance.target\n    LEFT JOIN attendance_override ON attendance_override.id = effective_attendance.cause_id\n    LEFT JOIN messages ON messages.id = effective_attendance.cause_id\n    WHERE group_relations.child=$1 AND day >= $2 AND day < $3\n    ORDER BY day, meal_id, value, level DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "day",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 1,
+        "name": "meal_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "value",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 3,
+        "name": "target",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "cause_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "is_override",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "is_cancellation",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "c5c85abf5b8590f9a2e4d11081a5fa2c5b2ff4755ba0b445648eee10013f50d0"
+}

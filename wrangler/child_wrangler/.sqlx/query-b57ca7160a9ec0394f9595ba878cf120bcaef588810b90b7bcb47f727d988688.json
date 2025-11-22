@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT bool_and(value) AS value, meal_id,  (attendance_override.id IS NOT NULL) AS is_override, students.id AS id, (messages.id IS NOT NULL) AS is_cancellation, students.allergy_combination_id AS allergies_id FROM caterings\n    INNER JOIN group_relations ON group_relations.parent = caterings.group_id\n    INNER JOIN students ON students.id = group_relations.child\n    INNER JOIN total_attendance ON total_attendance.student_id = students.id\n    LEFT JOIN attendance_override ON attendance_override.id = total_attendance.cause_id\n    LEFT JOIN messages ON messages.id = total_attendance.cause_id\n    WHERE total_attendance.day = $1 AND caterings.id = $2\n    GROUP BY students.id, meal_id, is_override, is_cancellation\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "value",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 1,
+        "name": "meal_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "is_override",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 3,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "is_cancellation",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "allergies_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      true,
+      null,
+      false,
+      null,
+      true
+    ]
+  },
+  "hash": "b57ca7160a9ec0394f9595ba878cf120bcaef588810b90b7bcb47f727d988688"
+}

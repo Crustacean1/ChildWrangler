@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH combinations AS (SELECT allergy_combinations.id, ARRAY_AGG(allergies.name) AS al_id FROM allergy_combinations JOIN allergies ON allergies.id = allergy_id GROUP BY allergy_combinations.id)\n            SELECT id FROM combinations\n            WHERE $1::text[] @> combinations.al_id AND $1::text[] <@ combinations.al_id\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "7ce86d00d17f63e2039e436a38ea4aad4e717b235916e4531f2d1f482eda33c8"
+}

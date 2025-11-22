@@ -1,0 +1,65 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT attendance.target, attendance.cause_id, messages.phone AS \"phone?\", messages.content AS \"content?\", originated, ARRAY_AGG((meal_id, value)) AS \"meals: Vec<(Uuid,bool)>\", note, messages.id AS \"msg_id?\" FROM group_relations\n    INNER JOIN attendance ON attendance.target = group_relations.parent\n    LEFT JOIN attendance_override ON attendance_override.id = attendance.cause_id\n    LEFT JOIN messages ON messages.id = attendance.cause_id\n    WHERE group_relations.child = $1 AND attendance.day = $2 \n    GROUP BY attendance.cause_id, attendance.originated, attendance_override.id, messages.id , target\n    ORDER BY originated",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "target",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "cause_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "phone?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "content?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "originated",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 5,
+        "name": "meals: Vec<(Uuid,bool)>",
+        "type_info": "RecordArray"
+      },
+      {
+        "ordinal": 6,
+        "name": "note",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "msg_id?",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      true,
+      false
+    ]
+  },
+  "hash": "8ed6abfb4e2a4b177a1180d24c46a24dafcb81053ce9df23398ea846538f86f9"
+}

@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM messages WHERE NOT processed AND outgoing AND id = $1 FOR UPDATE SKIP LOCKED",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "phone",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "outgoing",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "inserted",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 5,
+        "name": "processed",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "cause_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "sent",
+        "type_info": "Timestamp"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "32b55c661d576be8e81f8c2b3d2bb762553e6ccd9d8cf757876bfde9c14c1962"
+}

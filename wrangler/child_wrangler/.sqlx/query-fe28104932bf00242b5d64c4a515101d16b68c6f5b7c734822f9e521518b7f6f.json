@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT note, messages.id AS \"trigger_id?\", target, level FROM group_relations\n    INNER JOIN effective_attendance ON effective_attendance.target = group_relations.parent\n    LEFT JOIN attendance_override ON attendance_override.id = effective_attendance.cause_id\n    LEFT JOIN messages ON messages.id = effective_attendance.cause_id\n    WHERE group_relations.child = $1 AND effective_attendance.day = $2 AND effective_attendance.meal_id = $3 AND ((level > 0 AND value = false) OR level = 0)\n    ORDER BY level DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "note",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "trigger_id?",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "target",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "level",
+        "type_info": "Int2"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "fe28104932bf00242b5d64c4a515101d16b68c6f5b7c734822f9e521518b7f6f"
+}

@@ -94,7 +94,11 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
     }
 
     for (day, messages) in sorted_messages.iter_mut() {
-        messages.sort_by_key(|m| m.metadata().inserted);
+        messages.sort_by_key(|m| match m {
+            Message::Sent(sent_message) => sent_message.metadata.inserted,
+            Message::Received(received_message) => received_message.received,
+            Message::Pending(pending_message) => pending_message.metadata.inserted,
+        });
     }
 
     view! {
@@ -137,8 +141,8 @@ pub fn InnerMessages(messages: Vec<Message>) -> impl IntoView {
                                 }
                             })
                             .collect::<Vec<_>>()}
-                        <div class="text-center before:w-full before:absolute before:top-2 before:left-0 before:rounded-full before:bg-gray-300/25 before:h-0.5 before:content-[''] relative">
-                            <span class="z-index-2 bg-gray-950">
+                        <div class="text-center before:w-full before:absolute before:top-[50%] before:-z-1 before:left-0 before:rounded-full before:bg-gray-300/25 before:h-0.5 before:content-[''] relative">
+                            <span class="z-index-2 bg-gray-950 p-1">
                                 {format!("{}", day.format("%d %B %Y"))}
                             </span>
                         </div>
@@ -179,12 +183,15 @@ pub fn PendingMessageView(message: PendingMessage) -> impl IntoView {
 #[component]
 pub fn SentMessageView(message: SentMessage) -> impl IntoView {
     view! {
-        <div class="flex flex-col gap-1 w-fit self-end">
-            <div on:click=move |_| {} class="card row row-col p-2 w-fit">
+        <div class="flex flex-col gap-1 w-fit self-end w-fit">
+            <div on:click=move |_| {} class="card row row-col p-2 ">
                 <span>{format!("{}", message.data.content)}</span>
             </div>
-            <small class="self-end gray">
-                {format!("Wysłano: {}", message.sent.format("%H:%M:%S"))}
+            <small class="self-end gray flex flex-row gap-2">
+                <span>
+                    {format!("Zakolejkowano: {}", message.metadata.inserted.format("%H:%M:%S"))}
+                </span>
+                <span>{format!("Wysłano: {}", message.sent.format("%H:%M:%S"))}</span>
             </small>
         </div>
     }
@@ -197,11 +204,14 @@ pub fn ReceivedMessageView(
 ) -> impl IntoView {
     view! {
         <div class="flex flex-col gap-1 w-fit self-start ">
-            <div on:click=move |_| on_click(message.metadata.id) class="card row row-col p-2 w-fit">
+            <div on:click=move |_| on_click(message.metadata.id) class="card row row-col p-2 ">
                 <span>{format!("{}", message.data.content)}</span>
             </div>
-            <small class="self-end gray">
-                {format!("Odebrano: {}", message.received.format("%H:%M:%S"))}
+            <small class="self-end gray flex gap-2">
+                <span>{format!("Wysłano: {}", message.received.format("%H:%M:%S"))}</span>
+                <span>
+                    {format!("Otrzymano: {}", message.metadata.inserted.format("%H:%M:%S"))}
+                </span>
             </small>
         </div>
     }

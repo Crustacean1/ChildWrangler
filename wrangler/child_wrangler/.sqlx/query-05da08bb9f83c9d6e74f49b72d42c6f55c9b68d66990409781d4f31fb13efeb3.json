@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT groups.id AS \"id!\",  group_relations.parent AS \"parent?\", groups.name AS \"name!\" FROM groups \n        LEFT JOIN group_relations ON group_relations.child = groups.id AND group_relations.level = 1 \n        WHERE NOT groups.removed\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "parent?",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "05da08bb9f83c9d6e74f49b72d42c6f55c9b68d66990409781d4f31fb13efeb3"
+}
