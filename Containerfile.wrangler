@@ -14,7 +14,7 @@ WORKDIR /wrangler
 COPY ./wrangler ./
 
 RUN echo $(xx-cargo --print-target-triple)
-RUN LEPTOS_BIN_TARGET_TRIPLE=$(xx-cargo --print-target-triple) CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL=/usr/bin/aarch64-unknown-linux-musl-clang cargo leptos build --release
+RUN LEPTOS_BIN_TARGET_TRIPLE=$(xx-cargo --print-target-triple) CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=/usr/bin/aarch64-unknown-linux-musl-clang cargo leptos build --release
 
 RUN cp $(find / -name child_wrangler -type f) /child_wrangler
 RUN cp -r $(find / -name site -type d) /site
