@@ -2,6 +2,6 @@ pub mod attendance;
 pub mod catering;
 pub mod details;
 pub mod group;
+pub mod guardian;
 pub mod messages;
 pub mod student;
-pub mod guardian;

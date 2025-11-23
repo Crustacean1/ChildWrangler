@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use dto::{
     catering::MealDto,
     messages::{
-        AttendanceCancellation, CancellationRequest, CancellationResult, MessageProcessing, RequestError, Student, Token
+        AttendanceCancellation, CancellationRequest, CancellationResult, MessageProcessing,
+        RequestError, Student, Token,
     },
     student::StudentDto,
 };

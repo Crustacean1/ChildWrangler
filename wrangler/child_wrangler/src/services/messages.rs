@@ -140,9 +140,13 @@ pub async fn get_messages(phone: String) -> Result<Vec<Message>, ServerFnError> 
 
     let pool: PgPool = use_context().ok_or(ServerFnError::new("Failed to retrieve db pool"))?;
 
-    let messages = sqlx::query_as!(DbMessage, "SELECT * FROM messages WHERE phone = $1 OR phone = format('+48%s', $1) ORDER BY inserted", phone)
-        .fetch_all(&pool)
-        .await?;
+    let messages = sqlx::query_as!(
+        DbMessage,
+        "SELECT * FROM messages WHERE phone = $1 OR phone = format('+48%s', $1) ORDER BY inserted",
+        phone
+    )
+    .fetch_all(&pool)
+    .await?;
     let messages = messages.into_iter().map(parse_message);
 
     Ok(messages.collect())

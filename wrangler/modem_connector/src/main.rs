@@ -329,52 +329,95 @@ async fn handle_modem(
                 tr.commit().await.expect("Failed to commit transaction");
             }
             ModemEvent::MessageAdded(path) => {
-                let sms_proxy = SmsProxy::builder(connection).path(path)?.build().await?;
-                let content = sms_proxy.text().await?;
-                let phone = sms_proxy.number().await?;
-                let state = sms_proxy.state().await?;
-
-                if state == SmsState::Received as u32 {
-                    let sent = sms_proxy.timestamp().await?;
-                    if let Ok(sent) = NaiveDateTime::parse_from_str(&sent, "%Y-%m-%dT%H:%M:%S%z") {
-                        let db_message = sqlx::query!("SELECT * FROM messages WHERE sent = $1 AND phone = $2 AND content = $3",sent,phone,content)
-                            .fetch_optional(pool)
-                            .await
-                            .expect("Failed to get existing messages from db");
-
-                        if let Some(duplicate) = db_message {
-                            log::info!(
-                                "Message {} is duplicate of {}, ignoring",
-                                content,
-                                duplicate.id
-                            );
-                        } else {
-                            sqlx::query!(
-                                "INSERT INTO messages (phone, content, sent) VALUES ($1,$2,$3)",
-                                phone,
-                                content,
-                                sent
-                            )
-                            .execute(pool)
-                            .await
-                            .expect("Failed to insert message into db");
-                        }
-                    } else {
-                        log::error!("Failed to parse message date: {}", sent);
-                    }
-                } else if state == SmsState::Sent as u32 {
-                    log::info!(
-                        "Message is recognized as already sent to: '{}' content: '{}'",
-                        phone,
-                        content
-                    );
-                } else {
-                    log::info!("Unknown sms state: {:?}", state);
-                }
+                on_message_added(connection, pool, path)
+                    .await
+                    .expect("Failed to process added message");
             }
         }
     }
     Ok(())
+}
+
+pub async fn on_message_added(
+    connection: &Connection,
+    pool: &PgPool,
+    sms_path: OwnedObjectPath,
+) -> Result<()> {
+    let sms_proxy = SmsProxy::builder(connection)
+        .path(sms_path)?
+        .build()
+        .await?;
+
+    let message_added = process_added_message(pool, &sms_proxy).await?;
+
+    if !message_added {
+        let mut state_stream = sms_proxy.receive_state_changed().await;
+        tokio::spawn({
+            let pool = pool.clone();
+            async move {
+                while let Some(_) = state_stream.next().await {
+                    if let Ok(result) = process_added_message(&pool, &sms_proxy).await
+                        && result
+                    {
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
+    Ok(())
+}
+
+async fn process_added_message<'a>(pool: &PgPool, sms_proxy: &SmsProxy<'a>) -> Result<bool> {
+    let content = sms_proxy.text().await?;
+    let phone = sms_proxy.number().await?;
+    let state = sms_proxy.state().await?;
+    let sent = sms_proxy.timestamp().await?;
+    let sent = NaiveDateTime::parse_from_str(&sent, "%Y-%m-%dT%H:%M:%S%z")
+        .expect("Failed to parse timestamp");
+    log::info!("Streaming state: {}", state);
+
+    if state == 3 {
+        let db_message = sqlx::query!(
+            "SELECT * FROM messages WHERE sent = $1 AND phone = $2 AND content = $3",
+            sent,
+            phone,
+            content
+        )
+        .fetch_optional(pool)
+        .await
+        .expect("Failed to select message");
+
+        if let Some(duplicate) = db_message {
+            log::info!(
+                "Message {} is duplicate of {}, ignoring",
+                content,
+                duplicate.id
+            );
+        } else {
+            sqlx::query!(
+                "INSERT INTO messages (phone, content, sent) VALUES ($1,$2,$3)",
+                phone,
+                content,
+                sent
+            )
+            .execute(pool)
+            .await
+            .expect("Failed to insert message");
+        }
+        Ok(true)
+    } else if state == 5 {
+        log::info!(
+            "Message is recognized as already sent to: '{}' content: '{}'",
+            phone,
+            content
+        );
+        Ok(true)
+    } else {
+        log::info!("Unknown sms state: {:?}", state);
+        Ok(false)
+    }
 }
 
 #[tokio::main]

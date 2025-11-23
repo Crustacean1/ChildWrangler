@@ -13,9 +13,8 @@ RUN LEPTOS_BIN_TARGET_TRIPLE=$(xx-cargo --print-target-triple) CARGO_TARGET_AARC
 WORKDIR /wrangler
 COPY ./wrangler ./
 
-RUN LEPTOS_BIN_TARGET_TRIPLE=$(xx-cargo --print-target-triple) CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL=/usr/bin/aarch64-unknown-linux-musl-clang \
-	cargo test && \
-	cargo leptos build --release
+RUN LEPTOS_BIN_TARGET_TRIPLE=$(xx-cargo --print-target-triple) CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL=/usr/bin/aarch64-unknown-linux-musl-clang cargo test && \
+	LEPTOS_BIN_TARGET_TRIPLE=$(xx-cargo --print-target-triple) CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL=/usr/bin/aarch64-unknown-linux-musl-clang cargo leptos build --release
 
 RUN cp $(find / -name child_wrangler -type f) /child_wrangler
 RUN cp -r $(find / -name site -type d) /site
@@ -27,7 +26,7 @@ WORKDIR /wrangler
 COPY --from=builder /child_wrangler /wrangler/
 COPY --from=builder /site /wrangler/
 
-ENTRYPOINT ["/wrangler/modem_connector"]
+ENTRYPOINT ["/wrangler/child_wrangler"]
 
 
 
