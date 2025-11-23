@@ -1,14 +1,13 @@
-use std::{collections::HashMap, env};
+use std::collections::HashMap;
 
-use chrono::{DateTime, NaiveDateTime, NaiveTime, Utc};
-use dto::messages::MessageData;
-use futures::stream::{self, StreamExt};
+use chrono::{DateTime, Utc};
+use futures::stream::StreamExt;
 use simple_logger::SimpleLogger;
 use sqlx::PgPool;
+use sqlx::postgres::PgListener;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 use zbus::proxy;
-use zbus::zvariant::NoneValue;
 use zbus::{
     Connection, Result,
     fdo::ObjectManagerProxy,
@@ -59,15 +58,6 @@ trait Sms {
     fn state(&self) -> Result<u32>;
 
     fn send(&self) -> Result<()>;
-}
-
-enum SmsState {
-    Unknown = 0,
-    Stored = 1,
-    Receiving = 2,
-    Received = 3,
-    Sending = 4,
-    Sent = 5,
 }
 
 #[proxy(
@@ -217,6 +207,40 @@ async fn handle_modem(
         }
     });
 
+    let messages_to_send = tokio::spawn({
+        let pool = pool.clone();
+        let tx = tx.clone();
+        async move {
+            let mut listener = PgListener::connect_with(&pool)
+                .await
+                .expect("Listener failed to connect to db");
+            listener
+                .listen("sent")
+                .await
+                .expect("Listener couldn't start listening to messages");
+            while let Some(message) =
+                sqlx::query!("SELECT * FROM messages WHERE outgoing AND NOT processed LIMIT 1")
+                    .fetch_optional(&pool)
+                    .await
+                    .expect("Failed to get messages from db")
+            {
+                tx.send(ModemEvent::MessageEnqueued(message.id))
+                    .expect("Failed to enqueue outgoing message");
+            }
+            log::info!("Caught up to new events");
+
+            while let Ok(message) = listener.recv().await {
+                let message = message.payload();
+                if let Ok(message_id) = message.try_into() {
+                    tx.send(ModemEvent::MessageEnqueued(message_id))
+                        .expect("Failed to enqueue outgoing message");
+                } else {
+                    log::error!("Failed to parse message id: '{}'", message);
+                }
+            }
+        }
+    });
+
     while let Some(event) = rx.recv().await {
         match event {
             ModemEvent::StateChanged(old, new) => {
@@ -298,14 +322,8 @@ async fn handle_modem(
                         .build()
                         .await?;
 
-                    sms.send().await?;
-
-                    sqlx::query!("UPDATE messages SET processed = true WHERE id = $1", id)
-                        .execute(pool)
-                        .await
-                        .expect("Failed to mark message as processed");
-
                     tokio::spawn({
+                        let sms = sms.clone();
                         let pool = pool.clone();
                         async move {
                             let mut state_stream = sms.receive_state_changed().await;
@@ -324,6 +342,13 @@ async fn handle_modem(
                             }
                         }
                     });
+
+                    sms.send().await?;
+
+                    sqlx::query!("UPDATE messages SET processed = true WHERE id = $1", id)
+                        .execute(pool)
+                        .await
+                        .expect("Failed to mark message as processed");
                 }
 
                 tr.commit().await.expect("Failed to commit transaction");
