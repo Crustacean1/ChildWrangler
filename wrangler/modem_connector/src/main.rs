@@ -1,6 +1,6 @@
 use std::{collections::HashMap, env};
 
-use chrono::{NaiveDateTime, NaiveTime, Utc};
+use chrono::{DateTime, NaiveDateTime, NaiveTime, Utc};
 use dto::messages::MessageData;
 use futures::stream::{self, StreamExt};
 use simple_logger::SimpleLogger;
@@ -374,8 +374,10 @@ async fn process_added_message<'a>(pool: &PgPool, sms_proxy: &SmsProxy<'a>) -> R
     let phone = sms_proxy.number().await?;
     let state = sms_proxy.state().await?;
     let sent = sms_proxy.timestamp().await?;
-    let sent = NaiveDateTime::parse_from_str(&sent, "%Y-%m-%dT%H:%M:%S%z")
-        .expect("Failed to parse timestamp");
+    let sent = DateTime::parse_from_str(&sent, "%Y-%m-%dT%H:%M:%S%#z")
+        .expect("Failed to parse timestamp")
+        .naive_local();
+
     log::info!("Streaming state: {}", state);
 
     if state == 3 {
