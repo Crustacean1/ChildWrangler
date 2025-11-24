@@ -1,0 +1,12 @@
+[Unit]
+Description=Modem manager service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/modem_connector
+Environment=DATABASE_URL=postgres://admin:admin@192.168.1.104/wrangler
+Environment=MODEM_PIN=6538
+Restart=always
+
+[Install]
+WantedBy=default.target
