@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO messages (phone, content, sent) VALUES ($1,$2,$3)",
+  "query": "INSERT INTO messages (phone, content, sent, outgoing) VALUES ($1,$2,$3, false)",
   "describe": {
     "columns": [],
     "parameters": {
@@ -12,5 +12,5 @@
     },
     "nullable": []
   },
-  "hash": "3500b21a4dfb62381ba4a461a4eca95739d5c1a3bab00605aa01be3f2b9e6042"
+  "hash": "446245862cd909b84b4e33e8cdd42045a25010969050889b6f5acdf9d4c4c3f9"
 }

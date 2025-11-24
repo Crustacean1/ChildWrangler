@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, Utc};
 use futures::stream::StreamExt;
 use simple_logger::SimpleLogger;
 use sqlx::PgPool;
@@ -218,12 +218,17 @@ async fn handle_modem(
                 .listen("sent")
                 .await
                 .expect("Listener couldn't start listening to messages");
-            while let Some(message) =
-                sqlx::query!("SELECT * FROM messages WHERE outgoing AND NOT processed LIMIT 1")
-                    .fetch_optional(&pool)
-                    .await
-                    .expect("Failed to get messages from db")
-            {
+            let messages = sqlx::query!("SELECT * FROM messages WHERE outgoing AND NOT processed")
+                .fetch_all(&pool)
+                .await
+                .expect("Failed to get messages from db");
+            for message in messages {
+                log::info!(
+                    "Found message: {} : {} to {}",
+                    message.id,
+                    message.content,
+                    message.phone
+                );
                 tx.send(ModemEvent::MessageEnqueued(message.id))
                     .expect("Failed to enqueue outgoing message");
             }
@@ -276,25 +281,27 @@ async fn handle_modem(
                 .expect("Failed to update signal quality in db");
             }
             ModemEvent::RequiresUnlock(locked) => {
+                log::info!("Handling requires unlock");
                 if current_state == 2 {
                     if locked {
                         if has_attempted_unlock {
                             log::warn!(
-                                "Phone status changed to locked, even though unlock took place, quitting"
+                                "Phone status changed to locked, even though unlock took place, skipping unlock"
                             );
-                            panic!();
                         } else {
                             has_attempted_unlock = true;
+                            let sim_path = modem_proxy.sim().await?;
+
+                            log::info!("Sending pin");
+
+                            let sim = SimProxy::builder(connection)
+                                .path(sim_path)?
+                                .build()
+                                .await?;
+                            sim.send_pin(pin.into()).await?;
+
+                            log::info!("Sent pind to unlock phone");
                         }
-
-                        let sim_path = modem_proxy.sim().await?;
-                        let sim = SimProxy::builder(connection)
-                            .path(sim_path)?
-                            .build()
-                            .await?;
-                        sim.send_pin("1631".into()).await?;
-
-                        log::info!("Sent pind to unlock phone");
                     } else {
                         if is_locked {
                             log::info!("Phone unlocked");
@@ -304,6 +311,7 @@ async fn handle_modem(
                 is_locked = locked;
             }
             ModemEvent::MessageEnqueued(id) => {
+                log::info!("Enqueued message");
                 let mut tr = pool.begin().await.expect("Failed to start transaction");
 
                 let message = sqlx::query!("SELECT * FROM messages WHERE NOT processed AND outgoing AND id = $1 FOR UPDATE SKIP LOCKED", id).fetch_optional(&mut *tr).await.expect("Failed to fetch message from db");
@@ -325,15 +333,18 @@ async fn handle_modem(
                     tokio::spawn({
                         let sms = sms.clone();
                         let pool = pool.clone();
+                        log::info!("starting waiting for message state change");
                         async move {
                             let mut state_stream = sms.receive_state_changed().await;
                             while let Some(state) = state_stream.next().await {
+                                log::info!("state change detected for sms message");
                                 let state = state.get().await;
+                                log::info!("state: {:?}", state);
                                 if state == Ok(5) {
                                     sqlx::query!(
                                         "UPDATE messages SET sent = $2 WHERE id = $1",
                                         id,
-                                        Utc::now().naive_local()
+                                        Local::now().naive_local()
                                     )
                                     .execute(&pool)
                                     .await
@@ -343,10 +354,12 @@ async fn handle_modem(
                         }
                     });
 
+                    log::info!("Sending sms");
                     sms.send().await?;
+                    log::info!("Sms sent");
 
                     sqlx::query!("UPDATE messages SET processed = true WHERE id = $1", id)
-                        .execute(pool)
+                        .execute(&mut *tr)
                         .await
                         .expect("Failed to mark message as processed");
                 }
@@ -354,6 +367,7 @@ async fn handle_modem(
                 tr.commit().await.expect("Failed to commit transaction");
             }
             ModemEvent::MessageAdded(path) => {
+                log::info!("Message added");
                 on_message_added(connection, pool, path)
                     .await
                     .expect("Failed to process added message");
@@ -398,14 +412,16 @@ async fn process_added_message<'a>(pool: &PgPool, sms_proxy: &SmsProxy<'a>) -> R
     let content = sms_proxy.text().await?;
     let phone = sms_proxy.number().await?;
     let state = sms_proxy.state().await?;
-    let sent = sms_proxy.timestamp().await?;
-    let sent = DateTime::parse_from_str(&sent, "%Y-%m-%dT%H:%M:%S%#z")
-        .expect("Failed to parse timestamp")
-        .naive_local();
 
-    log::info!("Streaming state: {}", state);
+    log::info!("Streaming state: {} {} {}", state, phone, content);
 
     if state == 3 {
+        let sent = sms_proxy.timestamp().await?;
+        log::info!("Timestamp is: '{}'", sent);
+        let sent = DateTime::parse_from_str(&sent, "%Y-%m-%dT%H:%M:%S%#z")
+            .expect("Failed to parse timestamp")
+            .naive_local();
+
         let db_message = sqlx::query!(
             "SELECT * FROM messages WHERE sent = $1 AND phone = $2 AND content = $3",
             sent,
@@ -424,7 +440,7 @@ async fn process_added_message<'a>(pool: &PgPool, sms_proxy: &SmsProxy<'a>) -> R
             );
         } else {
             sqlx::query!(
-                "INSERT INTO messages (phone, content, sent) VALUES ($1,$2,$3)",
+                "INSERT INTO messages (phone, content, sent, outgoing) VALUES ($1,$2,$3, false)",
                 phone,
                 content,
                 sent
