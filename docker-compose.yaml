@@ -1,7 +1,7 @@
-name: wrangler
 services:
   postgres:
     image: docker.io/postgres:18
+    restart: always
     ports:
       - 5432:5432
     environment:
@@ -9,13 +9,27 @@ services:
       POSTGRES_PASSWORD: "admin"
       POSTGRES_DB: "wrangler"
       TZ: "Europe/Warsaw"
+    volumes:
+      - data:/var/lib/postgresql
 
   wrangler:
-    image: gitea.lan/crustacean/child-wrangler:latest
+    image: gitea.lan/crustacean/child-wrangler@sha256:aaef7f626b9e82b4b9220703d0c793912f3aec4eef0ae7d9b8dce22976830e4c
     ports:
       - 2137:2137
+    entrypoint: /wrangler/child_wrangler
     environment:
-      CONNECTION_STRING: "postgres://admin:admin@postgres/wrangler"
+      DATABASE_URL: "postgres://admin:admin@postgres/wrangler"
       LEPTOS_SITE_ADDR: "0.0.0.0:2137"
+      LEPTOS_SITE_ROOT: /wrangler
       RUST_LOG: debug
       TZ: "Europe/Warsaw"
+
+  message_daemon:
+    image: gitea.lan/crustacean/message-daemon@sha256:ec51f9020e5ad44594de1c570ee8da02399adc4024f38c180bab261839f4d274
+    restart: always
+    environment:
+      DATABASE_URL: "postgres://admin:admin@postgres/wrangler"
+      TZ: "Europe/Warsaw"
+
+volumes:
+  data:
